@@ -833,7 +833,10 @@ export default function App() {
   const [jobsError,   setJobsError]   = useState("");
 
   useEffect(() => {
-    const today = new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+    const todayRaw = new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+    // Also build zero-padded version e.g. 03/10/2026
+    const todayPadded = new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
+    const today = todayRaw;
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(SHEETS_TAB)}?key=${SHEETS_KEY}`;
     fetch(url)
       .then(r => r.json())
@@ -856,11 +859,13 @@ export default function App() {
         const byTruck = {};
         rows.slice(1).forEach(row => {
           const rowDate   = row[iDate]   || "";
-          const truckNum  = parseInt(row[iTruck]) || 0;
+          const truckRaw  = (row[iTruck] || "").toString().trim();
+          const truckNum  = parseInt(truckRaw.replace(/[^0-9]/g, "")) || 0;
           const rowStatus = (row[iStatus] || "scheduled").toLowerCase();
           if (!truckNum) return;
           // Show today's jobs OR jobs with no date
-          const dateMatch = !rowDate || rowDate === today;
+          const normalizeDate = d => d.trim().replace(/^0(\d)/, "$1").replace(/\/(0)(\d)\//, "/$2/");
+          const dateMatch = !rowDate || normalizeDate(rowDate) === normalizeDate(today) || rowDate.trim() === todayPadded;
           if (!dateMatch) return;
           if (!byTruck[truckNum]) byTruck[truckNum] = [];
           byTruck[truckNum].push({
