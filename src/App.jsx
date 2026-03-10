@@ -303,22 +303,23 @@ const TRUCK_JOBS = {
 const FORM_CATS = [
   { id: "ops", label: "Daily Operations", icon: "truck", colorClass: "ci-ops",
     forms: [
-      { name: "Trailer Checklist",    desc: "Pre-departure equipment check" },
-      { name: "Morning Runthrough",   desc: "Daily startup & safety review" },
-      { name: "Property Walkthrough", desc: "On-site condition report" },
+      { name: "Trailer Checklist",    desc: "Pre-departure equipment check",   url: "https://forms.gle/7GE4hZFKo9DUeuqf6" },
+      { name: "Morning Runthrough",   desc: "Daily startup & safety review",   url: "" },
+      { name: "Property Walkthrough", desc: "On-site condition report",        url: "" },
     ]},
   { id: "hr", label: "HR & Admin", icon: "clip", colorClass: "ci-hr",
     forms: [
-      { name: "Time Off Request", desc: "Submit leave for approval" },
-      { name: "Document Upload",  desc: "Tax docs & employment forms" },
-      { name: "Job Application",  desc: "Refer someone to the team" },
+      { name: "Time Off Request",  desc: "Submit leave for approval",          url: "https://forms.gle/RbJWkvB21z3Ncfc18" },
+      { name: "Document Upload",   desc: "Tax docs & employment forms",        url: "" },
+      { name: "Job Application",   desc: "Refer someone to the team",          url: "https://forms.gle/1E7RovrzAax6znfv8" },
+      { name: "Contact a Manager", desc: "Send a message to management",       url: "https://forms.gle/U2msqNE6uJZa267b8" },
     ]},
   { id: "team", label: "Team & Skills", icon: "star", colorClass: "ci-team",
     forms: [
-      { name: "Team Member Profile",              desc: "Music, food, favorites & more" },
-      { name: "Skills Assessment — Gardening",    desc: "Rate your gardening knowledge" },
-      { name: "Skills Assessment — Construction", desc: "Construction skills self-review" },
-      { name: "Skills Assessment — Maintenance",  desc: "Equipment & maintenance proficiency" },
+      { name: "Team Member Info",                 desc: "Your profile & personal info",        url: "https://forms.gle/J63nza1gkYKDL7Lk7" },
+      { name: "Skills Assessment — Gardening",    desc: "Rate your gardening knowledge",       url: "" },
+      { name: "Skills Assessment — Construction", desc: "Construction skills self-review",     url: "" },
+      { name: "Skills Assessment — Maintenance",  desc: "Equipment & maintenance proficiency", url: "" },
     ]},
 ];
 
@@ -414,7 +415,7 @@ function ToolsTab({ truck, checkouts, setCheckouts }) {
             </div>
             {isOpen && cat.tools.map(tool => {
               const avl = available(tool.id, tool.total);
-              const qty = pending[tool.id] ?? 1;
+              const qty = pending[tool.id] ?? 0;
               return (
                 <div key={tool.id} className="tool-row">
                   <div className="tool-info">
@@ -425,10 +426,10 @@ function ToolsTab({ truck, checkouts, setCheckouts }) {
                   </div>
                   {avl > 0 && (
                     <div className="qty-row">
-                      <button className="qty-btn" disabled={qty <= 1} onClick={() => setPending(p => ({...p, [tool.id]: Math.max(1, (p[tool.id]??1)-1)}))}> − </button>
+                      <button className="qty-btn" disabled={qty <= 0} onClick={() => setPending(p => ({...p, [tool.id]: Math.max(0, (p[tool.id]??0)-1)}))}> − </button>
                       <span className="qty-num">{qty}</span>
-                      <button className="qty-btn" disabled={qty >= avl} onClick={() => setPending(p => ({...p, [tool.id]: Math.min(avl, (p[tool.id]??1)+1)}))}> + </button>
-                      <button className="checkout-btn" onClick={() => checkout(tool.id, tool.name, qty)}>
+                      <button className="qty-btn" disabled={qty >= avl} onClick={() => setPending(p => ({...p, [tool.id]: Math.min(avl, (p[tool.id]??0)+1)}))}> + </button>
+                      <button className="checkout-btn" disabled={qty < 1} onClick={() => checkout(tool.id, tool.name, qty)}>
                         Check Out
                       </button>
                     </div>
@@ -690,7 +691,7 @@ function TruckHome({ truck, onLogout, checkouts, setCheckouts }) {
                           <div className="form-dot"/>
                           <div><div className="form-name">{f.name}</div><div className="form-desc">{f.desc}</div></div>
                         </div>
-                        <span className="open-badge">Open →</span>
+                        {f.url ? <a href={f.url} target="_blank" rel="noreferrer" className="open-badge">Open →</a> : <span className="open-badge" style={{opacity:0.35,cursor:"default"}}>Soon</span>}
                       </div>
                     ))}
                   </div>
