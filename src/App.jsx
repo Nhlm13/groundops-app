@@ -799,7 +799,7 @@ function ManagerZone({ onLogout, checkouts, jobs, jobsLoading }) {
             <div className="section-hd" style={{color:"var(--mgr)"}}>Truck Status</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
               {TRUCKS.map(t => {
-                const hasJobs = !!TRUCK_JOBS[t.id];
+                const hasJobs = !!(jobs[t.id] && jobs[t.id].length > 0);
                 return (
                   <div key={t.id} style={{background:"var(--bark)",border:`1px solid ${hasJobs?"var(--leaf)":"var(--moss)"}`,borderRadius:9,padding:"10px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                     <Ic n="truck" style={{width:18,height:18,color:hasJobs?"var(--lime)":"var(--stone)"}}/>
