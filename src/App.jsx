@@ -464,7 +464,6 @@ function MgrToolsTab({ checkouts }) {
   };
 
   const toolsOut = allTools.filter(t => totalOut(t.id) > 0);
-  const toolsAvail = allTools.filter(t => totalOut(t.id) === 0);
 
   return (
     <div>
