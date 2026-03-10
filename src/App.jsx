@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap');`;
 
@@ -288,17 +288,10 @@ const TRUCKS = Array.from({ length: 20 }, (_, i) => ({
 }));
 const MGR_PASS = "ground25";
 
-const TRUCK_JOBS = {
-  1: [
-    { name: "Hartwell Estate",  address: "4201 Oak Ridge Dr",    time: "7:00 AM", status: "active" },
-    { name: "Maple Commons",    address: "77 Maple Commons Way", time: "1:00 PM", status: "next"   },
-  ],
-  2: [{ name: "Crestview HOA", address: "Crestview Blvd Zone 2", time: "8:30 AM", status: "active" }],
-  3: [
-    { name: "Dunbar Residence", address: "912 Pinehurst Ln",      time: "9:00 AM", status: "active" },
-    { name: "Birch Park",       address: "33 Birch Park Circle",  time: "2:00 PM", status: "next"   },
-  ],
-};
+// Jobs loaded from Google Sheets — see fetchJobs() in App component
+const SHEETS_ID  = "1RdaByCLstwdj0zkKfWnrExX5DWcaMFgld-H-w27BuUU";
+const SHEETS_TAB = "Sheet 1";
+const SHEETS_KEY = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
 
 const FORM_CATS = [
   { id: "ops", label: "Daily Operations", icon: "truck", colorClass: "ci-ops",
@@ -624,10 +617,10 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
 // ════════════════════
 //  TRUCK HOME
 // ════════════════════
-function TruckHome({ truck, onLogout, checkouts, setCheckouts }) {
+function TruckHome({ truck, onLogout, checkouts, setCheckouts, jobs, jobsLoading, jobsError }) {
   const [tab,  setTab]  = useState("jobs");
   const [open, setOpen] = useState({ ops: true, hr: false, team: false });
-  const jobs = TRUCK_JOBS[truck.id] || [];
+  const truckJobs = jobs[truck.id] || [];
   const subs = TRUCK_SUBMISSIONS[truck.id] || [];
   const toggle = id => setOpen(o => ({ ...o, [id]: !o[id] }));
   const myCheckoutCount = (checkouts[truck.id] || []).reduce((s,c)=>s+c.qty,0);
@@ -653,9 +646,13 @@ function TruckHome({ truck, onLogout, checkouts, setCheckouts }) {
         {tab === "jobs" && (
           <>
             <div className="section-hd">Today's Jobs</div>
-            {jobs.length === 0
-              ? <div style={{textAlign:"center",padding:"30px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,textTransform:"uppercase"}}>No jobs assigned yet</div>
-              : jobs.map((j,i) => (
+            {jobsLoading ? (
+              <div style={{textAlign:"center",padding:"30px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,letterSpacing:1}}>Loading jobs...</div>
+            ) : jobsError ? (
+              <div style={{textAlign:"center",padding:"20px",color:"var(--danger)",fontSize:16}}>{jobsError}</div>
+            ) : truckJobs.length === 0 ? (
+              <div style={{textAlign:"center",padding:"30px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:18,letterSpacing:1,textTransform:"uppercase"}}>No jobs assigned today</div>
+            ) : truckJobs.map((j,i) => (
                 <div key={i} className="job-card" style={{borderLeftColor:j.status==="active"?"var(--lime)":"var(--dirt)"}}>
                   <div className="job-name">{j.name}</div>
                   <div className="job-meta">
@@ -665,8 +662,12 @@ function TruckHome({ truck, onLogout, checkouts, setCheckouts }) {
                   <span className={`job-status-chip ${j.status==="active"?"chip-active":"chip-next"}`}>
                     {j.status==="active"?"In Progress":"Up Next"}
                   </span>
+                  {j.gate    && <div style={{fontSize:16,color:"var(--stone)",marginTop:6}}>🔒 {j.gate}</div>}
+                  {j.notes   && <div style={{fontSize:16,color:"var(--stone)",marginTop:4}}>📋 {j.notes}</div>}
+                  {j.contact && <div style={{fontSize:16,color:"var(--stone)",marginTop:4}}>📞 {j.contact}</div>}
                 </div>
               ))}
+            
           </>
         )}
 
@@ -740,7 +741,7 @@ function TruckHome({ truck, onLogout, checkouts, setCheckouts }) {
 // ════════════════════
 //  MANAGER ZONE
 // ════════════════════
-function ManagerZone({ onLogout, checkouts }) {
+function ManagerZone({ onLogout, checkouts, jobs, jobsLoading }) {
   const [tab, setTab] = useState("activity");
   return (
     <div className="screen" style={{background:"#ddd9d0"}}>
@@ -757,7 +758,26 @@ function ManagerZone({ onLogout, checkouts }) {
       <div className="content" style={{background:"#ddd9d0"}}>
         {tab === "activity" && (
           <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>All Recent Activity</div>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>Today's Jobs</div>
+            {jobsLoading ? (
+              <div style={{fontSize:18,color:"var(--stone)",marginBottom:14}}>Loading...</div>
+            ) : Object.keys(jobs).length === 0 ? (
+              <div style={{fontSize:18,color:"var(--stone)",marginBottom:14}}>No jobs in sheet for today.</div>
+            ) : Object.entries(jobs).map(([truckId, truckJobs]) =>
+              truckJobs.map((j, i) => (
+                <div key={`${truckId}-${i}`} className="activity-item" style={{borderLeftColor:"var(--leaf)"}}>
+                  <div className="act-top">
+                    <div className="act-form">{j.name}</div>
+                    <div className="act-time">{j.time}</div>
+                  </div>
+                  <div className="act-truck"><Ic n="truck"/>Truck {truckId}</div>
+                  <div className="act-cat">{j.address}</div>
+                  {j.status === "active" && <span className="chip-active" style={{fontSize:13,padding:"2px 8px",borderRadius:4,marginTop:6,display:"inline-block"}}>In Progress</span>}
+                </div>
+              ))
+            )}
+            <div style={{height:16}}/>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>All Recent Form Activity</div>
             {ACTIVITY.map((a,i) => (
               <div key={i} className={`activity-item ${a.type}`} style={{animationDelay:`${i*0.05}s`}}>
                 <div className="act-top"><div className="act-form">{a.form}</div><div className="act-time">{a.when}</div></div>
@@ -807,8 +827,63 @@ function ManagerZone({ onLogout, checkouts }) {
 export default function App() {
   const [screen,    setScreen]    = useState("login");
   const [truck,     setTruck]     = useState(null);
-  // Shared checkout state — lives at root so manager can see all trucks
   const [checkouts, setCheckouts] = useState({});
+  const [jobs,      setJobs]      = useState({});
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError,   setJobsError]   = useState("");
+
+  useEffect(() => {
+    const today = new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/${encodeURIComponent(SHEETS_TAB)}?key=${SHEETS_KEY}`;
+    fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        const rows = data.values || [];
+        if (rows.length < 2) { setJobsLoading(false); return; }
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        const iDate     = headers.findIndex(h => h.includes("date"));
+        const iTruck    = headers.findIndex(h => h.includes("truck"));
+        const iName     = headers.findIndex(h => h.includes("property") || h.includes("name"));
+        const iAddress  = headers.findIndex(h => h.includes("address"));
+        const iTime     = headers.findIndex(h => h.includes("time"));
+        const iStatus   = headers.findIndex(h => h.includes("status"));
+        const iDuration = headers.findIndex(h => h.includes("duration"));
+        const iType     = headers.findIndex(h => h.includes("type"));
+        const iNotes    = headers.findIndex(h => h.includes("notes") || h.includes("instruction"));
+        const iGate     = headers.findIndex(h => h.includes("gate") || h.includes("access"));
+        const iContact  = headers.findIndex(h => h.includes("contact"));
+
+        const byTruck = {};
+        rows.slice(1).forEach(row => {
+          const rowDate   = row[iDate]   || "";
+          const truckNum  = parseInt(row[iTruck]) || 0;
+          const rowStatus = (row[iStatus] || "scheduled").toLowerCase();
+          if (!truckNum) return;
+          // Show today's jobs OR jobs with no date
+          const dateMatch = !rowDate || rowDate === today;
+          if (!dateMatch) return;
+          if (!byTruck[truckNum]) byTruck[truckNum] = [];
+          byTruck[truckNum].push({
+            name:     row[iName]     || "Unnamed Job",
+            address:  row[iAddress]  || "",
+            time:     row[iTime]     || "",
+            status:   rowStatus === "in progress" || rowStatus === "active" ? "active" : "next",
+            duration: iDuration >= 0 ? row[iDuration] : "",
+            type:     iType     >= 0 ? row[iType]     : "",
+            notes:    iNotes    >= 0 ? row[iNotes]    : "",
+            gate:     iGate     >= 0 ? row[iGate]     : "",
+            contact:  iContact  >= 0 ? row[iContact]  : "",
+          });
+        });
+        setJobs(byTruck);
+        setJobsLoading(false);
+      })
+      .catch(err => {
+        console.error("Sheets error:", err);
+        setJobsError("Could not load jobs. Check connection.");
+        setJobsLoading(false);
+      });
+  }, []);
 
   return (
     <>
@@ -822,10 +897,11 @@ export default function App() {
         )}
         {screen === "truck" && truck && (
           <TruckHome truck={truck} onLogout={() => { setTruck(null); setScreen("login"); }}
-            checkouts={checkouts} setCheckouts={setCheckouts} />
+            checkouts={checkouts} setCheckouts={setCheckouts}
+            jobs={jobs} jobsLoading={jobsLoading} jobsError={jobsError} />
         )}
         {screen === "manager" && (
-          <ManagerZone onLogout={() => setScreen("login")} checkouts={checkouts} />
+          <ManagerZone onLogout={() => setScreen("login")} checkouts={checkouts} jobs={jobs} jobsLoading={jobsLoading} />
         )}
       </div>
     </>
