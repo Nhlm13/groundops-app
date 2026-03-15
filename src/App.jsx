@@ -766,7 +766,6 @@ function ReceiptForm({ truck, division, onSubmitted }) {
 function ReceiptTab({ truck, division, onGoHome }) {
   const [step,       setStep]      = useState("form");
   const [uploading,  setUploading] = useState(false);
-  const [uploaded,   setUploaded]  = useState(false);
   const [photoUrl,   setPhotoUrl]  = useState("");
   const photoRef = useRef();
 
@@ -798,7 +797,6 @@ function ReceiptTab({ truck, division, onGoHome }) {
         body:    payload,
       });
       setPhotoUrl(URL.createObjectURL(file));
-      setUploaded(true);
       setStep("success");
     } catch(e) { console.warn(e); }
     setUploading(false);
@@ -836,7 +834,7 @@ function ReceiptTab({ truck, division, onGoHome }) {
           </div>
           <div style={{display:"flex",gap:8}}>
             <button style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
-              onClick={()=>{ setStep("form"); setUploaded(false); setPhotoUrl(""); }}>
+              onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
               Submit Another
             </button>
             <button style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
@@ -865,7 +863,7 @@ function ReceiptTab({ truck, division, onGoHome }) {
             Go to Home
           </button>
           <button style={{width:"100%",padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
-            onClick={()=>{ setStep("form"); setUploaded(false); setPhotoUrl(""); }}>
+            onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
             Submit Another Receipt
           </button>
         </div>
