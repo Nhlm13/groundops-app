@@ -612,12 +612,9 @@ const HR_LINKS = [
   { name: "Document Upload",    desc: "Tax docs & employment forms",     url: "" },
   { name: "Job Application",    desc: "Refer someone to the team",       url: "" },
   { name: "Contact a Manager",  desc: "Send a message to management",    url: "" },
-  { name: "Team Member Info",   desc: "Your profile & personal info",    url: "" },
 ];
 function HomeTab({ truck, division }) {
   const day = getTodayStr();
-  const [contactOpen,     setContactOpen]     = useState(false);
-  const [selectedContact, setSelectedContact] = useState(null);
   const formLinks = [
     { name: "Morning Rollout",   desc: "Start-of-day checklist",        url: "", icon: "sun" },
     { name: "Trailer Checklist", desc: "Pre-departure equipment check",  url: "https://forms.gle/7GE4hZFKo9DUeuqf6", icon: "clip" },
@@ -653,41 +650,11 @@ function HomeTab({ truck, division }) {
 
       {/* Contacts */}
       <div className="section-hd" style={{marginTop:8}}>Contact a Manager</div>
-      <div className="truck-dropdown-wrap">
-        <div className={`truck-dropdown-btn ${contactOpen?"open":""}`} onClick={()=>setContactOpen(o=>!o)}>
-          <Ic n="phone" style={{width:16,height:16,color:selectedContact?"var(--lime)":"var(--stone)"}}/>
-          {selectedContact
-            ? <span className="truck-dropdown-value">{selectedContact.name} — {selectedContact.role}</span>
-            : <span className="truck-dropdown-placeholder">Choose a manager...</span>
-          }
-          <Ic n="chevD" className={`truck-dropdown-chevron ${contactOpen?"open":""}`} style={{width:16,height:16}}/>
-        </div>
-        {contactOpen && (
-          <div className="truck-dropdown-list">
-            {CONTACTS.map(c=>(
-              <div key={c.name} className={`truck-dropdown-item ${selectedContact?.name===c.name?"selected":""}`}
-                onClick={()=>{ setSelectedContact(c); setContactOpen(false); }}>
-                <div style={{width:28,height:28,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>{c.initials}</div>
-                <div>
-                  <div style={{fontWeight:500,fontSize:14,color:"var(--cream)"}}>{c.name}</div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginTop:1}}>{c.role}</div>
-                </div>
-                {selectedContact?.name===c.name && <Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {selectedContact && (
-        <div className="contact-card" style={{marginTop:10}}>
-          <div className="contact-avatar">{selectedContact.initials}</div>
-          <div className="contact-info">
-            <div className="contact-name">{selectedContact.name}</div>
-            <div className="contact-role">{selectedContact.role}</div>
-          </div>
-          <a href={selectedContact.phone} className="call-btn"><Ic n="phone"/></a>
-        </div>
-      )}
+      <iframe
+        src="https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true"
+        style={{width:"100%",height:"520px",border:"none",display:"block",borderRadius:8}}
+        title="Contact a Manager"
+      />
     </div>
   );
 }
