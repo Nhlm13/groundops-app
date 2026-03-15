@@ -514,8 +514,7 @@ const TOOL_INVENTORY = [
   ]},
 ];
 
-const VISION_KEY      = "AIzaSyCbVWJhqgj4pZ-IFqF8ba0CZ3LEblzCgBs";
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDUICIHlzNdt_GMZs-FD5vsuh1F_6Uwe3iDbq9_meuNInbjrhW09LhZdX3osmX70Qf-A/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKusA5RXezgOGWqpqSES_LXmeRB2ijPPm9PElTu82l-kQGO4q36Z4NKHHPgS2ox1SU/exec";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -686,62 +685,12 @@ function HomeTab({ truck, division }) {
   );
 }
 
-// ── RECEIPT TAB ──
-function ReceiptTab({ truck, division }) {
-  const [view,       setView]      = useState("options"); // options | scan | manual
-  const [photo,      setPhoto]     = useState(null);
-  const [scanning,   setScanning]  = useState(false);
-  const [fields,     setFields]    = useState({ total:"", date:"", merchant:"", type:"" });
+// ── RECEIPT FORM — defined outside ReceiptTab to prevent keyboard dismissal ──
+function ReceiptForm({ truck, division, onSubmitted }) {
+  const [fields,     setFields]    = useState({ total:"", date: new Date().toLocaleDateString(), merchant:"", type:"" });
   const [submitting, setSubmitting]= useState(false);
-  const [submitted,  setSubmitted] = useState(false);
   const [error,      setError]     = useState("");
-  const fileRef = useRef();
-
-  const toBase64 = file => new Promise((res,rej)=>{
-    const r = new FileReader();
-    r.onload = ()=>res(r.result.split(",")[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-
-  const handleScan = async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhoto({ file, url: URL.createObjectURL(file) });
-    setScanning(true);
-    setView("scan");
-    setError("");
-    try {
-      const b64 = await toBase64(file);
-      const res = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            requests:[{ image:{content:b64}, features:[{type:"TEXT_DETECTION"}] }]
-          }),
-        }
-      );
-      const data = await res.json();
-      const text = data.responses?.[0]?.fullTextAnnotation?.text || "";
-
-      const totalMatch = text.match(/(?:total|amount|due|balance)[^\d]*(\d+\.\d{2})/i)
-        || text.match(/\$\s*(\d+\.\d{2})/);
-      const dateMatch  = text.match(/(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/);
-      const lines      = text.split("\n").map(l=>l.trim()).filter(Boolean);
-
-      setFields({
-        total:    totalMatch ? totalMatch[1] : "",
-        date:     dateMatch  ? dateMatch[1]  : new Date().toLocaleDateString(),
-        merchant: lines[0] || "",
-        type:     "",
-      });
-    } catch(e) {
-      setError("Couldn't read receipt — please fill in manually.");
-    }
-    setScanning(false);
-  };
+  const RECEIPT_TYPES = ["Fuel","Materials","Supplies","Other"];
 
   const handleSubmit = async () => {
     if (!fields.total) return;
@@ -749,12 +698,6 @@ function ReceiptTab({ truck, division }) {
     setError("");
     try {
       const now = new Date();
-      let photoData = null, photoMime = null, photoName = null;
-      if (photo?.file) {
-        photoData = await toBase64(photo.file);
-        photoMime = photo.file.type || "image/jpeg";
-        photoName = `receipt_truck${truck.id}_${Date.now()}.jpg`;
-      }
       const payload = JSON.stringify({
         sheet: "Receipts",
         row: [
@@ -767,9 +710,6 @@ function ReceiptTab({ truck, division }) {
           fields.merchant,
           "",
         ],
-        photo:     photoData,
-        photoMime: photoMime,
-        photoName: photoName,
       });
       await fetch(APPS_SCRIPT_URL, {
         method:  "POST",
@@ -777,38 +717,16 @@ function ReceiptTab({ truck, division }) {
         headers: { "Content-Type": "text/plain" },
         body:    payload,
       });
-      setSubmitted(true);
-      setTimeout(()=>{
-        setSubmitted(false);
-        setView("options");
-        setPhoto(null);
-        setFields({ total:"", date:"", merchant:"", type:"" });
-      }, 2500);
+      onSubmitted();
     } catch(e) {
       setError("Submission failed — please try again.");
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
-  const RECEIPT_TYPES = ["Fuel","Materials","Supplies","Other"];
-
-  const FieldForm = () => (
+  return (
     <div className="fuel-form">
-      {submitted && (
-        <div className="success-banner" style={{marginBottom:12}}>
-          <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt submitted!
-        </div>
-      )}
       {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
-
-      {/* Photo preview if scanned */}
-      {photo && (
-        <div style={{marginBottom:14}}>
-          <img src={photo.url} alt="receipt"
-            style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
-        </div>
-      )}
-
       <div className="fuel-row">
         <div className="fuel-label">Receipt Type</div>
         <div className="fuel-type-grid">
@@ -837,82 +755,103 @@ function ReceiptTab({ truck, division }) {
           onChange={e=>setFields(p=>({...p,date:e.target.value}))}
           placeholder="MM/DD/YYYY"/>
       </div>
-      <div style={{display:"flex",gap:8,marginTop:4}}>
-        <button style={{flex:1,padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
-          onClick={()=>{ setView("options"); setPhoto(null); setFields({total:"",date:"",merchant:"",type:""}); }}>
-          Cancel
-        </button>
-        <button className="btn-submit" style={{flex:2}}
-          disabled={!fields.total || submitting} onClick={handleSubmit}>
-          {submitting ? "Submitting..." : "Submit Receipt"}
-        </button>
-      </div>
+      <button className="btn-submit" disabled={!fields.total || submitting} onClick={handleSubmit}>
+        {submitting ? "Submitting..." : "Submit Receipt"}
+      </button>
     </div>
   );
+}
+
+// ── RECEIPT TAB ──
+function ReceiptTab({ truck, division }) {
+  const [step,       setStep]      = useState("form");   // form | photo
+  const [uploading,  setUploading] = useState(false);
+  const [uploaded,   setUploaded]  = useState(false);
+  const [photoUrl,   setPhotoUrl]  = useState("");
+  const photoRef = useRef();
+
+  const toBase64 = file => new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result.split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+
+  const handlePhotoUpload = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const b64  = await toBase64(file);
+      const payload = JSON.stringify({
+        sheet:     "Receipts",
+        row:       null,
+        photo:     b64,
+        photoMime: file.type || "image/jpeg",
+        photoName: `receipt_truck${truck.id}_${Date.now()}.jpg`,
+        photoOnly: true,
+      });
+      await fetch(APPS_SCRIPT_URL, {
+        method:  "POST",
+        mode:    "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body:    payload,
+      });
+      setPhotoUrl(URL.createObjectURL(file));
+      setUploaded(true);
+    } catch(e) { console.warn(e); }
+    setUploading(false);
+  };
 
   return (
     <div>
-      {/* ── Options ── */}
-      {view==="options" && (
+      {step === "form" && (
         <>
           <div className="section-hd">Submit a Receipt</div>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment"
-            style={{display:"none"}} onChange={handleScan}/>
-
-          <div className="action-card" style={{borderLeftColor:"var(--lime)",marginBottom:10}}
-            onClick={()=>fileRef.current.click()}>
-            <div className="action-card-icon" style={{background:"rgba(74,109,32,0.15)"}}>
-              <Ic n="camera"/>
-            </div>
-            <div className="action-card-info">
-              <div className="action-card-name">Scan Receipt</div>
-              <div className="action-card-desc">Photo it — we'll read the total & date</div>
-            </div>
-            <div className="action-card-arrow"><Ic n="chev"/></div>
-          </div>
-
-          <div className="action-card" style={{borderLeftColor:"var(--sand)"}}
-            onClick={()=>setView("manual")}>
-            <div className="action-card-icon" style={{background:"rgba(138,110,48,0.15)"}}>
-              <Ic n="clip"/>
-            </div>
-            <div className="action-card-info">
-              <div className="action-card-name">Enter Manually</div>
-              <div className="action-card-desc">Type in the receipt details</div>
-            </div>
-            <div className="action-card-arrow"><Ic n="chev"/></div>
-          </div>
+          <ReceiptForm
+            truck={truck}
+            division={division}
+            onSubmitted={()=>setStep("photo")}
+          />
         </>
       )}
 
-      {/* ── Scan view ── */}
-      {view==="scan" && (
+      {step === "photo" && (
         <>
-          <button className="back-btn" style={{marginBottom:14}}
-            onClick={()=>{ setView("options"); setPhoto(null); }}>
-            <Ic n="back"/> Back
-          </button>
-          <div className="section-hd">Scanned Receipt</div>
-          {scanning ? (
-            <div style={{textAlign:"center",padding:"40px 0"}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:3,marginBottom:8}}>Reading receipt...</div>
-              <div style={{fontSize:13,color:"var(--stone)"}}>This takes a few seconds</div>
+          <div className="success-banner" style={{marginBottom:20}}>
+            <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Receipt submitted successfully!
+          </div>
+
+          <div className="section-hd">Attach a Photo</div>
+          <div style={{fontSize:13,color:"var(--stone)",marginBottom:16}}>
+            Optional — take a photo of the receipt to save it to Drive.
+          </div>
+
+          <input ref={photoRef} type="file" accept="image/*" capture="environment"
+            style={{display:"none"}} onChange={handlePhotoUpload}/>
+
+          {!uploaded ? (
+            <div className="receipt-upload" onClick={()=>!uploading && photoRef.current.click()}
+              style={{opacity: uploading ? 0.6 : 1}}>
+              <Ic n="camera" style={{width:24,height:24}}/>
+              <span>{uploading ? "Uploading..." : "Tap to photograph receipt"}</span>
             </div>
           ) : (
-            <FieldForm/>
+            <>
+              <div className="success-banner" style={{marginBottom:16}}>
+                <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Photo saved to Drive!
+              </div>
+              {photoUrl && (
+                <img src={photoUrl} alt="receipt"
+                  style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block",marginBottom:16}}/>
+              )}
+            </>
           )}
-        </>
-      )}
 
-      {/* ── Manual entry ── */}
-      {view==="manual" && (
-        <>
-          <button className="back-btn" style={{marginBottom:14}}
-            onClick={()=>setView("options")}>
-            <Ic n="back"/> Back
+          <button style={{width:"100%",marginTop:12,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+            onClick={()=>{ setStep("form"); setUploaded(false); setPhotoUrl(""); }}>
+            Submit Another Receipt
           </button>
-          <div className="section-hd">Enter Receipt Details</div>
-          <FieldForm/>
         </>
       )}
     </div>
