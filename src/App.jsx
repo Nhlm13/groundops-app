@@ -515,7 +515,7 @@ const TOOL_INVENTORY = [
 ];
 
 // Google Apps Script Web App URL — paste your deployed script URL here
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyV5vurruW-f6kRvYCssWTsERcGr8jcv4S0SS9Qun14xs4E34KoA_3-WChrxBx7Wc13/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzeCj8InykF3upwTx5qnPcKXf9leFSoDNOZn-bJmNs-8K463AzYxVSCMJEWaKlO_m0i/exec";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -619,7 +619,7 @@ function FuelTab({ truck, division, receiptType, onBack }) {
 
   const isFuel = receiptType === "fuel";
   const typeLabel = { fuel:"Fuel", materials:"Materials", food:"Food / Supplies", other:"Other" }[receiptType] || "Receipt";
-  const sheetName = isFuel ? "Fuel Log" : "Receipts";
+  const sheetName = isFuel ? "Truck Logs" : "Receipts";
 
   const handlePhoto = e => {
     const file = e.target.files?.[0];
