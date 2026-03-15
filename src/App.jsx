@@ -473,12 +473,12 @@ const DIVISIONS = ["Maintenance", "Construction", "Lighting & Irrigation", "Fine
 
 
 const CONTACTS = [
-  { name: "Jonny", role: "General Manager",     initials: "JO", phone: "tel:+15085550001" },
-  { name: "Jon",   role: "Mowing Manager",      initials: "JN", phone: "tel:+15085550002" },
-  { name: "Tom",   role: "Residential Manager", initials: "TM", phone: "tel:+15085550003" },
-  { name: "Joel",  role: "Commercial Manager",  initials: "JL", phone: "tel:+15085550004" },
-  { name: "Katie", role: "Office Manager",      initials: "KT", phone: "tel:+15085550005" },
-  { name: "Nikki", role: "IT & App Support",    initials: "NK", phone: "tel:+15084048480" },
+  { name: "Jonny", role: "General Manager",     initials: "JF", phone: "tel:+15085550001" },
+  { name: "Jon",   role: "Mowing Manager",      initials: "JG", phone: "tel:+15085550002" },
+  { name: "Tom",   role: "Residential Manager", initials: "TF", phone: "tel:+15085550003" },
+  { name: "Joel",  role: "Commercial Manager",  initials: "JS", phone: "tel:+15085550004" },
+  { name: "Katie", role: "Office Manager",      initials: "KR", phone: "tel:+15085550005" },
+  { name: "Nikki", role: "IT & App Support",    initials: "NS", phone: "tel:+15084048480" },
 ];
 
 const TOOL_INVENTORY = [
