@@ -732,7 +732,7 @@ function ReceiptTab({ truck, division }) {
       const total = totalMatch ? totalMatch[1] : "";
 
       // Extract date
-      const dateMatch = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+      const dateMatch = text.match(/(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/);
       const date = dateMatch ? dateMatch[1] : new Date().toLocaleDateString();
 
       // Extract merchant — usually first non-empty line
