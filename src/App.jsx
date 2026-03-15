@@ -470,6 +470,14 @@ const TRUCKS = Array.from({ length: 20 }, (_, i) => ({
 
 const DIVISIONS = ["Maintenance", "Construction", "Lighting & Irrigation", "Fine Gardening"];
 
+const CONTACTS = [
+  { name: "Jonny", role: "General Manager",     initials: "JF", phone: "tel:+15085550001" },
+  { name: "Jon",   role: "Mowing Manager",      initials: "JG", phone: "tel:+15085550002" },
+  { name: "Tom",   role: "Residential Manager", initials: "TF", phone: "tel:+15085550003" },
+  { name: "Joel",  role: "Commercial Manager",  initials: "JS", phone: "tel:+15085550004" },
+  { name: "Katie", role: "Office Manager",      initials: "KR", phone: "tel:+15085550005" },
+  { name: "Nikki", role: "IT & App Support",    initials: "NS", phone: "tel:+15084048480" },
+];
 
 const TOOL_INVENTORY = [
   { category: "Hand Tools", tools: [
@@ -640,11 +648,16 @@ function HomeTab({ truck, division }) {
 
       {/* Contacts */}
       <div className="section-hd" style={{marginTop:8}}>Contact a Manager</div>
-      <iframe
-        src="https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true"
-        style={{width:"100%",height:"520px",border:"none",display:"block",borderRadius:8}}
-        title="Contact a Manager"
-      />
+      {CONTACTS.map(c=>(
+        <div key={c.name} className="contact-card">
+          <div className="contact-avatar">{c.initials}</div>
+          <div className="contact-info">
+            <div className="contact-name">{c.name}</div>
+            <div className="contact-role">{c.role}</div>
+          </div>
+          <a href={c.phone} className="call-btn"><Ic n="phone"/></a>
+        </div>
+      ))}
     </div>
   );
 }
