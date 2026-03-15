@@ -478,7 +478,7 @@ const CONTACTS = [
   { name: "Tom",   role: "Residential Manager", initials: "TM", phone: "tel:+15085550003" },
   { name: "Joel",  role: "Commercial Manager",  initials: "JL", phone: "tel:+15085550004" },
   { name: "Katie", role: "Office Manager",      initials: "KT", phone: "tel:+15085550005" },
-  { name: "Nikki", role: "IT & App Support",    initials: "NK", phone: "tel:+15085550006" },
+  { name: "Nikki", role: "IT & App Support",    initials: "NK", phone: "tel:+15084048480" },
 ];
 
 const TOOL_INVENTORY = [
@@ -845,10 +845,10 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
 
   const RECEIPT_TYPES = [
-    { id: "fuel",      label: "Fuel",           icon: "fuel" },
-    { id: "materials", label: "Materials",       icon: "box"  },
-    { id: "food",      label: "Food / Supplies", icon: "clip" },
-    { id: "other",     label: "Other",           icon: "doc"  },
+    { id: "fuel",      label: "Fuel",      icon: "fuel" },
+    { id: "materials", label: "Materials", icon: "box"  },
+    { id: "supplies",  label: "Supplies",  icon: "clip" },
+    { id: "other",     label: "Other",     icon: "doc"  },
   ];
 
 
