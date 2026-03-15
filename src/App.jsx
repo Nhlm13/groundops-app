@@ -821,25 +821,6 @@ function ReceiptTab({ truck, division, onGoHome }) {
           )}
         </div>
       )}
-      {/* HR */}
-      <div className="section-hd" style={{marginTop:8}}>HR & Employee Portal</div>
-      {HR_LINKS.map(f=>(
-        <div key={f.name} className="action-card"
-          style={{borderLeftColor:"var(--mgr)"}}
-          onClick={()=>{ if(f.url) window.open(f.url,"_blank"); }}>
-          <div className="action-card-icon" style={{background:"rgba(74,122,181,0.15)"}}>
-            <Ic n="shield" style={{color:"var(--mgr-lt)"}}/>
-          </div>
-          <div className="action-card-info">
-            <div className="action-card-name">{f.name}</div>
-            <div className="action-card-desc">{f.desc}</div>
-            <span className="status-chip chip-pending" style={{background:"rgba(74,122,181,0.1)",color:"var(--mgr-lt)"}}>
-              {f.url ? "Open →" : "Coming Soon"}
-            </span>
-          </div>
-          {f.url && <div className="action-card-arrow"><Ic n="chev"/></div>}
-        </div>
-      ))}
     </div>
   );
 }
@@ -1215,6 +1196,31 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
           )}
 
           <div className="mgr-toggle" onClick={()=>{ setMode("manager"); setError(""); }}>Manager Zone →</div>
+
+          {/* HR Section */}
+          <div style={{width:"100%",marginTop:28}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--stone)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+              HR & Employee Portal
+              <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
+            </div>
+            {HR_LINKS.map(f=>(
+              <div key={f.name}
+                style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}}
+                onClick={()=>{ if(f.url) window.open(f.url,"_blank"); }}>
+                <div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div>
+                </div>
+                {f.url
+                  ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
+                  : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
+                }
+              </div>
+            ))}
+          </div>
         </>
       )}
 
