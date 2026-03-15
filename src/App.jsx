@@ -466,13 +466,7 @@ const TRUCKS = Array.from({ length: 20 }, (_, i) => ({
 
 const DIVISIONS = ["Maintenance", "Construction", "Lighting & Irrigation", "Fine Gardening"];
 
-const MGR_ROLES = {
-  owner:       { label: "Owner",              pin: "owner25",  view: "A" },
-  residential: { label: "Residential Manager",pin: "res25",    view: "A" },
-  commercial:  { label: "Commercial Manager", pin: "com25",    view: "A" },
-  general:     { label: "General Manager",    pin: "gm25",     view: "B" },
-  mowing:      { label: "Mowing Crew Manager",pin: "mow25",    view: "B" },
-};
+
 
 const CONTACTS = [
   { name: "General Manager",     initials: "GM", phone: "tel:+15085550001" },
@@ -997,18 +991,24 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   const handleKey = v => {
     setError("");
     if (v==="del")   { setPin(p=>p.slice(0,-1)); return; }
-    if (v==="enter") { tryLogin(); return; }
+    if (v==="enter") {
+      if(!selected) return;
+      if(selected.pin !== pin){ setError("Wrong PIN — try again."); setPin(""); return; }
+      onTruckLogin(selected);
+      return;
+    }
     if (pin.length<4) setPin(p=>p+v);
   };
 
-  useEffect(()=>{ if(pin.length===4) tryLogin(); },[pin]);
+  useEffect(()=>{
+    if(pin.length===4){
+      if(!selected) return;
+      if(selected.pin !== pin){ setError("Wrong PIN — try again."); setPin(""); return; }
+      onTruckLogin(selected);
+    }
+  },[pin]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const tryLogin = () => {
-    if (!selected) return;
-    const p = pin.length===4 ? pin : "";
-    if (selected.pin !== p) { setError("Wrong PIN — try again."); setPin(""); return; }
-    onTruckLogin(selected);
-  };
+
 
   const tryMgr = () => {
     if (mgrPass === "ground25") onMgrLogin();
