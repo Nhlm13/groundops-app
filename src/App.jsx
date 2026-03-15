@@ -686,81 +686,236 @@ function HomeTab({ truck, division }) {
   );
 }
 
+const VISION_KEY = "AIzaSyCbVWJhqgj4pZ-IFqF8ba0CZ3LEblzCgBs";
+
 // ── RECEIPT TAB ──
 function ReceiptTab({ truck, division }) {
+  const [view,       setView]       = useState("options"); // options | scan | form
   const [photo,      setPhoto]      = useState(null);
-  const [uploading,  setUploading]  = useState(false);
-  const [uploaded,   setUploaded]   = useState(false);
+  const [scanning,   setScanning]   = useState(false);
+  const [extracted,  setExtracted]  = useState({ total:"", date:"", merchant:"", type:"" });
+  const [submitted,  setSubmitted]  = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef();
 
-  const handlePhoto = e => {
+  const toBase64 = file => new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result.split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+
+  const handleScan = async e => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPhoto({ file, url: URL.createObjectURL(file) });
-    setUploaded(false);
+    setScanning(true);
+    setView("scan");
+    try {
+      const b64 = await toBase64(file);
+      const res = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${VISION_KEY}`,
+        {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({
+            requests:[{ image:{content:b64}, features:[{type:"TEXT_DETECTION"}] }]
+          }),
+        }
+      );
+      const data = await res.json();
+      const text = data.responses?.[0]?.fullTextAnnotation?.text || "";
+
+      // Extract total — look for patterns like $12.34 or TOTAL 12.34
+      const totalMatch = text.match(/(?:total|amount|due|charged)[^\d]*(\d+\.\d{2})/i)
+        || text.match(/\$\s*(\d+\.\d{2})/);
+      const total = totalMatch ? totalMatch[1] : "";
+
+      // Extract date
+      const dateMatch = text.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+      const date = dateMatch ? dateMatch[1] : new Date().toLocaleDateString();
+
+      // Extract merchant — usually first non-empty line
+      const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
+      const merchant = lines[0] || "";
+
+      setExtracted({ total, date, merchant, type:"" });
+    } catch(e) { console.warn("Vision API error", e); }
+    setScanning(false);
   };
 
-  const handleUpload = async () => {
-    if (!photo?.file) return;
-    setUploading(true);
+  const handleSubmit = async () => {
+    setSubmitting(true);
     try {
-      const photoMime = photo.file.type || "image/jpeg";
-      const photoData = await new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res(reader.result.split(",")[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(photo.file);
-      });
       const now = new Date();
+      const formData = new FormData();
       const payload = {
         sheet: "Receipts",
-        row: [now.toLocaleDateString(), now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}), `Truck ${truck.id}`, division||"—", "Photo", "", "", ""],
-        photo: photoData,
-        photoMime,
-        photoName: `receipt_${truck.id}_${Date.now()}.jpg`,
+        row: [
+          extracted.date || now.toLocaleDateString(),
+          now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
+          `Truck ${truck.id}`,
+          division||"—",
+          extracted.type || "Other",
+          extracted.total,
+          extracted.merchant,
+          "",
+        ],
       };
-      const formData = new FormData();
+      if (photo?.file) {
+        const b64 = await toBase64(photo.file);
+        payload.photo = b64;
+        payload.photoMime = photo.file.type || "image/jpeg";
+        payload.photoName = `receipt_${truck.id}_${Date.now()}.jpg`;
+      }
       formData.append("data", JSON.stringify(payload));
-      await fetch(RECEIPT_FORM_URL.replace("viewform?embedded=true","").replace("viewform","").replace("https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/",""), { method:"POST", mode:"no-cors", body: formData });
+      await fetch(RECEIPT_FORM_URL.replace("?embedded=true","").replace("viewform",""), {
+        method:"POST", mode:"no-cors", body: formData,
+      });
     } catch(e) { console.warn(e); }
-    setUploading(false);
-    setUploaded(true);
-    setPhoto(null);
+    setSubmitting(false);
+    setSubmitted(true);
+    setTimeout(()=>{ setSubmitted(false); setView("options"); setPhoto(null); setExtracted({total:"",date:"",merchant:"",type:""}); }, 3000);
   };
 
+  const RECEIPT_TYPES = ["Fuel","Materials","Supplies","Other"];
+
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 120px)"}}>
-      {/* Embedded form takes most of the space */}
-      <iframe
-        src={RECEIPT_FORM_URL}
-        style={{flex:1,width:"100%",border:"none",display:"block"}}
-        title="Receipt & Fuel Log"
-      />
-      {/* Photo upload strip pinned below the form */}
-      <div style={{background:"var(--bark)",borderTop:"2px solid var(--moss)",padding:"12px 16px",flexShrink:0}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Attach Receipt Photo (optional)</div>
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
-        {uploaded && (
-          <div className="success-banner" style={{marginBottom:8}}>
-            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Photo uploaded!
+    <div>
+      {/* Options view */}
+      {view==="options" && (
+        <div>
+          <div className="section-hd">Submit a Receipt</div>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment"
+            style={{display:"none"}} onChange={handleScan}/>
+
+          {/* Scan option */}
+          <div className="action-card" style={{borderLeftColor:"var(--lime)",marginBottom:10}}
+            onClick={()=>fileRef.current.click()}>
+            <div className="action-card-icon" style={{background:"rgba(74,109,32,0.15)"}}><Ic n="camera"/></div>
+            <div className="action-card-info">
+              <div className="action-card-name">Scan Receipt</div>
+              <div className="action-card-desc">Take a photo — we'll read it for you</div>
+            </div>
+            <div className="action-card-arrow"><Ic n="chev"/></div>
           </div>
-        )}
-        {photo ? (
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <img src={photo.url} alt="receipt" style={{width:56,height:56,objectFit:"cover",borderRadius:8,border:"1px solid var(--moss)",flexShrink:0}}/>
-            <div style={{flex:1,fontSize:12,color:"var(--stone)"}}>Photo ready</div>
-            <button style={{padding:"6px 10px",background:"none",border:"1px solid var(--moss)",borderRadius:7,fontSize:12,color:"var(--stone)",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1,marginRight:6}} onClick={()=>setPhoto(null)}>Remove</button>
-            <button className="checkout-btn" onClick={handleUpload} disabled={uploading}>
-              {uploading ? "..." : "Upload"}
+
+          {/* Manual / form option */}
+          <div className="action-card" style={{borderLeftColor:"var(--sand)"}}
+            onClick={()=>setView("form")}>
+            <div className="action-card-icon" style={{background:"rgba(138,110,48,0.15)"}}><Ic n="clip"/></div>
+            <div className="action-card-info">
+              <div className="action-card-name">Enter Manually</div>
+              <div className="action-card-desc">Type in the receipt details</div>
+            </div>
+            <div className="action-card-arrow"><Ic n="chev"/></div>
+          </div>
+        </div>
+      )}
+
+      {/* Scan processing view */}
+      {view==="scan" && (
+        <div>
+          <div className="section-hd">Receipt Scan</div>
+          {photo && <div className="receipt-preview" style={{marginBottom:16}}><img src={photo.url} alt="receipt"/></div>}
+          {scanning ? (
+            <div style={{textAlign:"center",padding:"24px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>
+              Reading receipt...
+            </div>
+          ) : (
+            <div className="fuel-form">
+              {submitted && (
+                <div className="success-banner" style={{marginBottom:12}}>
+                  <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt submitted!
+                </div>
+              )}
+              <div className="fuel-row">
+                <div className="fuel-label">Receipt Type</div>
+                <div className="fuel-type-grid">
+                  {RECEIPT_TYPES.map(t=>(
+                    <button key={t} className={`fuel-type-btn ${extracted.type===t?"selected":""}`}
+                      onClick={()=>setExtracted(p=>({...p,type:t}))}>{t}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="fuel-row">
+                <div className="fuel-label">Merchant</div>
+                <input className="fuel-input" value={extracted.merchant}
+                  onChange={e=>setExtracted(p=>({...p,merchant:e.target.value}))}
+                  placeholder="Merchant name"/>
+              </div>
+              <div className="fuel-row">
+                <div className="fuel-label">Total ($)</div>
+                <input className="fuel-input" type="number" inputMode="decimal"
+                  value={extracted.total}
+                  onChange={e=>setExtracted(p=>({...p,total:e.target.value}))}
+                  placeholder="0.00"/>
+              </div>
+              <div className="fuel-row">
+                <div className="fuel-label">Date</div>
+                <input className="fuel-input" value={extracted.date}
+                  onChange={e=>setExtracted(p=>({...p,date:e.target.value}))}
+                  placeholder="MM/DD/YYYY"/>
+              </div>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <button style={{flex:1,padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+                  onClick={()=>{ setView("options"); setPhoto(null); }}>Retake</button>
+                <button className="btn-submit" style={{flex:2}} disabled={!extracted.total||submitting} onClick={handleSubmit}>
+                  {submitting?"Submitting...":"Submit Receipt"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manual entry view */}
+      {view==="form" && (
+        <div>
+          <button className="back-btn" style={{marginBottom:14}} onClick={()=>setView("options")}>
+            <Ic n="back"/> Back
+          </button>
+          {submitted && (
+            <div className="success-banner" style={{marginBottom:12}}>
+              <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt submitted!
+            </div>
+          )}
+          <div className="section-hd">Enter Receipt Details</div>
+          <div className="fuel-form">
+            <div className="fuel-row">
+              <div className="fuel-label">Receipt Type</div>
+              <div className="fuel-type-grid">
+                {RECEIPT_TYPES.map(t=>(
+                  <button key={t} className={`fuel-type-btn ${extracted.type===t?"selected":""}`}
+                    onClick={()=>setExtracted(p=>({...p,type:t}))}>{t}</button>
+                ))}
+              </div>
+            </div>
+            <div className="fuel-row">
+              <div className="fuel-label">Merchant</div>
+              <input className="fuel-input" value={extracted.merchant}
+                onChange={e=>setExtracted(p=>({...p,merchant:e.target.value}))}
+                placeholder="Where was the purchase made?"/>
+            </div>
+            <div className="fuel-row">
+              <div className="fuel-label">Total ($)</div>
+              <input className="fuel-input" type="number" inputMode="decimal"
+                value={extracted.total}
+                onChange={e=>setExtracted(p=>({...p,total:e.target.value}))}
+                placeholder="0.00"/>
+            </div>
+            <div className="fuel-row">
+              <div className="fuel-label">Date</div>
+              <input className="fuel-input" value={extracted.date||new Date().toLocaleDateString()}
+                onChange={e=>setExtracted(p=>({...p,date:e.target.value}))}
+                placeholder="MM/DD/YYYY"/>
+            </div>
+            <button className="btn-submit" disabled={!extracted.total||submitting} onClick={handleSubmit}>
+              {submitting?"Submitting...":"Submit Receipt"}
             </button>
           </div>
-        ) : (
-          <div className="receipt-upload" style={{padding:"10px"}} onClick={()=>fileRef.current.click()}>
-            <Ic n="camera" style={{width:18,height:18}}/>
-            <span>Tap to attach a photo</span>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
