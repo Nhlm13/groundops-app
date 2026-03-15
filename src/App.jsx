@@ -1086,7 +1086,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
               </button>
             ))}
           </div>
-          <button className="btn-enter" disabled={pin.length<4} onClick={tryLogin}>Sign In</button>
+          <button className="btn-enter" disabled={pin.length<4} onClick={()=>handleKey("enter")}>Sign In</button>
           {error && <div className="error-msg">{error}</div>}
         </div>
       )}
