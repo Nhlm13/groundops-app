@@ -514,10 +514,8 @@ const TOOL_INVENTORY = [
   ]},
 ];
 
-const SHEETS_ID  = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
 // Google Apps Script Web App URL — paste your deployed script URL here
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
-
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
