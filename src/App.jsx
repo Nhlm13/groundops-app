@@ -619,7 +619,7 @@ function FuelTab({ truck, division, receiptType, onBack }) {
 
   const isFuel = receiptType === "fuel";
   const typeLabel = { fuel:"Fuel", materials:"Materials", food:"Food / Supplies", other:"Other" }[receiptType] || "Receipt";
-  const sheetName = isFuel ? "Truck Logs" : "Receipts";
+  const sheetName = isFuel ? "Fuel Log" : "Receipts";
 
   const handlePhoto = e => {
     const file = e.target.files?.[0];
