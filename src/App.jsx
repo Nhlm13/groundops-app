@@ -606,11 +606,59 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 
 // HR portal links — add URLs once available
 const HR_LINKS = [
-  { name: "Time Off Request",   desc: "Submit leave for approval",       url: "" },
-  { name: "Document Upload",    desc: "Tax docs & employment forms",     url: "" },
-  { name: "Job Application",    desc: "Refer someone to the team",       url: "" },
-  { name: "Contact a Manager",  desc: "Send a message to management",    url: "" },
+  { name: "Time Off Request",      desc: "Submit leave for approval",          url: "" },
+  { name: "Document Upload",       desc: "Tax docs & employment forms",        url: "" },
+  { name: "Job Application",       desc: "Refer someone to the team",          url: "" },
+  { name: "Contact a Manager",     desc: "Send a message to management",       url: "https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true" },
+  { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "" },
+  { name: "Uniform Guidelines",    desc: "Dress code & uniform standards",     url: "" },
+  { name: "Vehicle Guidelines",    desc: "Fleet use & driving policies",       url: "" },
 ];
+// ── CONTACT DROPDOWN ──
+function ContactDropdown() {
+  const [open,     setOpen]     = useState(false);
+  const [selected, setSelected] = useState(null);
+  return (
+    <div>
+      <div className="truck-dropdown-wrap">
+        <div className={`truck-dropdown-btn ${open?"open":""}`} onClick={()=>setOpen(o=>!o)}>
+          <Ic n="phone" style={{width:16,height:16,color:selected?"var(--lime)":"var(--stone)"}}/>
+          {selected
+            ? <span className="truck-dropdown-value">{selected.name} — {selected.role}</span>
+            : <span className="truck-dropdown-placeholder">Choose a manager...</span>
+          }
+          <Ic n="chevD" className={`truck-dropdown-chevron ${open?"open":""}`} style={{width:16,height:16}}/>
+        </div>
+        {open && (
+          <div className="truck-dropdown-list">
+            {CONTACTS.map(c=>(
+              <div key={c.name} className={`truck-dropdown-item ${selected?.name===c.name?"selected":""}`}
+                onClick={()=>{ setSelected(c); setOpen(false); }}>
+                <div style={{width:28,height:28,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>{c.initials}</div>
+                <div>
+                  <div style={{fontWeight:500,fontSize:14,color:"var(--cream)"}}>{c.name}</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:1}}>{c.role}</div>
+                </div>
+                {selected?.name===c.name && <Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {selected && (
+        <div className="contact-card" style={{marginTop:10}}>
+          <div className="contact-avatar">{selected.initials}</div>
+          <div className="contact-info">
+            <div className="contact-name">{selected.name}</div>
+            <div className="contact-role">{selected.role}</div>
+          </div>
+          <a href={selected.phone} className="call-btn"><Ic n="phone"/></a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HomeTab({ truck, division }) {
   const day = getTodayStr();
   const formLinks = [
@@ -648,16 +696,7 @@ function HomeTab({ truck, division }) {
 
       {/* Contacts */}
       <div className="section-hd" style={{marginTop:8}}>Contact a Manager</div>
-      {CONTACTS.map(c=>(
-        <div key={c.name} className="contact-card">
-          <div className="contact-avatar">{c.initials}</div>
-          <div className="contact-info">
-            <div className="contact-name">{c.name}</div>
-            <div className="contact-role">{c.role}</div>
-          </div>
-          <a href={c.phone} className="call-btn"><Ic n="phone"/></a>
-        </div>
-      ))}
+      <ContactDropdown />
     </div>
   );
 }
@@ -1079,6 +1118,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   const [pin,       setPin]     = useState("");
   const [mgrPass,   setMgrPass] = useState("");
   const [error,     setError]   = useState("");
+  const [openHR,    setOpenHR]  = useState(null); // holds the HR_LINK object when open
 
   const handleKey = v => {
     setError("");
@@ -1173,23 +1213,37 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
               HR & Employee Portal
               <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
             </div>
-            {HR_LINKS.map(f=>(
-              <div key={f.name}
-                style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}}
-                onClick={()=>{ if(f.url) window.open(f.url,"_blank"); }}>
-                <div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+            {!openHR ? (
+              HR_LINKS.map(f=>(
+                <div key={f.name}
+                  style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}}
+                  onClick={()=>{ if(f.url) setOpenHR(f); }}>
+                  <div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div>
+                    <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div>
+                  </div>
+                  {f.url
+                    ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
+                    : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
+                  }
                 </div>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div>
-                </div>
-                {f.url
-                  ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
-                  : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
-                }
+              ))
+            ) : (
+              <div style={{animation:"fadeUp 0.3s ease both"}}>
+                <button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}>
+                  <Ic n="back"/> Back to HR Portal
+                </button>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div>
+                <iframe
+                  src={openHR.url}
+                  style={{width:"100%",height:"580px",border:"none",display:"block",borderRadius:8}}
+                  title={openHR.name}
+                />
               </div>
-            ))}
+            )}
           </div>
         </>
       )}
