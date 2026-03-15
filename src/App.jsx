@@ -688,15 +688,17 @@ function HomeTab({ truck, division }) {
 // ── RECEIPT FORM — embedded Google Form ──
 function ReceiptForm({ onSubmitted }) {
   return (
-    <div>
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
       <iframe
         src="https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true"
         style={{width:"100%", height:"600px", border:"none", display:"block", borderRadius:8}}
         title="Receipt Form"
       />
-      <button className="btn-submit" style={{marginTop:12}} onClick={onSubmitted}>
-        Continue to Photo Upload
-      </button>
+      <div style={{width:"100%",padding:"20px 0 8px",display:"flex",justifyContent:"center"}}>
+        <button className="btn-submit" style={{width:"100%",padding:"18px",fontSize:"18px",letterSpacing:3}} onClick={onSubmitted}>
+          Final Step: Upload Photo
+        </button>
+      </div>
     </div>
   );
 }
@@ -783,7 +785,6 @@ function ReceiptTab({ truck, division, onGoHome }) {
 
       {step === "success" && (
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 0 20px"}}>
-          {/* Big green check */}
           <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20}}>
             <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
           </div>
@@ -791,17 +792,17 @@ function ReceiptTab({ truck, division, onGoHome }) {
           <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:24}}>
             Receipt submitted and photo saved to Drive.
           </div>
-          {photoUrl && (
-            <img src={photoUrl} alt="receipt"
-              style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block",marginBottom:24}}/>
-          )}
-          <button className="btn-submit" style={{width:"100%",marginBottom:10,padding:"16px"}} onClick={onGoHome}>
-            Go to Home
+          <button className="btn-submit" style={{width:"100%",marginBottom:12,padding:"18px"}} onClick={onGoHome}>
+            Back to Home
           </button>
-          <button style={{width:"100%",padding:"16px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+          <button style={{width:"100%",padding:"16px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer",marginBottom:20}}
             onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
             Submit Another Receipt
           </button>
+          {photoUrl && (
+            <img src={photoUrl} alt="receipt"
+              style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
+          )}
         </div>
       )}
     </div>
