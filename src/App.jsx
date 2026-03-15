@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap');`;
 
@@ -515,7 +515,7 @@ const TOOL_INVENTORY = [
 ];
 
 // Google Apps Script Web App URL — paste your deployed script URL here
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyBoDZrgZz2lTleA5ttYOVsikhySJK0sCMjcW4v9g5RhlGijINPj3Fk4IS8yK8dUMt/exec";
+const RECEIPT_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -606,161 +606,6 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
   );
 }
 
-// ── RECEIPT / FUEL TAB ──
-function FuelTab({ truck, division, receiptType, onBack }) {
-  const [gallons,    setGallons]   = useState("");
-  const [cost,       setCost]      = useState("");
-  const [fuelType,   setFuelType]  = useState("");
-  const [notes,      setNotes]     = useState("");
-  const [receipt,    setReceipt]   = useState(null);
-  const [submitted,  setSubmitted] = useState(false);
-  const [submitting, setSubmitting]= useState(false);
-  const fileRef = useRef();
-
-  const isFuel = receiptType === "fuel";
-  const typeLabel = { fuel:"Fuel", materials:"Materials", food:"Food / Supplies", other:"Other" }[receiptType] || "Receipt";
-  const sheetName = isFuel ? "Fuel Log" : "Receipts";
-
-  const handlePhoto = e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setReceipt({ file, url: URL.createObjectURL(file) });
-  };
-
-  const canSubmit = isFuel ? (gallons && cost && fuelType) : cost;
-
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    const now  = new Date();
-    const date = now.toLocaleDateString();
-    const time = now.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
-    try {
-      let photoData = null, photoMime = null;
-      if (receipt?.file) {
-        photoMime = receipt.file.type || "image/jpeg";
-        photoData = await new Promise((res, rej) => {
-          const reader = new FileReader();
-          reader.onload = () => res(reader.result.split(",")[1]);
-          reader.onerror = rej;
-          reader.readAsDataURL(receipt.file);
-        });
-      }
-      const row = isFuel
-        ? [date, time, `Truck ${truck.id}`, division||"—", gallons, cost, fuelType, ""]
-        : [date, time, `Truck ${truck.id}`, division||"—", typeLabel, cost, notes, ""];
-      const payload = {
-        sheet: sheetName,
-        row,
-        photo: photoData || null,
-        photoMime: photoMime || null,
-        photoName: `receipt_${truck.id}_${date.replace(/\//g,"-")}_${time.replace(/:/g,"-")}.jpg`,
-      };
-
-      // Send as a form field named 'data' — this bypasses CORS preflight issues
-      const formData = new FormData();
-      formData.append("data", JSON.stringify(payload));
-      await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: formData,
-      });
-    } catch(e) { console.warn("Submit failed", e); }
-    setSubmitting(false);
-    setSubmitted(true);
-    setGallons(""); setCost(""); setFuelType(""); setNotes(""); setReceipt(null);
-    setTimeout(() => { setSubmitted(false); onBack && onBack(); }, 3000);
-  };
-
-  return (
-    <div>
-      <button className="back-btn" style={{marginBottom:14}} onClick={onBack}>
-        <Ic n="back"/> Choose receipt type
-      </button>
-      {submitted && (
-        <div className="success-banner">
-          <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> {typeLabel} receipt submitted!
-        </div>
-      )}
-      <div className="section-hd">{typeLabel} Receipt</div>
-      <div className="fuel-form">
-        {/* Auto-filled info */}
-        <div className="fuel-row">
-          <div className="fuel-label">Auto-filled</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <div style={{background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 14px"}}>
-              <div style={{fontSize:10,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Truck</div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>Truck {truck.id}</div>
-            </div>
-            <div style={{background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 14px"}}>
-              <div style={{fontSize:10,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Division</div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:"var(--cream)"}}>{division||"Not set"}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Fuel-only fields */}
-        {isFuel && (
-          <>
-            <div className="fuel-row">
-              <div className="fuel-label">Gallons Pumped</div>
-              <input className="fuel-input" type="number" inputMode="decimal" placeholder="0.0"
-                value={gallons} onChange={e=>setGallons(e.target.value)}/>
-            </div>
-            <div className="fuel-row">
-              <div className="fuel-label">Fuel Type</div>
-              <div className="fuel-type-grid">
-                {["Regular","Diesel","Premium"].map(t=>(
-                  <button key={t} className={`fuel-type-btn ${fuelType===t?"selected":""}`}
-                    onClick={()=>setFuelType(t)}>{t}</button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* All receipt types */}
-        <div className="fuel-row">
-          <div className="fuel-label">Total Cost ($)</div>
-          <input className="fuel-input" type="number" inputMode="decimal" placeholder="0.00"
-            value={cost} onChange={e=>setCost(e.target.value)}/>
-        </div>
-
-        {/* Notes for non-fuel */}
-        {!isFuel && (
-          <div className="fuel-row">
-            <div className="fuel-label">Notes</div>
-            <input className="fuel-input" type="text" placeholder="What was purchased?"
-              value={notes} onChange={e=>setNotes(e.target.value)}/>
-          </div>
-        )}
-
-        {/* Receipt photo */}
-        <div className="fuel-row">
-          <div className="fuel-label">Receipt Photo</div>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment"
-            style={{display:"none"}} onChange={handlePhoto}/>
-          {receipt ? (
-            <div>
-              <div className="receipt-preview"><img src={receipt.url} alt="receipt"/></div>
-              <button style={{marginTop:8,width:"100%",background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",cursor:"pointer",letterSpacing:1}}
-                onClick={()=>setReceipt(null)}>Remove Photo</button>
-            </div>
-          ) : (
-            <div className="receipt-upload" onClick={()=>fileRef.current.click()}>
-              <Ic n="camera"/>
-              <span>Tap to capture receipt</span>
-            </div>
-          )}
-        </div>
-
-        <button className="btn-submit" disabled={!canSubmit||submitting} onClick={handleSubmit}>
-          {submitting ? "Submitting..." : `Submit ${typeLabel} Receipt`}
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // ── HOME TAB ──
 function HomeTab({ truck, division }) {
@@ -843,18 +688,9 @@ function HomeTab({ truck, division }) {
 
 // ── TRUCK SCREEN ──
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
-  const [tab,         setTab]         = useState("home");
-  const [division]                    = useState(initialDivision || "");
-  const [receiptType, setReceiptType] = useState(null);
+  const [tab,      setTab]    = useState("home");
+  const [division]            = useState(initialDivision || "");
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
-
-  const RECEIPT_TYPES = [
-    { id: "fuel",      label: "Fuel",      icon: "fuel" },
-    { id: "materials", label: "Materials", icon: "box"  },
-    { id: "supplies",  label: "Supplies",  icon: "clip" },
-    { id: "other",     label: "Other",     icon: "doc"  },
-  ];
-
 
   return (
     <div className="screen">
@@ -865,36 +701,20 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         </div>
         <button className="logout-btn" onClick={onLogout}>Sign Out</button>
       </div>
-      <div className="content">
-        {tab==="home"  && <HomeTab truck={truck} division={division}/>}
-        {tab==="receipt" && !receiptType && (
-          <div>
-            <div className="section-hd">Upload a Receipt</div>
-            <div style={{fontSize:13,color:"var(--stone)",marginBottom:16}}>What type of receipt is this?</div>
-            {RECEIPT_TYPES.map(r=>(
-              <div key={r.id} className="action-card" onClick={()=>setReceiptType(r.id)}>
-                <div className="action-card-icon"><Ic n={r.icon}/></div>
-                <div className="action-card-info">
-                  <div className="action-card-name">{r.label}</div>
-                </div>
-                <div className="action-card-arrow"><Ic n="chev"/></div>
-              </div>
-            ))}
-          </div>
-        )}
-        {tab==="receipt" && receiptType && (
-          <FuelTab
-            truck={truck}
-            division={division}
-            receiptType={receiptType}
-            onBack={()=>setReceiptType(null)}
+      <div className="content" style={{padding: tab==="receipt" ? "0" : undefined}}>
+        {tab==="home"    && <HomeTab truck={truck} division={division}/>}
+        {tab==="receipt" && (
+          <iframe
+            src={RECEIPT_FORM_URL}
+            style={{width:"100%",height:"calc(100dvh - 120px)",border:"none",display:"block"}}
+            title="Receipt & Fuel Log"
           />
         )}
         {tab==="tools" && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
       </div>
       <nav className="bottom-nav">
         <button className={`bnav-btn ${tab==="home"?"active":""}`} onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
-        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>{ setTab("receipt"); setReceiptType(null); }}><Ic n="camera"/>Receipts</button>
+        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`} onClick={()=>setTab("tools")} style={{position:"relative"}}>
           <Ic n="wrench"/>Tools
           {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
