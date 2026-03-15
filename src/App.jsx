@@ -515,7 +515,7 @@ const TOOL_INVENTORY = [
 ];
 
 // Google Apps Script Web App URL — paste your deployed script URL here
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzeCj8InykF3upwTx5qnPcKXf9leFSoDNOZn-bJmNs-8K463AzYxVSCMJEWaKlO_m0i/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxyBoDZrgZz2lTleA5ttYOVsikhySJK0sCMjcW4v9g5RhlGijINPj3Fk4IS8yK8dUMt/exec";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -656,10 +656,14 @@ function FuelTab({ truck, division, receiptType, onBack }) {
         photoMime: photoMime || null,
         photoName: `receipt_${truck.id}_${date.replace(/\//g,"-")}_${time.replace(/:/g,"-")}.jpg`,
       };
+
+      // Send as a form field named 'data' — this bypasses CORS preflight issues
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(payload));
       await fetch(APPS_SCRIPT_URL, {
-        method:"POST", mode:"no-cors",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify(payload),
+        method: "POST",
+        mode: "no-cors",
+        body: formData,
       });
     } catch(e) { console.warn("Submit failed", e); }
     setSubmitting(false);
