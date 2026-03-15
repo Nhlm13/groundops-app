@@ -514,7 +514,7 @@ const TOOL_INVENTORY = [
   ]},
 ];
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKusA5RXezgOGWqpqSES_LXmeRB2ijPPm9PElTu82l-kQGO4q36Z4NKHHPgS2ox1SU/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdA4rFkh_F1yjpz9TtyAltj6Xalg4jQbE1lK5czhF_an5-eyIg_7KSrLoIr8FRtCf0Lg/exec";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -763,8 +763,8 @@ function ReceiptForm({ truck, division, onSubmitted }) {
 }
 
 // ── RECEIPT TAB ──
-function ReceiptTab({ truck, division }) {
-  const [step,       setStep]      = useState("form");   // form | photo
+function ReceiptTab({ truck, division, onGoHome }) {
+  const [step,       setStep]      = useState("form");
   const [uploading,  setUploading] = useState(false);
   const [uploaded,   setUploaded]  = useState(false);
   const [photoUrl,   setPhotoUrl]  = useState("");
@@ -799,6 +799,7 @@ function ReceiptTab({ truck, division }) {
       });
       setPhotoUrl(URL.createObjectURL(file));
       setUploaded(true);
+      setStep("success");
     } catch(e) { console.warn(e); }
     setUploading(false);
   };
@@ -821,38 +822,53 @@ function ReceiptTab({ truck, division }) {
           <div className="success-banner" style={{marginBottom:20}}>
             <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Receipt submitted successfully!
           </div>
-
           <div className="section-hd">Attach a Photo</div>
           <div style={{fontSize:13,color:"var(--stone)",marginBottom:16}}>
-            Optional — take a photo of the receipt to save it to Drive.
+            Optional — photograph the receipt to save it to Drive.
           </div>
-
           <input ref={photoRef} type="file" accept="image/*" capture="environment"
             style={{display:"none"}} onChange={handlePhotoUpload}/>
+          <div className="receipt-upload"
+            onClick={()=>!uploading && photoRef.current.click()}
+            style={{opacity: uploading ? 0.6 : 1, marginBottom:12}}>
+            <Ic n="camera" style={{width:24,height:24}}/>
+            <span>{uploading ? "Uploading..." : "Tap to photograph receipt"}</span>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+              onClick={()=>{ setStep("form"); setUploaded(false); setPhotoUrl(""); }}>
+              Submit Another
+            </button>
+            <button style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+              onClick={onGoHome}>
+              Go to Home
+            </button>
+          </div>
+        </>
+      )}
 
-          {!uploaded ? (
-            <div className="receipt-upload" onClick={()=>!uploading && photoRef.current.click()}
-              style={{opacity: uploading ? 0.6 : 1}}>
-              <Ic n="camera" style={{width:24,height:24}}/>
-              <span>{uploading ? "Uploading..." : "Tap to photograph receipt"}</span>
-            </div>
-          ) : (
-            <>
-              <div className="success-banner" style={{marginBottom:16}}>
-                <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Photo saved to Drive!
-              </div>
-              {photoUrl && (
-                <img src={photoUrl} alt="receipt"
-                  style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block",marginBottom:16}}/>
-              )}
-            </>
+      {step === "success" && (
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 0 20px"}}>
+          {/* Big green check */}
+          <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20}}>
+            <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
+          </div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>All Done!</div>
+          <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:24}}>
+            Receipt submitted and photo saved to Drive.
+          </div>
+          {photoUrl && (
+            <img src={photoUrl} alt="receipt"
+              style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block",marginBottom:24}}/>
           )}
-
-          <button style={{width:"100%",marginTop:12,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+          <button className="btn-submit" style={{width:"100%",marginBottom:10}} onClick={onGoHome}>
+            Go to Home
+          </button>
+          <button style={{width:"100%",padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
             onClick={()=>{ setStep("form"); setUploaded(false); setPhotoUrl(""); }}>
             Submit Another Receipt
           </button>
-        </>
+        </div>
       )}
     </div>
   );
@@ -875,7 +891,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
       </div>
       <div className="content" style={{padding: tab==="receipt" ? "0" : undefined}}>
         {tab==="home"    && <HomeTab truck={truck} division={division}/>}
-        {tab==="receipt" && <ReceiptTab truck={truck} division={division}/>}
+        {tab==="receipt" && <ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
         {tab==="tools" && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
       </div>
       <nav className="bottom-nav">
