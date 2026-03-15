@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap');`;
 
@@ -686,6 +686,85 @@ function HomeTab({ truck, division }) {
   );
 }
 
+// ── RECEIPT TAB ──
+function ReceiptTab({ truck, division }) {
+  const [photo,      setPhoto]      = useState(null);
+  const [uploading,  setUploading]  = useState(false);
+  const [uploaded,   setUploaded]   = useState(false);
+  const fileRef = useRef();
+
+  const handlePhoto = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhoto({ file, url: URL.createObjectURL(file) });
+    setUploaded(false);
+  };
+
+  const handleUpload = async () => {
+    if (!photo?.file) return;
+    setUploading(true);
+    try {
+      const photoMime = photo.file.type || "image/jpeg";
+      const photoData = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result.split(",")[1]);
+        reader.onerror = rej;
+        reader.readAsDataURL(photo.file);
+      });
+      const now = new Date();
+      const payload = {
+        sheet: "Receipts",
+        row: [now.toLocaleDateString(), now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}), `Truck ${truck.id}`, division||"—", "Photo", "", "", ""],
+        photo: photoData,
+        photoMime,
+        photoName: `receipt_${truck.id}_${Date.now()}.jpg`,
+      };
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(payload));
+      await fetch(RECEIPT_FORM_URL.replace("viewform?embedded=true","").replace("viewform","").replace("https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/",""), { method:"POST", mode:"no-cors", body: formData });
+    } catch(e) { console.warn(e); }
+    setUploading(false);
+    setUploaded(true);
+    setPhoto(null);
+  };
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"calc(100dvh - 120px)"}}>
+      {/* Embedded form takes most of the space */}
+      <iframe
+        src={RECEIPT_FORM_URL}
+        style={{flex:1,width:"100%",border:"none",display:"block"}}
+        title="Receipt & Fuel Log"
+      />
+      {/* Photo upload strip pinned below the form */}
+      <div style={{background:"var(--bark)",borderTop:"2px solid var(--moss)",padding:"12px 16px",flexShrink:0}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Attach Receipt Photo (optional)</div>
+        <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
+        {uploaded && (
+          <div className="success-banner" style={{marginBottom:8}}>
+            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Photo uploaded!
+          </div>
+        )}
+        {photo ? (
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src={photo.url} alt="receipt" style={{width:56,height:56,objectFit:"cover",borderRadius:8,border:"1px solid var(--moss)",flexShrink:0}}/>
+            <div style={{flex:1,fontSize:12,color:"var(--stone)"}}>Photo ready</div>
+            <button style={{padding:"6px 10px",background:"none",border:"1px solid var(--moss)",borderRadius:7,fontSize:12,color:"var(--stone)",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1,marginRight:6}} onClick={()=>setPhoto(null)}>Remove</button>
+            <button className="checkout-btn" onClick={handleUpload} disabled={uploading}>
+              {uploading ? "..." : "Upload"}
+            </button>
+          </div>
+        ) : (
+          <div className="receipt-upload" style={{padding:"10px"}} onClick={()=>fileRef.current.click()}>
+            <Ic n="camera" style={{width:18,height:18}}/>
+            <span>Tap to attach a photo</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── TRUCK SCREEN ──
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
   const [tab,      setTab]    = useState("home");
@@ -703,13 +782,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
       </div>
       <div className="content" style={{padding: tab==="receipt" ? "0" : undefined}}>
         {tab==="home"    && <HomeTab truck={truck} division={division}/>}
-        {tab==="receipt" && (
-          <iframe
-            src={RECEIPT_FORM_URL}
-            style={{width:"100%",height:"calc(100dvh - 120px)",border:"none",display:"block"}}
-            title="Receipt & Fuel Log"
-          />
-        )}
+        {tab==="receipt" && <ReceiptTab truck={truck} division={division}/>}
         {tab==="tools" && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
       </div>
       <nav className="bottom-nav">
