@@ -66,10 +66,11 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .truck-dropdown-chevron { margin-left: auto; color: var(--stone); transition: transform 0.2s; }
 .truck-dropdown-chevron.open { transform: rotate(180deg); }
 .truck-dropdown-list {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
   background: var(--bark); border: 1.5px solid var(--lime);
   border-top: none; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
-  max-height: 240px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  max-height: 320px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  -webkit-overflow-scrolling: touch;
 }
 .truck-dropdown-item {
   display: flex; align-items: center; gap: 12px; padding: 12px 16px;
@@ -514,7 +515,9 @@ const TOOL_INVENTORY = [
 ];
 
 const SHEETS_ID  = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
-const SHEETS_KEY = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
+// Google Apps Script Web App URL — paste your deployed script URL here
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
+
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -630,16 +633,17 @@ function FuelTab({ truck, division }) {
     const now  = new Date();
     const date = now.toLocaleDateString();
     const time = now.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" });
-    // In production: upload receipt to Drive, get link, then append to sheet
-    // For now we append all text fields
     try {
-      const body = {
-        values: [[date, time, `Truck ${truck.id}`, division || "—", gallons, cost, fuelType, receipt ? "[receipt attached]" : ""]],
+      const payload = {
+        sheet: "Fuel Log",
+        row: [date, time, `Truck ${truck.id}`, division || "—", gallons, cost, fuelType, receipt ? "[receipt attached]" : ""],
       };
-      await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Fuel%20Log:append?valueInputOption=USER_ENTERED&key=${SHEETS_KEY}`,
-        { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) }
-      );
+      await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
     } catch(e) { console.warn("Sheet append failed", e); }
     setSubmitting(false);
     setSubmitted(true);
