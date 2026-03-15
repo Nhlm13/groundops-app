@@ -606,7 +606,14 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 }
 
 
-// ── HOME TAB ──
+// HR portal links — add URLs once available
+const HR_LINKS = [
+  { name: "Time Off Request",   desc: "Submit leave for approval",       url: "" },
+  { name: "Document Upload",    desc: "Tax docs & employment forms",     url: "" },
+  { name: "Job Application",    desc: "Refer someone to the team",       url: "" },
+  { name: "Contact a Manager",  desc: "Send a message to management",    url: "" },
+  { name: "Team Member Info",   desc: "Your profile & personal info",    url: "" },
+];
 function HomeTab({ truck, division }) {
   const day = getTodayStr();
   const [contactOpen,     setContactOpen]     = useState(false);
@@ -814,11 +821,28 @@ function ReceiptTab({ truck, division, onGoHome }) {
           )}
         </div>
       )}
+      {/* HR */}
+      <div className="section-hd" style={{marginTop:8}}>HR & Employee Portal</div>
+      {HR_LINKS.map(f=>(
+        <div key={f.name} className="action-card"
+          style={{borderLeftColor:"var(--mgr)"}}
+          onClick={()=>{ if(f.url) window.open(f.url,"_blank"); }}>
+          <div className="action-card-icon" style={{background:"rgba(74,122,181,0.15)"}}>
+            <Ic n="shield" style={{color:"var(--mgr-lt)"}}/>
+          </div>
+          <div className="action-card-info">
+            <div className="action-card-name">{f.name}</div>
+            <div className="action-card-desc">{f.desc}</div>
+            <span className="status-chip chip-pending" style={{background:"rgba(74,122,181,0.1)",color:"var(--mgr-lt)"}}>
+              {f.url ? "Open →" : "Coming Soon"}
+            </span>
+          </div>
+          {f.url && <div className="action-card-arrow"><Ic n="chev"/></div>}
+        </div>
+      ))}
     </div>
   );
 }
-
-// ── TRUCK SCREEN ──
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
   const [tab,      setTab]    = useState("home");
   const [division]            = useState(initialDivision || "");
