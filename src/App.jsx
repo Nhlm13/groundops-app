@@ -917,11 +917,56 @@ function MgrToolsTab({ checkouts }) {
 }
 
 // ── MANAGER ZONE ──
+const SHEETS_ID  = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
+const SHEETS_KEY = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
+
 function ManagerZone({ onLogout, checkouts, signIns }) {
-  const [tab, setTab]             = useState("fleet");
-  const [selectedTruck, setSelTruck] = useState(null);
+  const [tab,          setTab]        = useState("fleet");
+  const [selectedTruck,setSelTruck]   = useState(null);
+  const [receipts,     setReceipts]   = useState([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(false);
 
   const activeTrucks = Object.entries(signIns);
+
+  // Fetch today's receipts from both Receipts and Fuel Log sheets
+  useEffect(()=>{
+    const fetchReceipts = async () => {
+      setReceiptsLoading(true);
+      const today = new Date().toLocaleDateString();
+      try {
+        const [r1, r2] = await Promise.all([
+          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
+          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Fuel%20Log?key=${SHEETS_KEY}`).then(r=>r.json()),
+        ]);
+        const parseRows = (data, type) => {
+          const rows = data.values || [];
+          if (rows.length < 2) return [];
+          return rows.slice(1)
+            .filter(r => r[0] === today)
+            .map(r => ({
+              date:     r[0] || "",
+              time:     r[1] || "",
+              truck:    r[2] || "",
+              division: r[3] || "",
+              type:     r[4] || type,
+              total:    r[5] || "",
+              merchant: r[6] || "",
+              photoUrl: r[7] || "",
+            }));
+        };
+        setReceipts([
+          ...parseRows(r1, "Receipt"),
+          ...parseRows(r2, "Fuel"),
+        ]);
+      } catch(e) { console.warn("Receipts fetch failed", e); }
+      setReceiptsLoading(false);
+    };
+    fetchReceipts();
+  },[]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Get receipts for a specific truck
+  const truckReceipts = (truckId) =>
+    receipts.filter(r => r.truck === `Truck ${truckId}`);
 
   return (
     <div className="screen" style={{background:"#ddd9d0"}}>
@@ -966,11 +1011,10 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
               Truck {selectedTruck.truckId}
             </div>
             {[
-              {icon:"clock", label:"Signed In",  val: selectedTruck.signInTime},
-              {icon:"home",  label:"Division",   val: selectedTruck.division||"Not selected"},
+              {icon:"clock", label:"Signed In",        val: selectedTruck.signInTime},
+              {icon:"home",  label:"Division",          val: selectedTruck.division||"Not selected"},
               {icon:"sun",   label:"Morning Rollout",   val:"Pending"},
               {icon:"clip",  label:"Trailer Checklist", val:"Pending"},
-              {icon:"fuel",  label:"Fuel Logs Today",   val:`${(checkouts[selectedTruck.truckId]||[]).length} entries`},
             ].map(s=>(
               <div key={s.label} className="detail-stat">
                 <div className="detail-stat-icon"><Ic n={s.icon}/></div>
@@ -980,6 +1024,35 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
                 </div>
               </div>
             ))}
+
+            {/* Receipts & Fuel Logs */}
+            <div className="section-hd" style={{marginTop:8,color:"var(--mgr)"}}>
+              Receipts & Fuel Logs Today
+            </div>
+            {receiptsLoading ? (
+              <div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>Loading...</div>
+            ) : truckReceipts(selectedTruck.truckId).length === 0 ? (
+              <div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>No submissions today</div>
+            ) : truckReceipts(selectedTruck.truckId).map((r,i)=>(
+              <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.type}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--sand)"}}>{r.time}</div>
+                </div>
+                <div style={{display:"flex",justifyContent:"space-between"}}>
+                  <div style={{fontSize:12,color:"var(--stone)"}}>{r.merchant||"—"}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)"}}>${r.total}</div>
+                </div>
+                {r.photoUrl && (
+                  <a href={r.photoUrl} target="_blank" rel="noreferrer"
+                    style={{display:"inline-block",marginTop:6,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:1}}>
+                    View Receipt Photo →
+                  </a>
+                )}
+              </div>
+            ))}
+
+            {/* Tools */}
             <div className="section-hd" style={{marginTop:8}}>Tools Checked Out</div>
             {(checkouts[selectedTruck.truckId]||[]).length===0
               ? <div style={{fontSize:13,color:"var(--stone)",padding:"12px 0"}}>No tools checked out</div>
