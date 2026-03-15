@@ -685,78 +685,17 @@ function HomeTab({ truck, division }) {
   );
 }
 
-// ── RECEIPT FORM — defined outside ReceiptTab to prevent keyboard dismissal ──
-function ReceiptForm({ truck, division, onSubmitted }) {
-  const [fields,     setFields]    = useState({ total:"", date: new Date().toLocaleDateString(), merchant:"", type:"" });
-  const [submitting, setSubmitting]= useState(false);
-  const [error,      setError]     = useState("");
-  const RECEIPT_TYPES = ["Fuel","Materials","Supplies","Other"];
-
-  const handleSubmit = async () => {
-    if (!fields.total) return;
-    setSubmitting(true);
-    setError("");
-    try {
-      const now = new Date();
-      const payload = JSON.stringify({
-        sheet: "Receipts",
-        row: [
-          fields.date || now.toLocaleDateString(),
-          now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
-          `Truck ${truck.id}`,
-          division || "—",
-          fields.type || "Other",
-          fields.total,
-          fields.merchant,
-          "",
-        ],
-      });
-      await fetch(APPS_SCRIPT_URL, {
-        method:  "POST",
-        mode:    "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body:    payload,
-      });
-      onSubmitted();
-    } catch(e) {
-      setError("Submission failed — please try again.");
-      setSubmitting(false);
-    }
-  };
-
+// ── RECEIPT FORM — embedded Google Form ──
+function ReceiptForm({ onSubmitted }) {
   return (
-    <div className="fuel-form">
-      {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
-      <div className="fuel-row">
-        <div className="fuel-label">Receipt Type</div>
-        <div className="fuel-type-grid">
-          {RECEIPT_TYPES.map(t=>(
-            <button key={t} className={`fuel-type-btn ${fields.type===t?"selected":""}`}
-              onClick={()=>setFields(p=>({...p,type:t}))}>{t}</button>
-          ))}
-        </div>
-      </div>
-      <div className="fuel-row">
-        <div className="fuel-label">Merchant / Store</div>
-        <input className="fuel-input" value={fields.merchant}
-          onChange={e=>setFields(p=>({...p,merchant:e.target.value}))}
-          placeholder="Where was the purchase made?"/>
-      </div>
-      <div className="fuel-row">
-        <div className="fuel-label">Total ($)</div>
-        <input className="fuel-input" type="number" inputMode="decimal"
-          value={fields.total}
-          onChange={e=>setFields(p=>({...p,total:e.target.value}))}
-          placeholder="0.00"/>
-      </div>
-      <div className="fuel-row">
-        <div className="fuel-label">Date</div>
-        <input className="fuel-input" value={fields.date}
-          onChange={e=>setFields(p=>({...p,date:e.target.value}))}
-          placeholder="MM/DD/YYYY"/>
-      </div>
-      <button className="btn-submit" disabled={!fields.total || submitting} onClick={handleSubmit}>
-        {submitting ? "Submitting..." : "Submit Receipt"}
+    <div>
+      <iframe
+        src="https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true"
+        style={{width:"100%", height:"600px", border:"none", display:"block", borderRadius:8}}
+        title="Receipt Form"
+      />
+      <button className="btn-submit" style={{marginTop:12}} onClick={onSubmitted}>
+        Continue to Photo Upload
       </button>
     </div>
   );
@@ -807,11 +746,7 @@ function ReceiptTab({ truck, division, onGoHome }) {
       {step === "form" && (
         <>
           <div className="section-hd">Submit a Receipt</div>
-          <ReceiptForm
-            truck={truck}
-            division={division}
-            onSubmitted={()=>setStep("photo")}
-          />
+          <ReceiptForm onSubmitted={()=>setStep("photo")}/>
         </>
       )}
 
@@ -821,23 +756,24 @@ function ReceiptTab({ truck, division, onGoHome }) {
             <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Receipt submitted successfully!
           </div>
           <div className="section-hd">Attach a Photo</div>
-          <div style={{fontSize:13,color:"var(--stone)",marginBottom:16}}>
-            Optional — photograph the receipt to save it to Drive.
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+            <span style={{fontSize:13,color:"var(--stone)"}}>Photograph the receipt to save it to Drive.</span>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:700,color:"var(--danger)",letterSpacing:1}}>REQUIRED</span>
           </div>
           <input ref={photoRef} type="file" accept="image/*" capture="environment"
             style={{display:"none"}} onChange={handlePhotoUpload}/>
           <div className="receipt-upload"
             onClick={()=>!uploading && photoRef.current.click()}
-            style={{opacity: uploading ? 0.6 : 1, marginBottom:12}}>
+            style={{opacity: uploading ? 0.6 : 1, marginBottom:16}}>
             <Ic n="camera" style={{width:24,height:24}}/>
             <span>{uploading ? "Uploading..." : "Tap to photograph receipt"}</span>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <button style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+            <button style={{flex:1,padding:"16px 12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
               onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
               Submit Another
             </button>
-            <button style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+            <button style={{flex:1,padding:"16px 12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
               onClick={onGoHome}>
               Go to Home
             </button>
@@ -859,10 +795,10 @@ function ReceiptTab({ truck, division, onGoHome }) {
             <img src={photoUrl} alt="receipt"
               style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block",marginBottom:24}}/>
           )}
-          <button className="btn-submit" style={{width:"100%",marginBottom:10}} onClick={onGoHome}>
+          <button className="btn-submit" style={{width:"100%",marginBottom:10,padding:"16px"}} onClick={onGoHome}>
             Go to Home
           </button>
-          <button style={{width:"100%",padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
+          <button style={{width:"100%",padding:"16px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
             onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
             Submit Another Receipt
           </button>
