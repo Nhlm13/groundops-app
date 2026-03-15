@@ -688,14 +688,23 @@ function HomeTab({ truck, division }) {
 // ── RECEIPT FORM — embedded Google Form ──
 function ReceiptForm({ onSubmitted }) {
   return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+    <div style={{position:"relative"}}>
       <iframe
         src="https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true"
         style={{width:"100%", height:"600px", border:"none", display:"block", borderRadius:8}}
         title="Receipt Form"
       />
-      <div style={{width:"100%",padding:"20px 0 8px",display:"flex",justifyContent:"center"}}>
-        <button className="btn-submit" style={{width:"100%",padding:"18px",fontSize:"18px",letterSpacing:3}} onClick={onSubmitted}>
+      <div style={{
+        position:"sticky", bottom:70, left:0, right:0,
+        padding:"12px 0", display:"flex", justifyContent:"center",
+        background:"linear-gradient(to top, var(--earth) 60%, transparent)",
+      }}>
+        <button onClick={onSubmitted} style={{
+          width:"100%", padding:"18px",
+          background:"var(--danger)", border:"none", borderRadius:10,
+          fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3,
+          color:"#fff", cursor:"pointer",
+        }}>
           Final Step: Upload Photo
         </button>
       </div>
