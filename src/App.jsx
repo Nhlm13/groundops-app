@@ -607,6 +607,7 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 // HR portal links — add URLs once available
 const HR_LINKS = [
   { name: "Time Off Request",      desc: "Submit leave for approval",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
+  { name: "Document Upload",       desc: "Tax docs & employment forms",        url: "https://docs.google.com/forms/d/e/1FAIpQLSdgfiNB10GgUxFol4sFzq1m0mgVuCp8O5Ml3NQD_HTbNBnFSA/viewform?embedded=true" },
   { name: "Job Application",       desc: "Refer someone to the team",          url: "https://docs.google.com/forms/d/e/1FAIpQLSe405gWCY--4-chYWpku3PMaZ5zIl09W5HGCPUfDcbNuTuYYw/viewform?embedded=true" },
   { name: "Contact a Manager",     desc: "Send a message to management",       url: "https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true" },
   { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "" },
@@ -843,11 +844,16 @@ function JobsTab({ truck }) {
   const [starting,   setStarting]   = useState(false);
   const [started,    setStarted]    = useState(false);
 
+  const [upcomingJobs,    setUpcomingJobs]    = useState([]);
+  const [upcomingOpen,    setUpcomingOpen]    = useState(false);
+
   useEffect(()=>{
     const fetchJobs = async () => {
       setLoading(true);
       try {
-        const today = new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
+        const todayDate = new Date();
+        todayDate.setHours(0,0,0,0);
+        const today = todayDate.toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
         const url = `https://sheets.googleapis.com/v4/spreadsheets/1RdaByCLstwdj0zkKfWnrExX5DWcaMFgld-H-w27BuUU/values/Jobs?key=${SHEETS_KEY}`;
         const res  = await fetch(url);
         const data = await res.json();
@@ -872,20 +878,15 @@ function JobsTab({ truck }) {
         };
         const truckNum = truck.id.toString();
         const normalizeDate = d => d.trim().replace(/^0(\d)/,"$1").replace(/\/(0)(\d)\//,"/$2/");
-        const filtered = rows.slice(1).filter(r=>{
-          const rowDate  = (r[idx.date]||"").trim();
-          const rowTruck = (r[idx.truck]||"").toString().replace(/[^0-9]/g,"");
-          const dateMatch = !rowDate || normalizeDate(rowDate)===normalizeDate(today);
-          return dateMatch && rowTruck===truckNum;
-        }).map(r=>{
+
+        const mapRow = r => {
           const address = r[idx.address] || "";
-          // Extract city — typically the part after the last comma before state/zip
           const parts = address.split(",");
           const city = parts.length >= 2 ? parts[parts.length - 2].trim() : address;
           return {
             name:     r[idx.name]     || "Unnamed Job",
-            address,
-            city,
+            address, city,
+            date:     r[idx.date]     || "",
             start:    r[idx.start]    || "",
             duration: r[idx.duration] || "",
             type:     r[idx.type]     || "",
@@ -897,8 +898,27 @@ function JobsTab({ truck }) {
             contact:  r[idx.contact]  || "",
             phone:    r[idx.phone]    || "",
           };
-        });
-        setJobs(filtered);
+        };
+
+        const truckRows = rows.slice(1).filter(r=>
+          (r[idx.truck]||"").toString().replace(/[^0-9]/g,"") === truckNum
+        );
+
+        const todayJobs    = truckRows.filter(r=>{
+          const d = (r[idx.date]||"").trim();
+          return !d || normalizeDate(d)===normalizeDate(today);
+        }).map(mapRow);
+
+        const upcomingJobsList = truckRows.filter(r=>{
+          const d = (r[idx.date]||"").trim();
+          if (!d) return false;
+          const rowDate = new Date(d);
+          rowDate.setHours(0,0,0,0);
+          return rowDate > todayDate;
+        }).map(mapRow).sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+        setJobs(todayJobs);
+        setUpcomingJobs(upcomingJobsList);
       } catch(e) {
         setError("Could not load jobs. Check your connection.");
       }
@@ -1043,6 +1063,40 @@ function JobsTab({ truck }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Upcoming jobs — collapsible */}
+      {!loading && upcomingJobs.length > 0 && (
+        <div style={{marginTop:16}}>
+          <div className="section-hd" style={{cursor:"pointer"}} onClick={()=>setUpcomingOpen(o=>!o)}>
+            Upcoming Jobs ({upcomingJobs.length})
+            <Ic n="chev" className={`chevron ${upcomingOpen?"open":""}`} style={{marginLeft:"auto",width:16,height:16}}/>
+          </div>
+          {upcomingOpen && (
+            <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)"}}>
+              {upcomingJobs.map((j,i)=>(
+                <div key={i} style={{
+                  background:"var(--bark)",borderLeft:"4px solid var(--dirt)",
+                  padding:"14px 14px 12px",
+                  borderBottom: i < upcomingJobs.length-1 ? "1px solid var(--moss)" : "none"
+                }}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
+                    <div className="job-name">{j.name}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--sand)",flexShrink:0,marginLeft:8}}>
+                      {new Date(j.date).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}
+                    </div>
+                  </div>
+                  {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginBottom:4}}>{j.type}</div>}
+                  {j.address && <div style={{fontSize:12,color:"var(--stone)",marginBottom:8}}>{j.address}</div>}
+                  <button style={{padding:"7px 14px",background:"var(--moss)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"var(--cream)",cursor:"pointer"}}
+                    onClick={()=>setSelected(j)}>
+                    View Job
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
