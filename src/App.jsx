@@ -512,7 +512,7 @@ const TOOL_INVENTORY = [
   ]},
 ];
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxlsbWa7UFWQQydJqF5IGR6pP7_NXfQ2S3xceww7qDgO3DPsjhpbO4Hpkd7ghKD1BCpVg/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwy_sdQTyK80ZN7q62d-dQVm7v8-IDyVIX4InoKj3gFIJgURtp4T8HyraXTC9yjNRHs7Q/exec";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -841,6 +841,8 @@ function JobsTab({ truck }) {
   const [selected,   setSelected]   = useState(null);
   const [completing, setCompleting] = useState(false);
   const [completed,  setCompleted]  = useState(false);
+  const [starting,   setStarting]   = useState(false);
+  const [started,    setStarted]    = useState(false);
 
   useEffect(()=>{
     const fetchJobs = async () => {
@@ -906,15 +908,25 @@ function JobsTab({ truck }) {
         method:  "POST",
         mode:    "no-cors",
         headers: { "Content-Type": "text/plain" },
-        body:    JSON.stringify({
-          action:   "completeJob",
-          truckId:  truck.id,
-          jobName:  selected.name,
-        }),
+        body:    JSON.stringify({ action:"completeJob", truckId:truck.id, jobName:selected.name }),
       });
       setCompleted(true);
     } catch(e) { console.warn(e); }
     setCompleting(false);
+  };
+
+  const handleStart = async () => {
+    setStarting(true);
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method:  "POST",
+        mode:    "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body:    JSON.stringify({ action:"startJob", truckId:truck.id, jobName:selected.name }),
+      });
+      setStarted(true);
+    } catch(e) { console.warn(e); }
+    setStarting(false);
   };
 
   if (selected) return (
@@ -964,16 +976,26 @@ function JobsTab({ truck }) {
           )}
         </div>
       )}
-      {/* Mark Complete */}
-      <div style={{marginTop:16}}>
-        {completed ? (
-          <div className="success-banner">
-            <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Job marked as completed!
+      {/* Job Status Buttons */}
+      <div style={{marginTop:16,display:"flex",gap:8}}>
+        {started ? (
+          <div className="success-banner" style={{flex:1}}>
+            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Job started!
           </div>
         ) : (
-          <button className="btn-submit" disabled={completing} onClick={handleComplete}
-            style={{background: completing ? "var(--moss)" : "var(--leaf)"}}>
-            {completing ? "Marking Complete..." : "Mark Job Complete"}
+          <button disabled={starting||completed} onClick={handleStart}
+            style={{flex:1,padding:"13px",background:started?"var(--moss)":"var(--sand)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--earth)",cursor:"pointer",opacity:completed?0.4:1}}>
+            {starting ? "..." : "Started"}
+          </button>
+        )}
+        {completed ? (
+          <div className="success-banner" style={{flex:1}}>
+            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Completed!
+          </div>
+        ) : (
+          <button disabled={completing} onClick={handleComplete}
+            style={{flex:1,padding:"13px",background:"var(--leaf)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>
+            {completing ? "..." : "Complete"}
           </button>
         )}
       </div>
@@ -997,9 +1019,9 @@ function JobsTab({ truck }) {
           style={{borderLeftColor: j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)"}}>
           <div className="job-name">{j.name}</div>
           <div className="job-meta">
-            {j.start    && <span><Ic n="clock"/>{j.start}</span>}
-            {j.address  && <span><Ic n="map"/>{j.address}</span>}
-            {j.duration && <span><Ic n="clock"/>{j.duration} hrs</span>}
+            {j.start    && <span>{j.start}</span>}
+            {j.address  && <span>{j.address}</span>}
+            {j.duration && <span>{j.duration} hrs</span>}
           </div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
             <div style={{display:"flex",gap:6}}>
