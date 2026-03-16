@@ -864,7 +864,7 @@ function JobsTab({ truck }) {
           gate:     headers.findIndex(h=>h.includes("gate")||h.includes("access")),
           parking:  headers.findIndex(h=>h.includes("parking")),
           notes:    headers.findIndex(h=>h.includes("special")||h.includes("instruction")),
-          contact:  headers.findIndex(h=>h.includes("contact name")||h.indexOf("contact")===h.indexOf("contact")),
+          contact:  headers.findIndex(h=>h.includes("contact name")||h.includes("contact")),
           phone:    headers.findIndex(h=>h.includes("phone")),
         };
         const truckNum = truck.id.toString();
