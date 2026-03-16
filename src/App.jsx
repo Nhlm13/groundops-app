@@ -1021,27 +1021,31 @@ function JobsTab({ truck }) {
       {!loading && !error && jobs.length===0 && (
         <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>No jobs assigned today</div>
       )}
-      {!loading && jobs.map((j,i)=>(
-        <div key={i} className="job-card"
-          style={{borderLeftColor: j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)"}}>
-          <div className="job-name">{j.name}</div>
-          {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginTop:2}}>{j.type}</div>}
-          <div className="job-meta" style={{marginTop:4}}>
-            {j.city     && <span>{j.city}</span>}
-            {j.duration && <span>{j.duration} hrs</span>}
-          </div>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
-            <div style={{display:"flex",gap:6}}>
-              {j.status && <span className={`job-status-chip ${j.status==="in progress"||j.status==="active"?"chip-active":"chip-next"}`}>{j.status}</span>}
-              {j.priority==="high" && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"rgba(192,68,42,0.12)",color:"var(--danger)"}}>High Priority</span>}
+      {!loading && jobs.length > 0 && (
+        <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)"}}>
+          {jobs.map((j,i)=>(
+            <div key={i} style={{
+              background:"var(--bark)", borderLeft:`4px solid ${j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)"}`,
+              padding:"14px 14px 12px", marginBottom:0,
+              borderBottom: i < jobs.length-1 ? "1px solid var(--moss)" : "none"
+            }}>
+              <div className="job-name" style={{marginBottom:3}}>{j.name}</div>
+              {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginBottom:4}}>{j.type}</div>}
+              {j.address && <div style={{fontSize:12,color:"var(--stone)",marginBottom:8}}>{j.address}</div>}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",gap:6}}>
+                  {j.status && <span className={`job-status-chip ${j.status==="in progress"||j.status==="active"?"chip-active":"chip-next"}`}>{j.status}</span>}
+                  {j.priority==="high" && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"rgba(192,68,42,0.12)",color:"var(--danger)"}}>High Priority</span>}
+                </div>
+                <button style={{padding:"7px 14px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"var(--earth)",cursor:"pointer"}}
+                  onClick={()=>setSelected(j)}>
+                  View Job
+                </button>
+              </div>
             </div>
-            <button style={{padding:"7px 14px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"var(--earth)",cursor:"pointer"}}
-              onClick={()=>setSelected(j)}>
-              View Job
-            </button>
-          </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -1081,8 +1085,9 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
 
 // ── MANAGER JOBS TAB ──
 function MgrJobsTab() {
-  const [jobs,    setJobs]    = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [jobs,     setJobs]     = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [selected, setSelected] = useState(null);
 
   useEffect(()=>{
     const fetch_ = async () => {
@@ -1092,20 +1097,27 @@ function MgrJobsTab() {
         const data = await res.json();
         const rows = data.values || [];
         if (rows.length < 2) { setJobs([]); setLoading(false); return; }
-        const headers = rows[0].map(h=>h.trim().toLowerCase());
+        const h = rows[0].map(r=>r.trim().toLowerCase());
         const normalizeDate = d => d.trim().replace(/^0(\d)/,"$1").replace(/\/(0)(\d)\//,"/$2/");
         const parsed = rows.slice(1)
           .filter(r=>{
-            const rowDate = (r[headers.findIndex(h=>h.includes("date"))]||"").trim();
+            const rowDate = (r[h.findIndex(x=>x.includes("date"))]||"").trim();
             return !rowDate || normalizeDate(rowDate)===normalizeDate(today);
           })
           .map(r=>({
-            truck:    (r[headers.findIndex(h=>h.includes("truck"))]||"").toString().trim(),
-            name:     r[headers.findIndex(h=>h.includes("property")||h.includes("name"))] || "Unnamed",
-            type:     r[headers.findIndex(h=>h.includes("type"))]     || "",
-            status:   (r[headers.findIndex(h=>h.includes("status"))]  || "").toLowerCase(),
-            start:    r[headers.findIndex(h=>h.includes("start"))]    || "",
-            address:  r[headers.findIndex(h=>h.includes("address"))]  || "",
+            truck:    (r[h.findIndex(x=>x.includes("truck"))]||"").toString().trim(),
+            name:     r[h.findIndex(x=>x.includes("property")||x.includes("name"))] || "Unnamed",
+            type:     r[h.findIndex(x=>x.includes("type"))]     || "",
+            status:   (r[h.findIndex(x=>x.includes("status"))]  || "").toLowerCase(),
+            start:    r[h.findIndex(x=>x.includes("start"))]    || "",
+            duration: r[h.findIndex(x=>x.includes("duration"))] || "",
+            address:  r[h.findIndex(x=>x.includes("address"))]  || "",
+            priority: r[h.findIndex(x=>x.includes("priority"))] || "",
+            gate:     r[h.findIndex(x=>x.includes("gate")||x.includes("access"))] || "",
+            parking:  r[h.findIndex(x=>x.includes("parking"))]  || "",
+            notes:    r[h.findIndex(x=>x.includes("special")||x.includes("instruction"))] || "",
+            contact:  r[h.findIndex(x=>x.includes("contact"))]  || "",
+            phone:    r[h.findIndex(x=>x.includes("phone"))]    || "",
           }));
         setJobs(parsed);
       } catch(e) { console.warn(e); }
@@ -1118,14 +1130,62 @@ function MgrJobsTab() {
   const completed  = jobs.filter(j=>j.status==="completed");
   const pending    = jobs.filter(j=>!["in progress","active","completed"].includes(j.status));
 
+  if (selected) return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={()=>setSelected(null)}>
+        <Ic n="back"/> Back to Jobs
+      </button>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:2}}>{selected.name}</div>
+      <span className="truck-tag" style={{marginBottom:12,display:"inline-block"}}>{selected.truck}</span>
+      {selected.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginBottom:12,textTransform:"uppercase"}}>{selected.type}</div>}
+      {selected.address && (
+        <a href={`https://maps.apple.com/?q=${encodeURIComponent(selected.address)}`} target="_blank" rel="noreferrer"
+          style={{display:"block",background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:9,padding:"13px 15px",marginBottom:8,textDecoration:"none"}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Address</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--lime)"}}>{selected.address}</div>
+        </a>
+      )}
+      {[
+        {label:"Start Time",    val:selected.start},
+        {label:"Est. Duration", val:selected.duration ? `${selected.duration} hrs` : ""},
+        {label:"Priority",      val:selected.priority},
+        {label:"Gate / Access", val:selected.gate},
+        {label:"Parking",       val:selected.parking},
+        {label:"Special Notes", val:selected.notes},
+      ].filter(s=>s.val).map(s=>(
+        <div key={s.label} className="detail-stat" style={{marginBottom:8}}>
+          <div className="detail-stat-info">
+            <div className="detail-stat-label">{s.label}</div>
+            <div className="detail-stat-val">{s.val}</div>
+          </div>
+        </div>
+      ))}
+      {(selected.contact||selected.phone) && (
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"13px 15px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Site Contact</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{selected.contact}</div>
+            {selected.phone && <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{selected.phone}</div>}
+          </div>
+          {selected.phone && <a href={`tel:${selected.phone}`} className="call-btn"><Ic n="phone"/></a>}
+        </div>
+      )}
+    </div>
+  );
+
   const JobRow = ({j}) => (
-    <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"11px 13px",marginBottom:6}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{j.name}</div>
+    <div style={{background:"var(--bark)",borderLeft:`4px solid ${j.status==="in progress"||j.status==="active"?"var(--lime)":j.status==="completed"?"var(--mgr)":"var(--moss)"}`,
+      padding:"13px 14px 11px",marginBottom:0,borderBottom:"1px solid var(--moss)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:2}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{j.name}</div>
         <span className="truck-tag">{j.truck}</span>
       </div>
-      {j.type && <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{j.type}</div>}
-      {j.start && <div style={{fontSize:12,color:"var(--stone)",marginTop:1}}>{j.start}</div>}
+      {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"var(--cream)",marginBottom:2}}>{j.type}</div>}
+      {j.address && <div style={{fontSize:12,color:"var(--stone)",marginBottom:6}}>{j.address}</div>}
+      <button style={{padding:"6px 12px",background:"rgba(74,122,181,0.15)",border:"1px solid var(--mgr)",borderRadius:7,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,color:"var(--mgr-lt)",cursor:"pointer"}}
+        onClick={()=>setSelected(j)}>
+        View Job
+      </button>
     </div>
   );
 
@@ -1136,19 +1196,25 @@ function MgrJobsTab() {
       {inProgress.length > 0 && (
         <>
           <div className="section-hd" style={{color:"var(--lime)"}}>In Progress ({inProgress.length})</div>
-          {inProgress.map((j,i)=><JobRow key={i} j={j}/>)}
+          <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)",marginBottom:14}}>
+            {inProgress.map((j,i)=><JobRow key={i} j={j}/>)}
+          </div>
         </>
       )}
       {completed.length > 0 && (
         <>
-          <div className="section-hd" style={{color:"var(--mgr)",marginTop:8}}>Completed ({completed.length})</div>
-          {completed.map((j,i)=><JobRow key={i} j={j}/>)}
+          <div className="section-hd" style={{color:"var(--mgr)"}}>Completed ({completed.length})</div>
+          <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)",marginBottom:14}}>
+            {completed.map((j,i)=><JobRow key={i} j={j}/>)}
+          </div>
         </>
       )}
       {pending.length > 0 && (
         <>
-          <div className="section-hd" style={{color:"var(--stone)",marginTop:8}}>Pending ({pending.length})</div>
-          {pending.map((j,i)=><JobRow key={i} j={j}/>)}
+          <div className="section-hd" style={{color:"var(--stone)"}}>Pending ({pending.length})</div>
+          <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)",marginBottom:14}}>
+            {pending.map((j,i)=><JobRow key={i} j={j}/>)}
+          </div>
         </>
       )}
       {jobs.length === 0 && (
