@@ -835,10 +835,12 @@ function ReceiptTab({ truck, division, onGoHome }) {
 }
 // ── JOBS TAB ──
 function JobsTab({ truck }) {
-  const [jobs,    setJobs]    = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState("");
-  const [selected,setSelected]= useState(null);
+  const [jobs,       setJobs]       = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState("");
+  const [selected,   setSelected]   = useState(null);
+  const [completing, setCompleting] = useState(false);
+  const [completed,  setCompleted]  = useState(false);
 
   useEffect(()=>{
     const fetchJobs = async () => {
@@ -896,9 +898,6 @@ function JobsTab({ truck }) {
     };
     fetchJobs();
   },[truck.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const [completing, setCompleting] = useState(false);
-  const [completed,  setCompleted]  = useState(false);
 
   const handleComplete = async () => {
     setCompleting(true);
