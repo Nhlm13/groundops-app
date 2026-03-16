@@ -979,6 +979,10 @@ function JobsTab({ truck }) {
       </div>
     </div>
   );
+
+  return (
+    <div>
+      <div className="section-hd">Today's Jobs</div>
       {loading && (
         <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>Loading jobs...</div>
       )}
