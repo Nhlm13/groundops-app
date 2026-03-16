@@ -512,7 +512,7 @@ const TOOL_INVENTORY = [
   ]},
 ];
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwdA4rFkh_F1yjpz9TtyAltj6Xalg4jQbE1lK5czhF_an5-eyIg_7KSrLoIr8FRtCf0Lg/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxlsbWa7UFWQQydJqF5IGR6pP7_NXfQ2S3xceww7qDgO3DPsjhpbO4Hpkd7ghKD1BCpVg/exec";
 
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
@@ -897,6 +897,27 @@ function JobsTab({ truck }) {
     fetchJobs();
   },[truck.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [completing, setCompleting] = useState(false);
+  const [completed,  setCompleted]  = useState(false);
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method:  "POST",
+        mode:    "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body:    JSON.stringify({
+          action:   "completeJob",
+          truckId:  truck.id,
+          jobName:  selected.name,
+        }),
+      });
+      setCompleted(true);
+    } catch(e) { console.warn(e); }
+    setCompleting(false);
+  };
+
   if (selected) return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <button className="back-btn" style={{marginBottom:14}} onClick={()=>setSelected(null)}>
@@ -944,12 +965,21 @@ function JobsTab({ truck }) {
           )}
         </div>
       )}
+      {/* Mark Complete */}
+      <div style={{marginTop:16}}>
+        {completed ? (
+          <div className="success-banner">
+            <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Job marked as completed!
+          </div>
+        ) : (
+          <button className="btn-submit" disabled={completing} onClick={handleComplete}
+            style={{background: completing ? "var(--moss)" : "var(--leaf)"}}>
+            {completing ? "Marking Complete..." : "Mark Job Complete"}
+          </button>
+        )}
+      </div>
     </div>
   );
-
-  return (
-    <div>
-      <div className="section-hd">Today's Jobs</div>
       {loading && (
         <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>Loading jobs...</div>
       )}
@@ -961,17 +991,22 @@ function JobsTab({ truck }) {
       )}
       {!loading && jobs.map((j,i)=>(
         <div key={i} className="job-card"
-          style={{borderLeftColor: j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)", cursor:"pointer"}}
-          onClick={()=>setSelected(j)}>
+          style={{borderLeftColor: j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)"}}>
           <div className="job-name">{j.name}</div>
           <div className="job-meta">
             {j.start    && <span><Ic n="clock"/>{j.start}</span>}
             {j.address  && <span><Ic n="map"/>{j.address}</span>}
             {j.duration && <span><Ic n="clock"/>{j.duration} hrs</span>}
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
-            {j.status && <span className={`job-status-chip ${j.status==="in progress"||j.status==="active"?"chip-active":"chip-next"}`}>{j.status}</span>}
-            {j.priority==="high" && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"rgba(192,68,42,0.12)",color:"var(--danger)"}}>High Priority</span>}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
+            <div style={{display:"flex",gap:6}}>
+              {j.status && <span className={`job-status-chip ${j.status==="in progress"||j.status==="active"?"chip-active":"chip-next"}`}>{j.status}</span>}
+              {j.priority==="high" && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"rgba(192,68,42,0.12)",color:"var(--danger)"}}>High Priority</span>}
+            </div>
+            <button style={{padding:"7px 14px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"var(--earth)",cursor:"pointer"}}
+              onClick={()=>setSelected(j)}>
+              View Job
+            </button>
           </div>
         </div>
       ))}
@@ -1000,8 +1035,8 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         {tab==="tools"   && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
       </div>
       <nav className="bottom-nav">
-        <button className={`bnav-btn ${tab==="jobs"?"active":""}`}     onClick={()=>setTab("jobs")}><Ic n="map"/>Jobs</button>
         <button className={`bnav-btn ${tab==="home"?"active":""}`}     onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
+        <button className={`bnav-btn ${tab==="jobs"?"active":""}`}     onClick={()=>setTab("jobs")}><Ic n="clip"/>Jobs</button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`}  onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`}    onClick={()=>setTab("tools")} style={{position:"relative"}}>
           <Ic n="wrench"/>Tools
