@@ -607,6 +607,7 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 // HR portal links — add URLs once available
 const HR_LINKS = [
   { name: "Time Off Request",      desc: "Submit leave for approval",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
+  { name: "Document Upload",       desc: "Tax docs & employment forms",        url: "https://docs.google.com/forms/d/e/1FAIpQLSdgfiNB10GgUxFol4sFzq1m0mgVuCp8O5Ml3NQD_HTbNBnFSA/viewform?embedded=true" },
   { name: "Job Application",       desc: "Refer someone to the team",          url: "https://docs.google.com/forms/d/e/1FAIpQLSe405gWCY--4-chYWpku3PMaZ5zIl09W5HGCPUfDcbNuTuYYw/viewform?embedded=true" },
   { name: "Contact a Manager",     desc: "Send a message to management",       url: "https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true" },
   { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "" },
@@ -832,8 +833,154 @@ function ReceiptTab({ truck, division, onGoHome }) {
     </div>
   );
 }
+// ── JOBS TAB ──
+function JobsTab({ truck }) {
+  const [jobs,    setJobs]    = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
+  const [selected,setSelected]= useState(null);
+
+  useEffect(()=>{
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const today = new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Jobs?key=${SHEETS_KEY}`;
+        const res  = await fetch(url);
+        const data = await res.json();
+        const rows = data.values || [];
+        if (rows.length < 2) { setJobs([]); setLoading(false); return; }
+        const headers = rows[0].map(h=>h.trim().toLowerCase());
+        const idx = {
+          date:     headers.findIndex(h=>h.includes("date")),
+          truck:    headers.findIndex(h=>h.includes("truck")),
+          name:     headers.findIndex(h=>h.includes("property")||h.includes("name")),
+          address:  headers.findIndex(h=>h.includes("address")),
+          start:    headers.findIndex(h=>h.includes("start")),
+          duration: headers.findIndex(h=>h.includes("duration")),
+          type:     headers.findIndex(h=>h.includes("type")),
+          status:   headers.findIndex(h=>h.includes("status")),
+          priority: headers.findIndex(h=>h.includes("priority")),
+          gate:     headers.findIndex(h=>h.includes("gate")||h.includes("access")),
+          parking:  headers.findIndex(h=>h.includes("parking")),
+          notes:    headers.findIndex(h=>h.includes("special")||h.includes("instruction")),
+          contact:  headers.findIndex(h=>h.includes("contact name")||h.indexOf("contact")===h.indexOf("contact")),
+          phone:    headers.findIndex(h=>h.includes("phone")),
+        };
+        const truckNum = truck.id.toString();
+        const normalizeDate = d => d.trim().replace(/^0(\d)/,"$1").replace(/\/(0)(\d)\//,"/$2/");
+        const filtered = rows.slice(1).filter(r=>{
+          const rowDate  = (r[idx.date]||"").trim();
+          const rowTruck = (r[idx.truck]||"").toString().replace(/[^0-9]/g,"");
+          const dateMatch = !rowDate || normalizeDate(rowDate)===normalizeDate(today);
+          return dateMatch && rowTruck===truckNum;
+        }).map(r=>({
+          name:     r[idx.name]     || "Unnamed Job",
+          address:  r[idx.address]  || "",
+          start:    r[idx.start]    || "",
+          duration: r[idx.duration] || "",
+          type:     r[idx.type]     || "",
+          status:   (r[idx.status]  || "").toLowerCase(),
+          priority: r[idx.priority] || "",
+          gate:     r[idx.gate]     || "",
+          parking:  r[idx.parking]  || "",
+          notes:    r[idx.notes]    || "",
+          contact:  r[idx.contact]  || "",
+          phone:    r[idx.phone]    || "",
+        }));
+        setJobs(filtered);
+      } catch(e) {
+        setError("Could not load jobs. Check your connection.");
+      }
+      setLoading(false);
+    };
+    fetchJobs();
+  },[truck.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (selected) return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={()=>setSelected(null)}>
+        <Ic n="back"/> Back to Jobs
+      </button>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:4}}>{selected.name}</div>
+      {selected.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,marginBottom:14,textTransform:"uppercase"}}>{selected.type}</div>}
+
+      {/* Address — tap to open maps */}
+      {selected.address && (
+        <a href={`https://maps.apple.com/?q=${encodeURIComponent(selected.address)}`} target="_blank" rel="noreferrer"
+          style={{display:"block",background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:9,padding:"13px 15px",marginBottom:8,textDecoration:"none"}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Address — Tap for Directions</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--lime)"}}>{selected.address}</div>
+        </a>
+      )}
+
+      {/* Job details */}
+      {[
+        {label:"Start Time",    val:selected.start},
+        {label:"Est. Duration", val:selected.duration ? `${selected.duration} hrs` : ""},
+        {label:"Priority",      val:selected.priority},
+        {label:"Gate / Access", val:selected.gate},
+        {label:"Parking",       val:selected.parking},
+        {label:"Special Notes", val:selected.notes},
+      ].filter(s=>s.val).map(s=>(
+        <div key={s.label} className="detail-stat" style={{marginBottom:8}}>
+          <div className="detail-stat-info">
+            <div className="detail-stat-label">{s.label}</div>
+            <div className="detail-stat-val">{s.val}</div>
+          </div>
+        </div>
+      ))}
+
+      {/* Contact */}
+      {(selected.contact || selected.phone) && (
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"13px 15px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Site Contact</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{selected.contact}</div>
+            {selected.phone && <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{selected.phone}</div>}
+          </div>
+          {selected.phone && (
+            <a href={`tel:${selected.phone}`} className="call-btn"><Ic n="phone"/></a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="section-hd">Today's Jobs</div>
+      {loading && (
+        <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>Loading jobs...</div>
+      )}
+      {!loading && error && (
+        <div style={{background:"rgba(192,68,42,0.1)",border:"1px solid var(--danger)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"var(--danger)"}}>{error}</div>
+      )}
+      {!loading && !error && jobs.length===0 && (
+        <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>No jobs assigned today</div>
+      )}
+      {!loading && jobs.map((j,i)=>(
+        <div key={i} className="job-card"
+          style={{borderLeftColor: j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)", cursor:"pointer"}}
+          onClick={()=>setSelected(j)}>
+          <div className="job-name">{j.name}</div>
+          <div className="job-meta">
+            {j.start    && <span><Ic n="clock"/>{j.start}</span>}
+            {j.address  && <span><Ic n="map"/>{j.address}</span>}
+            {j.duration && <span><Ic n="clock"/>{j.duration} hrs</span>}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
+            {j.status && <span className={`job-status-chip ${j.status==="in progress"||j.status==="active"?"chip-active":"chip-next"}`}>{j.status}</span>}
+            {j.priority==="high" && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"rgba(192,68,42,0.12)",color:"var(--danger)"}}>High Priority</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
-  const [tab,      setTab]    = useState("home");
+  const [tab,      setTab]    = useState("jobs");
   const [division]            = useState(initialDivision || "");
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
 
@@ -847,14 +994,16 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         <button className="logout-btn" onClick={onLogout}>Sign Out</button>
       </div>
       <div className="content" style={{padding: tab==="receipt" ? "0" : undefined}}>
+        {tab==="jobs"    && <JobsTab truck={truck}/>}
         {tab==="home"    && <HomeTab truck={truck} division={division}/>}
         {tab==="receipt" && <ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
-        {tab==="tools" && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
+        {tab==="tools"   && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
       </div>
       <nav className="bottom-nav">
-        <button className={`bnav-btn ${tab==="home"?"active":""}`} onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
-        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
-        <button className={`bnav-btn ${tab==="tools"?"active":""}`} onClick={()=>setTab("tools")} style={{position:"relative"}}>
+        <button className={`bnav-btn ${tab==="jobs"?"active":""}`}     onClick={()=>setTab("jobs")}><Ic n="map"/>Jobs</button>
+        <button className={`bnav-btn ${tab==="home"?"active":""}`}     onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
+        <button className={`bnav-btn ${tab==="receipt"?"active":""}`}  onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
+        <button className={`bnav-btn ${tab==="tools"?"active":""}`}    onClick={()=>setTab("tools")} style={{position:"relative"}}>
           <Ic n="wrench"/>Tools
           {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
         </button>
