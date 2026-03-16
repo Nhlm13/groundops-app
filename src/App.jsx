@@ -1360,10 +1360,10 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)"}}>${r.total}</div>
                 </div>
                 {r.photoUrl && (
-                  <a href={r.photoUrl} target="_blank" rel="noreferrer"
-                    style={{display:"inline-block",marginTop:6,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:1}}>
-                    View Receipt Photo →
-                  </a>
+                  <div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}>
+                    <Ic n="check" style={{width:12,height:12,color:"var(--lime)",flexShrink:0}}/>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>Photo Uploaded</span>
+                  </div>
                 )}
               </div>
             ))}
