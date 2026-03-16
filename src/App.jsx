@@ -25,7 +25,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .app {
   max-width: 430px; min-height: 100dvh; margin: 0 auto;
   background: var(--earth); display: flex; flex-direction: column;
-  position: relative; overflow: hidden;
+  position: relative;
 }
 .app::before {
   content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -872,7 +872,7 @@ function JobsTab({ truck }) {
           priority: headers.findIndex(h=>h.includes("priority")),
           gate:     headers.findIndex(h=>h.includes("gate")||h.includes("access")),
           parking:  headers.findIndex(h=>h.includes("parking")),
-          notes:    headers.findIndex(h=>h.includes("special")||h.includes("instruction")),
+          notes:    headers.findIndex(h=>h.includes("special")),
           contact:  headers.findIndex(h=>h.includes("contact name")||h.includes("contact")),
           phone:    headers.findIndex(h=>h.includes("phone")),
         };
@@ -978,8 +978,8 @@ function JobsTab({ truck }) {
         {label:"Est. Duration", val:selected.duration ? `${selected.duration} hrs` : ""},
         {label:"Priority",      val:selected.priority},
         {label:"Gate / Access", val:selected.gate},
-        {label:"Parking",       val:selected.parking},
-        {label:"Special Notes", val:selected.notes},
+        {label:"Parking Instructions", val:selected.parking},
+        {label:"Special Instructions", val:selected.notes},
       ].filter(s=>s.val).map(s=>(
         <div key={s.label} className="detail-stat" style={{marginBottom:8}}>
           <div className="detail-stat-info">
@@ -1168,7 +1168,7 @@ function MgrJobsTab() {
             priority: r[h.findIndex(x=>x.includes("priority"))] || "",
             gate:     r[h.findIndex(x=>x.includes("gate")||x.includes("access"))] || "",
             parking:  r[h.findIndex(x=>x.includes("parking"))]  || "",
-            notes:    r[h.findIndex(x=>x.includes("special")||x.includes("instruction"))] || "",
+            notes:    r[h.findIndex(x=>x.includes("special"))]  || "",
             contact:  r[h.findIndex(x=>x.includes("contact"))]  || "",
             phone:    r[h.findIndex(x=>x.includes("phone"))]    || "",
           }));
@@ -1203,8 +1203,8 @@ function MgrJobsTab() {
         {label:"Est. Duration", val:selected.duration ? `${selected.duration} hrs` : ""},
         {label:"Priority",      val:selected.priority},
         {label:"Gate / Access", val:selected.gate},
-        {label:"Parking",       val:selected.parking},
-        {label:"Special Notes", val:selected.notes},
+        {label:"Parking Instructions", val:selected.parking},
+        {label:"Special Instructions", val:selected.notes},
       ].filter(s=>s.val).map(s=>(
         <div key={s.label} className="detail-stat" style={{marginBottom:8}}>
           <div className="detail-stat-info">
