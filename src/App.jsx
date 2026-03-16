@@ -165,7 +165,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .btn-mgr:active { opacity: 0.85; }
 
 /* ── MAIN APP SCREEN ── */
-.screen { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; animation: fadeUp 0.35s ease both; }
+.screen { flex: 1; display: flex; flex-direction: column; position: relative; z-index: 1; animation: fadeUp 0.35s ease both; height: 100dvh; }
 .topbar {
   background: var(--bark); border-bottom: 3px solid var(--leaf);
   padding: 12px 16px 10px; padding-top: calc(12px + env(safe-area-inset-top));
@@ -186,7 +186,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
   font-family: 'Barlow Condensed', sans-serif; font-size: 12px;
   color: var(--stone); letter-spacing: 1px; text-transform: uppercase;
 }
-.content { padding: 16px 16px 100px; overflow-y: auto; flex: 1; }
+.content { padding: 16px 16px 100px; overflow-y: auto; flex: 1; height: 0; }
 .section-hd {
   font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 3px;
   color: var(--stone); text-transform: uppercase; margin-bottom: 10px;
