@@ -878,20 +878,27 @@ function JobsTab({ truck }) {
           const rowTruck = (r[idx.truck]||"").toString().replace(/[^0-9]/g,"");
           const dateMatch = !rowDate || normalizeDate(rowDate)===normalizeDate(today);
           return dateMatch && rowTruck===truckNum;
-        }).map(r=>({
-          name:     r[idx.name]     || "Unnamed Job",
-          address:  r[idx.address]  || "",
-          start:    r[idx.start]    || "",
-          duration: r[idx.duration] || "",
-          type:     r[idx.type]     || "",
-          status:   (r[idx.status]  || "").toLowerCase(),
-          priority: r[idx.priority] || "",
-          gate:     r[idx.gate]     || "",
-          parking:  r[idx.parking]  || "",
-          notes:    r[idx.notes]    || "",
-          contact:  r[idx.contact]  || "",
-          phone:    r[idx.phone]    || "",
-        }));
+        }).map(r=>{
+          const address = r[idx.address] || "";
+          // Extract city — typically the part after the last comma before state/zip
+          const parts = address.split(",");
+          const city = parts.length >= 2 ? parts[parts.length - 2].trim() : address;
+          return {
+            name:     r[idx.name]     || "Unnamed Job",
+            address,
+            city,
+            start:    r[idx.start]    || "",
+            duration: r[idx.duration] || "",
+            type:     r[idx.type]     || "",
+            status:   (r[idx.status]  || "").toLowerCase(),
+            priority: r[idx.priority] || "",
+            gate:     r[idx.gate]     || "",
+            parking:  r[idx.parking]  || "",
+            notes:    r[idx.notes]    || "",
+            contact:  r[idx.contact]  || "",
+            phone:    r[idx.phone]    || "",
+          };
+        });
         setJobs(filtered);
       } catch(e) {
         setError("Could not load jobs. Check your connection.");
@@ -1018,9 +1025,9 @@ function JobsTab({ truck }) {
         <div key={i} className="job-card"
           style={{borderLeftColor: j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)"}}>
           <div className="job-name">{j.name}</div>
-          <div className="job-meta">
-            {j.start    && <span>{j.start}</span>}
-            {j.address  && <span>{j.address}</span>}
+          {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginTop:2}}>{j.type}</div>}
+          <div className="job-meta" style={{marginTop:4}}>
+            {j.city     && <span>{j.city}</span>}
             {j.duration && <span>{j.duration} hrs</span>}
           </div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
@@ -1072,7 +1079,84 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
-// ── MANAGER TOOLS OVERVIEW ──
+// ── MANAGER JOBS TAB ──
+function MgrJobsTab() {
+  const [jobs,    setJobs]    = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(()=>{
+    const fetch_ = async () => {
+      try {
+        const today = new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
+        const res  = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/1RdaByCLstwdj0zkKfWnrExX5DWcaMFgld-H-w27BuUU/values/Jobs?key=${SHEETS_KEY}`);
+        const data = await res.json();
+        const rows = data.values || [];
+        if (rows.length < 2) { setJobs([]); setLoading(false); return; }
+        const headers = rows[0].map(h=>h.trim().toLowerCase());
+        const normalizeDate = d => d.trim().replace(/^0(\d)/,"$1").replace(/\/(0)(\d)\//,"/$2/");
+        const parsed = rows.slice(1)
+          .filter(r=>{
+            const rowDate = (r[headers.findIndex(h=>h.includes("date"))]||"").trim();
+            return !rowDate || normalizeDate(rowDate)===normalizeDate(today);
+          })
+          .map(r=>({
+            truck:    (r[headers.findIndex(h=>h.includes("truck"))]||"").toString().trim(),
+            name:     r[headers.findIndex(h=>h.includes("property")||h.includes("name"))] || "Unnamed",
+            type:     r[headers.findIndex(h=>h.includes("type"))]     || "",
+            status:   (r[headers.findIndex(h=>h.includes("status"))]  || "").toLowerCase(),
+            start:    r[headers.findIndex(h=>h.includes("start"))]    || "",
+            address:  r[headers.findIndex(h=>h.includes("address"))]  || "",
+          }));
+        setJobs(parsed);
+      } catch(e) { console.warn(e); }
+      setLoading(false);
+    };
+    fetch_();
+  },[]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const inProgress = jobs.filter(j=>j.status==="in progress"||j.status==="active");
+  const completed  = jobs.filter(j=>j.status==="completed");
+  const pending    = jobs.filter(j=>!["in progress","active","completed"].includes(j.status));
+
+  const JobRow = ({j}) => (
+    <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"11px 13px",marginBottom:6}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{j.name}</div>
+        <span className="truck-tag">{j.truck}</span>
+      </div>
+      {j.type && <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{j.type}</div>}
+      {j.start && <div style={{fontSize:12,color:"var(--stone)",marginTop:1}}>{j.start}</div>}
+    </div>
+  );
+
+  if (loading) return <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>Loading jobs...</div>;
+
+  return (
+    <div>
+      {inProgress.length > 0 && (
+        <>
+          <div className="section-hd" style={{color:"var(--lime)"}}>In Progress ({inProgress.length})</div>
+          {inProgress.map((j,i)=><JobRow key={i} j={j}/>)}
+        </>
+      )}
+      {completed.length > 0 && (
+        <>
+          <div className="section-hd" style={{color:"var(--mgr)",marginTop:8}}>Completed ({completed.length})</div>
+          {completed.map((j,i)=><JobRow key={i} j={j}/>)}
+        </>
+      )}
+      {pending.length > 0 && (
+        <>
+          <div className="section-hd" style={{color:"var(--stone)",marginTop:8}}>Pending ({pending.length})</div>
+          {pending.map((j,i)=><JobRow key={i} j={j}/>)}
+        </>
+      )}
+      {jobs.length === 0 && (
+        <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>No jobs today</div>
+      )}
+    </div>
+  );
+}
 function MgrToolsTab({ checkouts }) {
   const allTools = TOOL_INVENTORY.flatMap(c=>c.tools.map(t=>({...t,category:c.category})));
   const totalOut = id => Object.values(checkouts).flat().filter(c=>c.toolId===id).reduce((s,c)=>s+c.qty,0);
@@ -1302,11 +1386,15 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
         )}
 
         {tab==="tools" && <MgrToolsTab checkouts={checkouts}/>}
+        {tab==="jobs"  && <MgrJobsTab/>}
 
       </div>
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
         <button className={`bnav-btn ${tab==="fleet"?"active":""}`} style={tab==="fleet"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>{setTab("fleet");setSelTruck(null);}}>
           <Ic n="truck"/>Fleet
+        </button>
+        <button className={`bnav-btn ${tab==="jobs"?"active":""}`} style={tab==="jobs"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("jobs")}>
+          <Ic n="clip"/>Jobs
         </button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`} style={tab==="tools"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("tools")}>
           <Ic n="wrench"/>Tools
