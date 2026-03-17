@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap');`;
 
@@ -609,7 +609,7 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 
 // HR portal links
 const HR_LINKS = [
-  { name: "Time Off Request",      desc: "Submit leave for approval",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
+  { name: "Time Off Request",      desc: "Submit Time Off Request",            url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
   { name: "Job Application",       desc: "Refer someone to the team",          url: "https://docs.google.com/forms/d/e/1FAIpQLSe405gWCY--4-chYWpku3PMaZ5zIl09W5HGCPUfDcbNuTuYYw/viewform?embedded=true" },
   { name: "Contact a Manager",     desc: "Send a message to management",       url: "https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true" },
   { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "https://drive.google.com/file/d/1UPIOc2q7rs7h-VQcT6Cvv4eaG_-vePGs/preview" },
@@ -704,135 +704,351 @@ function HomeTab({ truck, division }) {
   );
 }
 
-// ── RECEIPT FORM — embedded Google Form ──
-function ReceiptForm({ onSubmitted }) {
+// ── SHARED NATIVE RECEIPT FORM ──
+// truckLabel = "Truck 3" or null (walk-in) | divisionLabel = pre-filled division or ""
+function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
+  const today = new Date().toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"});
+
+  const [step,       setStep]      = useState("form");
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading,  setUploading]  = useState(false);
+  const [photoUrl,   setPhotoUrl]   = useState("");
+  const [formErr,    setFormErr]    = useState("");
+  const photoRef = useRef();
+
+  const [fields, setFields] = useState({
+    name:         "",
+    division:     divisionLabel || "",
+    type:         "",           // Fuel | Materials | Tools/Supplies | Other
+    // fuel-specific
+    gallons:      "",
+    fuelType:     "",           // Regular | Diesel | Premium
+    atShop:       null,         // true = shop (no cost), false = gas station (cost required)
+    // non-fuel
+    vendor:       "",
+    total:        "",
+    // shared
+    notes:        "",
+  });
+  const set = (k,v) => { setFields(f=>({...f,[k]:v})); setFormErr(""); };
+
+  const isFuel    = fields.type === "Fuel";
+  const isWalkIn  = !truckLabel;
+  const displayTruck = truckLabel || "General Submission";
+
+  // ── Validation ──
+  const validate = () => {
+    if (!fields.name.trim())     return "Please enter your name.";
+    if (!fields.division)        return "Please select a division.";
+    if (!fields.type)            return "Please select a receipt type.";
+    if (isFuel) {
+      if (!fields.gallons.trim()) return "Please enter gallons pumped.";
+      if (!fields.fuelType)       return "Please select a fuel type.";
+      if (fields.atShop === null) return "Please select where you fueled up.";
+      if (fields.atShop === false && !fields.total.trim()) return "Please enter the total cost.";
+    } else {
+      if (!fields.vendor.trim()) return "Please enter a vendor / merchant.";
+      if (!fields.total.trim())  return "Please enter the total amount.";
+    }
+    return null;
+  };
+
+  const toBase64 = file => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
+
+  const handleSubmit = async () => {
+    const err = validate();
+    if (err) { setFormErr(err); return; }
+    setSubmitting(true);
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method:"POST", mode:"no-cors",
+        headers:{"Content-Type":"text/plain"},
+        body: JSON.stringify({
+          sheet:    "Receipts",
+          date:     today,
+          time:     new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
+          name:     fields.name,
+          truck:    displayTruck,
+          division: fields.division,
+          type:     fields.type,
+          vendor:   isFuel ? "Fuel" : fields.vendor,
+          gallons:  isFuel ? fields.gallons : "",
+          fuelType: isFuel ? fields.fuelType : "",
+          location: isFuel ? (fields.atShop ? "Shop" : "Gas Station") : "",
+          total:    isFuel ? (fields.atShop ? "" : fields.total) : fields.total,
+          notes:    fields.notes,
+        }),
+      });
+      setStep("photo");
+    } catch(e){ console.warn(e); }
+    setSubmitting(false);
+  };
+
+  const handlePhoto = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const b64 = await toBase64(file);
+      await fetch(APPS_SCRIPT_URL, {
+        method:"POST", mode:"no-cors",
+        headers:{"Content-Type":"text/plain"},
+        body: JSON.stringify({ sheet:"Receipts", photo:b64, photoMime:file.type||"image/jpeg", photoName:`receipt_${displayTruck.replace(/\s/g,"_")}_${Date.now()}.jpg`, photoOnly:true }),
+      });
+      setPhotoUrl(URL.createObjectURL(file));
+      setStep("success");
+    } catch(e){ console.warn(e); }
+    setUploading(false);
+  };
+
+  const reset = () => {
+    setStep("form"); setPhotoUrl(""); setFormErr("");
+    setFields({ name:"", division:divisionLabel||"", type:"", gallons:"", fuelType:"", atShop:null, vendor:"", total:"", notes:"" });
+  };
+
+  // ── Shared styles ──
+  const inputStyle = { width:"100%", background:"var(--bark2)", border:"1px solid var(--moss)", borderRadius:8, padding:"12px 14px", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:15 };
+  const Label = ({children,optional}) => (
+    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+      {children}{optional&&<span style={{color:"var(--moss)",fontSize:11,letterSpacing:1,textTransform:"none",fontWeight:400}}>(optional)</span>}
+    </div>
+  );
+  const ToggleGroup = ({options, value, onChange, cols=2}) => (
+    <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:7}}>
+      {options.map(o=>(
+        <button key={o} onClick={()=>onChange(o)}
+          style={{background:value===o?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${value===o?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:value===o?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
+          {o}
+        </button>
+      ))}
+    </div>
+  );
+  const StepBar = ({done}) => (
+    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
+      {["Details","Photo"].map((label,i)=>{
+        const active = done > i; const current = done === i;
+        return (
+          <React.Fragment key={label}>
+            {i>0 && <div style={{flex:1,height:2,background:active?"var(--lime)":"var(--moss)",borderRadius:1}}/>}
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <div style={{width:24,height:24,borderRadius:"50%",background:active?"var(--moss)":current?"var(--lime)":"transparent",border:`2px solid ${active||current?"var(--lime)":"var(--moss)"}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {active ? <Ic n="check" style={{width:12,height:12,color:"var(--earth)"}}/> : <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:current?"var(--earth)":"var(--stone)"}}>{i+1}</span>}
+              </div>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,color:active?"var(--stone)":current?"var(--lime)":"var(--stone)",textDecoration:active?"line-through":"none"}}>{label}</span>
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  // ── STEP: FORM ──
+  if (step === "form") return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <StepBar done={0}/>
+
+      {/* ── PART 1: General Info ── */}
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--stone)",marginBottom:10}}>Part 1 — General Information</div>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:14}}>
+
+        {/* Name */}
+        <div style={{marginBottom:14}}>
+          <Label>Your Name</Label>
+          <input style={inputStyle} type="text" placeholder="First & Last name" value={fields.name} onChange={e=>set("name",e.target.value)}/>
+        </div>
+
+        {/* Truck — pre-filled & locked if logged in, hidden if walk-in */}
+        {!isWalkIn && (
+          <div style={{marginBottom:14}}>
+            <Label>Truck</Label>
+            <div style={{...inputStyle,color:"var(--stone)",background:"var(--bark)",cursor:"default",display:"flex",alignItems:"center",gap:8}}>
+              <Ic n="truck" style={{width:14,height:14,flexShrink:0}}/>{truckLabel}
+            </div>
+          </div>
+        )}
+
+        {/* Division */}
+        <div style={{marginBottom:14}}>
+          <Label>Division</Label>
+          <ToggleGroup options={["Maintenance","Construction"]} value={fields.division} onChange={v=>set("division",v)} cols={2}/>
+        </div>
+
+        {/* Receipt Type */}
+        <div>
+          <Label>Receipt Type</Label>
+          <ToggleGroup options={["Fuel","Materials","Tools / Supplies","Other"]} value={fields.type} onChange={v=>{ set("type",v); set("gallons",""); set("fuelType",""); set("atShop",null); set("vendor",""); set("total",""); }} cols={2}/>
+        </div>
+      </div>
+
+      {/* ── PART 2: Fuel Details (slides in) ── */}
+      {isFuel && (
+        <div style={{animation:"fadeUp 0.25s ease both"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--warn)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+            Part 2 — Fuel Details
+            <span style={{flex:1,height:1,background:"rgba(160,96,16,0.3)",display:"block"}}/>
+          </div>
+          <div style={{background:"var(--bark)",border:"1.5px solid rgba(160,96,16,0.3)",borderLeft:"4px solid var(--warn)",borderRadius:12,padding:16,marginBottom:14}}>
+
+            {/* Gallons */}
+            <div style={{marginBottom:14}}>
+              <Label>Gallons Pumped</Label>
+              <input style={inputStyle} type="number" inputMode="decimal" placeholder="e.g. 14.3" value={fields.gallons} onChange={e=>set("gallons",e.target.value)}/>
+            </div>
+
+            {/* Fuel Type */}
+            <div style={{marginBottom:14}}>
+              <Label>Fuel Type</Label>
+              <ToggleGroup options={["Regular","Diesel","Premium"]} value={fields.fuelType} onChange={v=>set("fuelType",v)} cols={3}/>
+            </div>
+
+            {/* Fueled where */}
+            <div style={{marginBottom: fields.atShop===false ? 14 : 0}}>
+              <Label>Where did you fuel up?</Label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                {[{label:"At the Shop",val:true},{label:"Gas Station",val:false}].map(({label,val})=>(
+                  <button key={label} onClick={()=>{ set("atShop",val); if(val) set("total",""); }}
+                    style={{background:fields.atShop===val?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${fields.atShop===val?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:fields.atShop===val?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cost — only if gas station */}
+            {fields.atShop === false && (
+              <div style={{animation:"fadeUp 0.2s ease both"}}>
+                <Label>Total Cost ($)</Label>
+                <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.total} onChange={e=>set("total",e.target.value)}/>
+              </div>
+            )}
+
+            {/* Shop confirmation banner */}
+            {fields.atShop === true && (
+              <div style={{marginTop:12,background:"rgba(74,109,32,0.08)",border:"1px solid rgba(74,109,32,0.25)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"var(--leaf)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5}}>
+                ✓ No cost to record — shop fuel logged by gallons only.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Non-fuel details ── */}
+      {fields.type && !isFuel && (
+        <div style={{animation:"fadeUp 0.25s ease both"}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--stone)",marginBottom:10}}>Part 2 — Purchase Details</div>
+          <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:14}}>
+            <div style={{marginBottom:14}}>
+              <Label>Vendor / Merchant</Label>
+              <input style={inputStyle} type="text" placeholder="e.g. Home Depot, Lowe's" value={fields.vendor} onChange={e=>set("vendor",e.target.value)}/>
+            </div>
+            <div>
+              <Label>Total Amount ($)</Label>
+              <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.total} onChange={e=>set("total",e.target.value)}/>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Notes (always last) ── */}
+      {fields.type && (
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:14,animation:"fadeUp 0.2s ease both"}}>
+          <Label optional>Notes</Label>
+          <textarea style={{...inputStyle,resize:"none",height:76}} placeholder="Any additional details..." value={fields.notes} onChange={e=>set("notes",e.target.value)}/>
+        </div>
+      )}
+
+      {formErr && <div className="error-msg" style={{marginBottom:12}}>{formErr}</div>}
+
+      <button disabled={submitting} onClick={handleSubmit}
+        style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
+        {submitting ? "Saving..." : "Next: Attach Photo →"}
+      </button>
+      {onClose && (
+        <button onClick={onClose} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
+          Cancel
+        </button>
+      )}
+    </div>
+  );
+
+  // ── STEP: PHOTO ──
+  if (step === "photo") return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <StepBar done={1}/>
+
+      <div className="success-banner" style={{marginBottom:16}}>
+        <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt saved! Now attach a photo.
+      </div>
+
+      {/* Summary card */}
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+          <div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{fields.name}</div>
+            <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{displayTruck} · {fields.division}</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",lineHeight:1}}>
+              {isFuel && fields.atShop ? `${fields.gallons} gal` : `$${fields.total}`}
+            </div>
+            <div style={{fontSize:11,color:"var(--stone)",marginTop:2}}>{fields.type}{isFuel?` · ${fields.fuelType}`:""}</div>
+          </div>
+        </div>
+        {isFuel && <div style={{fontSize:12,color:"var(--stone)"}}>{fields.atShop?"At the Shop":"Gas Station"}{fields.gallons?` · ${fields.gallons} gal`:""}</div>}
+        {!isFuel && <div style={{fontSize:12,color:"var(--stone)"}}>{fields.vendor}</div>}
+      </div>
+
+      <div style={{fontSize:13,color:"var(--stone)",marginBottom:10}}>
+        Take a photo of the physical receipt — it will be saved directly to Drive.
+      </div>
+
+      <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
+      <div className="receipt-upload"
+        onClick={()=>!uploading && photoRef.current.click()}
+        style={{opacity:uploading?0.6:1,marginBottom:12,borderColor:uploading?"var(--moss)":"var(--leaf)",padding:"28px 16px"}}>
+        <Ic n="camera" style={{width:32,height:32,color:uploading?"var(--stone)":"var(--lime)"}}/>
+        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:15,letterSpacing:1,color:uploading?"var(--stone)":"var(--cream)"}}>
+          {uploading ? "Uploading photo..." : "Tap to Open Camera"}
+        </span>
+        <span style={{fontSize:11,color:"var(--stone)"}}>REQUIRED</span>
+      </div>
+    </div>
+  );
+
+  // ── STEP: SUCCESS ──
   return (
-    <div style={{position:"relative"}}>
-      <iframe
-        src="https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true"
-        style={{width:"100%", height:"600px", border:"none", display:"block", borderRadius:8}}
-        title="Receipt Form"
-      />
-      <div style={{
-        position:"sticky", bottom:70, left:0, right:0,
-        padding:"12px 0", display:"flex", justifyContent:"center",
-        background:"linear-gradient(to top, var(--earth) 60%, transparent)",
-      }}>
-        <button onClick={onSubmitted} style={{
-          width:"100%", padding:"18px",
-          background:"var(--danger)", border:"none", borderRadius:10,
-          fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3,
-          color:"#fff", cursor:"pointer",
-        }}>
-          Final Step: Upload Photo
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
+      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
+        <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
+      </div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:4}}>All Done!</div>
+      <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:4}}>
+        {isFuel ? `${fields.gallons} gal ${fields.fuelType}` : `${fields.vendor} · $${fields.total}`}
+      </div>
+      <div style={{fontSize:12,color:"var(--stone)",marginBottom:20}}>{fields.type} · {displayTruck} · {fields.division}</div>
+      {photoUrl && <img src={photoUrl} alt="receipt" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",marginBottom:16}}/>}
+      <div style={{display:"flex",gap:8,width:"100%"}}>
+        <button onClick={reset} style={{flex:1,padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>
+          Submit Another
+        </button>
+        <button onClick={onGoHome||onClose} style={{flex:1,padding:"14px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
+          {onGoHome ? "Go to Home" : "Done"}
         </button>
       </div>
     </div>
   );
 }
 
-// ── RECEIPT TAB ──
+// ── RECEIPT TAB (truck view) ──
 function ReceiptTab({ truck, division, onGoHome }) {
-  const [step,       setStep]      = useState("form");
-  const [uploading,  setUploading] = useState(false);
-  const [photoUrl,   setPhotoUrl]  = useState("");
-  const photoRef = useRef();
-
-  const toBase64 = file => new Promise((res,rej)=>{
-    const r = new FileReader();
-    r.onload = ()=>res(r.result.split(",")[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-
-  const handlePhotoUpload = async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const b64  = await toBase64(file);
-      const payload = JSON.stringify({
-        sheet:     "Receipts",
-        row:       null,
-        photo:     b64,
-        photoMime: file.type || "image/jpeg",
-        photoName: `receipt_truck${truck.id}_${Date.now()}.jpg`,
-        photoOnly: true,
-      });
-      await fetch(APPS_SCRIPT_URL, {
-        method:  "POST",
-        mode:    "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body:    payload,
-      });
-      setPhotoUrl(URL.createObjectURL(file));
-      setStep("success");
-    } catch(e) { console.warn(e); }
-    setUploading(false);
-  };
-
   return (
-    <div>
-      {step === "form" && (
-        <>
-          <div className="section-hd">Submit a Receipt</div>
-          <ReceiptForm onSubmitted={()=>setStep("photo")}/>
-        </>
-      )}
-
-      {step === "photo" && (
-        <>
-          <div className="success-banner" style={{marginBottom:20}}>
-            <Ic n="check" style={{width:16,height:16,flexShrink:0}}/> Receipt submitted successfully!
-          </div>
-          <div className="section-hd">Attach a Photo</div>
-          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-            <span style={{fontSize:13,color:"var(--stone)"}}>Photograph the receipt to save it to Drive.</span>
-            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:700,color:"var(--danger)",letterSpacing:1}}>REQUIRED</span>
-          </div>
-          <input ref={photoRef} type="file" accept="image/*" capture="environment"
-            style={{display:"none"}} onChange={handlePhotoUpload}/>
-          <div className="receipt-upload"
-            onClick={()=>!uploading && photoRef.current.click()}
-            style={{opacity: uploading ? 0.6 : 1, marginBottom:16}}>
-            <Ic n="camera" style={{width:24,height:24}}/>
-            <span>{uploading ? "Uploading..." : "Tap to photograph receipt"}</span>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button style={{flex:1,padding:"16px 12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
-              onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
-              Submit Another
-            </button>
-            <button style={{flex:1,padding:"16px 12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}
-              onClick={onGoHome}>
-              Go to Home
-            </button>
-          </div>
-        </>
-      )}
-
-      {step === "success" && (
-        <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"40px 0 20px"}}>
-          <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20}}>
-            <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
-          </div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>All Done!</div>
-          <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:24}}>
-            Receipt submitted and photo saved to Drive.
-          </div>
-          <button className="btn-submit" style={{width:"100%",marginBottom:12,padding:"18px"}} onClick={onGoHome}>
-            Back to Home
-          </button>
-          <button style={{width:"100%",padding:"16px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)",cursor:"pointer",marginBottom:20}}
-            onClick={()=>{ setStep("form"); setPhotoUrl(""); }}>
-            Submit Another Receipt
-          </button>
-          {photoUrl && (
-            <img src={photoUrl} alt="receipt"
-              style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
-          )}
-        </div>
-      )}
+    <div style={{padding:"16px 16px 100px"}}>
+      <div className="section-hd">Submit a Receipt</div>
+      <NativeReceiptFlow
+        truckLabel={truck.label}
+        divisionLabel={division}
+        onGoHome={onGoHome}
+      />
     </div>
   );
 }
@@ -1121,29 +1337,6 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   const [error,     setError]   = useState("");
   const [openHR,      setOpenHR]      = useState(null);
   const [receiptOpen, setReceiptOpen] = useState(false);
-  const [receiptStep, setReceiptStep] = useState("form"); // "form" | "photo" | "success"
-  const [uploading,   setUploading]   = useState(false);
-  const [photoUrl,    setPhotoUrl]    = useState("");
-  const receiptPhotoRef = useRef();
-
-  const toBase64 = file => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
-
-  const handleLoginReceiptPhoto = async e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const b64 = await toBase64(file);
-      await fetch(APPS_SCRIPT_URL, {
-        method:"POST", mode:"no-cors",
-        headers:{"Content-Type":"text/plain"},
-        body: JSON.stringify({ sheet:"Receipts", photo:b64, photoMime:file.type||"image/jpeg", photoName:`receipt_walkin_${Date.now()}.jpg`, photoOnly:true }),
-      });
-      setPhotoUrl(URL.createObjectURL(file));
-      setReceiptStep("success");
-    } catch(e){ console.warn(e); }
-    setUploading(false);
-  };
 
   // PIN length matches the selected truck's PIN length (1–2 digits)
   const pinLength = selected ? selected.pin.length : 4;
@@ -1253,69 +1446,12 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                 </div>
                 <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
               </div>
-            ) : receiptStep === "form" ? (
-              /* Step 1 — Embedded Google Form */
-              <div style={{animation:"fadeUp 0.3s ease both"}}>
-                <button className="back-btn" style={{marginBottom:12}} onClick={()=>setReceiptOpen(false)}>
-                  <Ic n="back"/> Close
-                </button>
-                <div style={{borderRadius:8,overflow:"hidden",marginBottom:12}}>
-                  <iframe
-                    src="https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true"
-                    style={{width:"100%",height:"580px",border:"none",display:"block"}}
-                    title="Receipt Form"
-                  />
-                </div>
-                <button
-                  onClick={()=>setReceiptStep("photo")}
-                  style={{width:"100%",padding:"16px",background:"var(--danger)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:3,color:"#fff",cursor:"pointer"}}>
-                  Final Step: Upload Photo
-                </button>
-              </div>
-            ) : receiptStep === "photo" ? (
-              /* Step 2 — Photo upload */
-              <div style={{animation:"fadeUp 0.3s ease both"}}>
-                <button className="back-btn" style={{marginBottom:12}} onClick={()=>setReceiptStep("form")}>
-                  <Ic n="back"/> Back to Form
-                </button>
-                <div className="success-banner" style={{marginBottom:16}}>
-                  <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt submitted! Now attach a photo.
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-                  <span style={{fontSize:13,color:"var(--stone)"}}>Photograph the receipt to save it to Drive.</span>
-                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:700,color:"var(--danger)",letterSpacing:1}}>REQUIRED</span>
-                </div>
-                <input ref={receiptPhotoRef} type="file" accept="image/*" capture="environment"
-                  style={{display:"none"}} onChange={handleLoginReceiptPhoto}/>
-                <div className="receipt-upload"
-                  onClick={()=>!uploading && receiptPhotoRef.current.click()}
-                  style={{opacity:uploading?0.6:1,marginBottom:12}}>
-                  <Ic n="camera" style={{width:24,height:24}}/>
-                  <span>{uploading?"Uploading...":"Tap to photograph receipt"}</span>
-                </div>
-              </div>
             ) : (
-              /* Step 3 — Success */
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"30px 0 10px",animation:"fadeUp 0.3s ease both"}}>
-                <div style={{width:64,height:64,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
-                  <Ic n="check" style={{width:32,height:32,color:"var(--lime)"}}/>
-                </div>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>All Done!</div>
-                <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:20}}>Receipt submitted and photo saved to Drive.</div>
-                {photoUrl && <img src={photoUrl} alt="receipt" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",marginBottom:16}}/>}
-                <div style={{display:"flex",gap:8,width:"100%"}}>
-                  <button
-                    onClick={()=>{ setReceiptStep("form"); setPhotoUrl(""); }}
-                    style={{flex:1,padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>
-                    Submit Another
-                  </button>
-                  <button
-                    onClick={()=>{ setReceiptOpen(false); setReceiptStep("form"); setPhotoUrl(""); }}
-                    style={{flex:1,padding:"14px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
-                    Done
-                  </button>
-                </div>
-              </div>
+              <NativeReceiptFlow
+                truckLabel="General Submission"
+                divisionLabel=""
+                onClose={()=>{ setReceiptOpen(false); }}
+              />
             )}
           </div>
 
