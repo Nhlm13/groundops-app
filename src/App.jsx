@@ -1436,7 +1436,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
               /* Collapsed card */
               <div
                 style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}
-                onClick={()=>{ setReceiptOpen(true); setReceiptStep("form"); setPhotoUrl(""); }}>
+                onClick={()=>{ setReceiptOpen(true); }}>
                 <div style={{width:34,height:34,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   <Ic n="camera" style={{width:15,height:15,color:"var(--lime)"}}/>
                 </div>
