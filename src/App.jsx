@@ -463,12 +463,15 @@ const Ic = ({ n, ...p }) => {
 };
 
 // ── CONSTANTS ──
+// PIN = truck number as a string (truck 1 → "1", truck 20 → "20")
 const TRUCKS = Array.from({ length: 20 }, (_, i) => ({
-  id: i + 1, label: `Truck ${i + 1}`,
-  pin: String(1000 + (i + 1) * 11).slice(0, 4),
+  id: i + 1,
+  label: `Truck ${i + 1}`,
+  pin: String(i + 1),
 }));
 
-const DIVISIONS = ["Maintenance", "Construction", "Lighting & Irrigation", "Fine Gardening"];
+// Only Maintenance and Construction
+const DIVISIONS = ["Maintenance", "Construction"];
 
 const CONTACTS = [
   { name: "Jonny", role: "General Manager",     initials: "JF", phone: "tel:+15085550001" },
@@ -514,6 +517,7 @@ const TOOL_INVENTORY = [
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwy_sdQTyK80ZN7q62d-dQVm7v8-IDyVIX4InoKj3gFIJgURtp4T8HyraXTC9yjNRHs7Q/exec";
 
+// Dynamic numpad — max digits based on truck PIN length
 const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
 
 function getTodayStr() {
@@ -603,8 +607,7 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
   );
 }
 
-
-// HR portal links — add URLs once available
+// HR portal links
 const HR_LINKS = [
   { name: "Time Off Request",      desc: "Submit leave for approval",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
   { name: "Document Upload",       desc: "Tax docs & employment forms",        url: "https://docs.google.com/forms/d/e/1FAIpQLSdgfiNB10GgUxFol4sFzq1m0mgVuCp8O5Ml3NQD_HTbNBnFSA/viewform?embedded=true" },
@@ -614,6 +617,7 @@ const HR_LINKS = [
   { name: "Uniform Guidelines",    desc: "Dress code & uniform standards",     url: "" },
   { name: "Vehicle Guidelines",    desc: "Fleet use & driving policies",       url: "" },
 ];
+
 // ── CONTACT DROPDOWN ──
 function ContactDropdown() {
   const [open,     setOpen]     = useState(false);
@@ -686,7 +690,7 @@ function HomeTab({ truck, division }) {
           <div className="action-card-info">
             <div className="action-card-name">{f.name}</div>
             <div className="action-card-desc">{f.desc}</div>
-            <span className={`status-chip ${f.url?"chip-pending":"chip-pending"}`}>
+            <span className={`status-chip chip-pending`}>
               {f.url?"Pending":"Coming Soon"}
             </span>
           </div>
@@ -833,278 +837,10 @@ function ReceiptTab({ truck, division, onGoHome }) {
     </div>
   );
 }
-// ── JOBS TAB ──
-function JobsTab({ truck }) {
-  const [jobs,       setJobs]       = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [error,      setError]      = useState("");
-  const [selected,   setSelected]   = useState(null);
-  const [completing, setCompleting] = useState(false);
-  const [completed,  setCompleted]  = useState(false);
-  const [starting,   setStarting]   = useState(false);
-  const [started,    setStarted]    = useState(false);
 
-  const [upcomingJobs,    setUpcomingJobs]    = useState([]);
-  const [upcomingOpen,    setUpcomingOpen]    = useState(false);
-
-  useEffect(()=>{
-    const fetchJobs = async () => {
-      setLoading(true);
-      try {
-        const todayDate = new Date();
-        todayDate.setHours(0,0,0,0);
-        const today = todayDate.toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/1RdaByCLstwdj0zkKfWnrExX5DWcaMFgld-H-w27BuUU/values/Jobs?key=${SHEETS_KEY}`;
-        const res  = await fetch(url);
-        const data = await res.json();
-        const rows = data.values || [];
-        if (rows.length < 2) { setJobs([]); setLoading(false); return; }
-        const headers = rows[0].map(h=>h.trim().toLowerCase());
-        const idx = {
-          date:     headers.findIndex(h=>h.includes("date")),
-          truck:    headers.findIndex(h=>h.includes("truck")),
-          name:     headers.findIndex(h=>h.includes("property")||h.includes("name")),
-          address:  headers.findIndex(h=>h.includes("address")),
-          start:    headers.findIndex(h=>h.includes("start")),
-          duration: headers.findIndex(h=>h.includes("duration")),
-          type:     headers.findIndex(h=>h.includes("type")),
-          status:   headers.findIndex(h=>h.includes("status")),
-          priority: headers.findIndex(h=>h.includes("priority")),
-          gate:     headers.findIndex(h=>h.includes("gate")||h.includes("access")),
-          parking:  headers.findIndex(h=>h.includes("parking")),
-          notes:    headers.findIndex(h=>h.includes("special")),
-          contact:  headers.findIndex(h=>h.includes("contact name")||h.includes("contact")),
-          phone:    headers.findIndex(h=>h.includes("phone")),
-        };
-        const truckNum = truck.id.toString();
-        const normalizeDate = d => d.trim().replace(/^0(\d)/,"$1").replace(/\/(0)(\d)\//,"/$2/");
-
-        const mapRow = r => {
-          const address = r[idx.address] || "";
-          const parts = address.split(",");
-          const city = parts.length >= 2 ? parts[parts.length - 2].trim() : address;
-          return {
-            name:     r[idx.name]     || "Unnamed Job",
-            address, city,
-            date:     r[idx.date]     || "",
-            start:    r[idx.start]    || "",
-            duration: r[idx.duration] || "",
-            type:     r[idx.type]     || "",
-            status:   (r[idx.status]  || "").toLowerCase(),
-            priority: r[idx.priority] || "",
-            gate:     r[idx.gate]     || "",
-            parking:  r[idx.parking]  || "",
-            notes:    r[idx.notes]    || "",
-            contact:  r[idx.contact]  || "",
-            phone:    r[idx.phone]    || "",
-          };
-        };
-
-        const truckRows = rows.slice(1).filter(r=>
-          (r[idx.truck]||"").toString().replace(/[^0-9]/g,"") === truckNum
-        );
-
-        const todayJobs    = truckRows.filter(r=>{
-          const d = (r[idx.date]||"").trim();
-          return !d || normalizeDate(d)===normalizeDate(today);
-        }).map(mapRow);
-
-        const upcomingJobsList = truckRows.filter(r=>{
-          const d = (r[idx.date]||"").trim();
-          if (!d) return false;
-          const rowDate = new Date(d);
-          rowDate.setHours(0,0,0,0);
-          return rowDate > todayDate;
-        }).map(mapRow).sort((a,b)=>new Date(a.date)-new Date(b.date));
-
-        setJobs(todayJobs);
-        setUpcomingJobs(upcomingJobsList);
-      } catch(e) {
-        setError("Could not load jobs. Check your connection.");
-      }
-      setLoading(false);
-    };
-    fetchJobs();
-  },[truck.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleComplete = async () => {
-    setCompleting(true);
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method:  "POST",
-        mode:    "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body:    JSON.stringify({ action:"completeJob", truckId:truck.id, jobName:selected.name }),
-      });
-      setCompleted(true);
-    } catch(e) { console.warn(e); }
-    setCompleting(false);
-  };
-
-  const handleStart = async () => {
-    setStarting(true);
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method:  "POST",
-        mode:    "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body:    JSON.stringify({ action:"startJob", truckId:truck.id, jobName:selected.name }),
-      });
-      setStarted(true);
-    } catch(e) { console.warn(e); }
-    setStarting(false);
-  };
-
-  if (selected) return (
-    <div style={{animation:"fadeUp 0.3s ease both"}}>
-      <button className="back-btn" style={{marginBottom:14}} onClick={()=>setSelected(null)}>
-        <Ic n="back"/> Back to Jobs
-      </button>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:4}}>{selected.name}</div>
-      {selected.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,marginBottom:14,textTransform:"uppercase"}}>{selected.type}</div>}
-
-      {/* Address — tap to open maps */}
-      {selected.address && (
-        <a href={`https://maps.apple.com/?q=${encodeURIComponent(selected.address)}`} target="_blank" rel="noreferrer"
-          style={{display:"block",background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:9,padding:"13px 15px",marginBottom:8,textDecoration:"none"}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Address — Tap for Directions</div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--lime)"}}>{selected.address}</div>
-        </a>
-      )}
-
-      {/* Job details */}
-      {[
-        {label:"Start Time",    val:selected.start},
-        {label:"Est. Duration", val:selected.duration ? `${selected.duration} hrs` : ""},
-        {label:"Priority",      val:selected.priority},
-        {label:"Gate / Access", val:selected.gate},
-        {label:"Parking Instructions", val:selected.parking},
-        {label:"Special Instructions", val:selected.notes},
-      ].filter(s=>s.val).map(s=>(
-        <div key={s.label} className="detail-stat" style={{marginBottom:8}}>
-          <div className="detail-stat-info">
-            <div className="detail-stat-label">{s.label}</div>
-            <div className="detail-stat-val">{s.val}</div>
-          </div>
-        </div>
-      ))}
-
-      {/* Contact */}
-      {(selected.contact || selected.phone) && (
-        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"13px 15px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Site Contact</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{selected.contact}</div>
-            {selected.phone && <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{selected.phone}</div>}
-          </div>
-          {selected.phone && (
-            <a href={`tel:${selected.phone}`} className="call-btn"><Ic n="phone"/></a>
-          )}
-        </div>
-      )}
-      {/* Job Status Buttons */}
-      <div style={{marginTop:16,display:"flex",gap:8}}>
-        {started ? (
-          <div className="success-banner" style={{flex:1}}>
-            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Job started!
-          </div>
-        ) : (
-          <button disabled={starting||completed} onClick={handleStart}
-            style={{flex:1,padding:"13px",background:started?"var(--moss)":"var(--sand)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--earth)",cursor:"pointer",opacity:completed?0.4:1}}>
-            {starting ? "..." : "Started"}
-          </button>
-        )}
-        {completed ? (
-          <div className="success-banner" style={{flex:1}}>
-            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Completed!
-          </div>
-        ) : (
-          <button disabled={completing} onClick={handleComplete}
-            style={{flex:1,padding:"13px",background:"var(--leaf)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>
-            {completing ? "..." : "Complete"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
-  return (
-    <div>
-      <div className="section-hd">Today's Jobs</div>
-      {loading && (
-        <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>Loading jobs...</div>
-      )}
-      {!loading && error && (
-        <div style={{background:"rgba(192,68,42,0.1)",border:"1px solid var(--danger)",borderRadius:8,padding:"12px 14px",fontSize:13,color:"var(--danger)"}}>{error}</div>
-      )}
-      {!loading && !error && jobs.length===0 && (
-        <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>No jobs assigned today</div>
-      )}
-      {!loading && jobs.length > 0 && (
-        <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)"}}>
-          {jobs.map((j,i)=>(
-            <div key={i} style={{
-              background:"var(--bark)", borderLeft:`4px solid ${j.status==="in progress"||j.status==="active" ? "var(--lime)" : j.priority==="high" ? "var(--danger)" : "var(--dirt)"}`,
-              padding:"14px 14px 12px", marginBottom:0,
-              borderBottom: i < jobs.length-1 ? "1px solid var(--moss)" : "none"
-            }}>
-              <div className="job-name" style={{marginBottom:3}}>{j.name}</div>
-              {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginBottom:4}}>{j.type}</div>}
-              {j.address && <div style={{fontSize:12,color:"var(--stone)",marginBottom:8}}>{j.address}</div>}
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{display:"flex",gap:6}}>
-                  {j.status && <span className={`job-status-chip ${j.status==="in progress"||j.status==="active"?"chip-active":"chip-next"}`}>{j.status}</span>}
-                  {j.priority==="high" && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,textTransform:"uppercase",padding:"3px 8px",borderRadius:4,background:"rgba(192,68,42,0.12)",color:"var(--danger)"}}>High Priority</span>}
-                </div>
-                <button style={{padding:"7px 14px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"var(--earth)",cursor:"pointer"}}
-                  onClick={()=>setSelected(j)}>
-                  View Job
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Upcoming jobs — collapsible */}
-      {!loading && upcomingJobs.length > 0 && (
-        <div style={{marginTop:16}}>
-          <div className="section-hd" style={{cursor:"pointer"}} onClick={()=>setUpcomingOpen(o=>!o)}>
-            Upcoming Jobs ({upcomingJobs.length})
-            <Ic n="chev" className={`chevron ${upcomingOpen?"open":""}`} style={{marginLeft:"auto",width:16,height:16}}/>
-          </div>
-          {upcomingOpen && (
-            <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)"}}>
-              {upcomingJobs.map((j,i)=>(
-                <div key={i} style={{
-                  background:"var(--bark)",borderLeft:"4px solid var(--dirt)",
-                  padding:"14px 14px 12px",
-                  borderBottom: i < upcomingJobs.length-1 ? "1px solid var(--moss)" : "none"
-                }}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-                    <div className="job-name">{j.name}</div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--sand)",flexShrink:0,marginLeft:8}}>
-                      {new Date(j.date).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}
-                    </div>
-                  </div>
-                  {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginBottom:4}}>{j.type}</div>}
-                  {j.address && <div style={{fontSize:12,color:"var(--stone)",marginBottom:8}}>{j.address}</div>}
-                  <button style={{padding:"7px 14px",background:"var(--moss)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"var(--cream)",cursor:"pointer"}}
-                    onClick={()=>setSelected(j)}>
-                    View Job
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
+// ── TRUCK HOME ── (no Jobs tab)
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
-  const [tab,      setTab]    = useState("jobs");
+  const [tab,      setTab]    = useState("home");
   const [division]            = useState(initialDivision || "");
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
 
@@ -1112,20 +848,18 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
     <div className="screen">
       <div className="topbar">
         <div className="topbar-left">
-          <div className="topbar-title">GroundForce</div>
+          <div className="topbar-title">J&amp;J &amp; Son</div>
           <div className="truck-pill"><Ic n="truck"/>{truck.label}</div>
         </div>
         <button className="logout-btn" onClick={onLogout}>Sign Out</button>
       </div>
       <div className="content" style={{padding: tab==="receipt" ? "0" : undefined}}>
-        {tab==="jobs"    && <JobsTab truck={truck}/>}
         {tab==="home"    && <HomeTab truck={truck} division={division}/>}
         {tab==="receipt" && <ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
         {tab==="tools"   && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
       </div>
       <nav className="bottom-nav">
         <button className={`bnav-btn ${tab==="home"?"active":""}`}     onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
-        <button className={`bnav-btn ${tab==="jobs"?"active":""}`}     onClick={()=>setTab("jobs")}><Ic n="clip"/>Jobs</button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`}  onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`}    onClick={()=>setTab("tools")} style={{position:"relative"}}>
           <Ic n="wrench"/>Tools
@@ -1136,146 +870,6 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
-// ── MANAGER JOBS TAB ──
-function MgrJobsTab() {
-  const [jobs,     setJobs]     = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [selected, setSelected] = useState(null);
-
-  useEffect(()=>{
-    const fetch_ = async () => {
-      try {
-        const today = new Date().toLocaleDateString("en-US",{month:"numeric",day:"numeric",year:"numeric"});
-        const res  = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/1RdaByCLstwdj0zkKfWnrExX5DWcaMFgld-H-w27BuUU/values/Jobs?key=${SHEETS_KEY}`);
-        const data = await res.json();
-        const rows = data.values || [];
-        if (rows.length < 2) { setJobs([]); setLoading(false); return; }
-        const h = rows[0].map(r=>r.trim().toLowerCase());
-        const normalizeDate = d => d.trim().replace(/^0(\d)/,"$1").replace(/\/(0)(\d)\//,"/$2/");
-        const parsed = rows.slice(1)
-          .filter(r=>{
-            const rowDate = (r[h.findIndex(x=>x.includes("date"))]||"").trim();
-            return !rowDate || normalizeDate(rowDate)===normalizeDate(today);
-          })
-          .map(r=>({
-            truck:    (r[h.findIndex(x=>x.includes("truck"))]||"").toString().trim(),
-            name:     r[h.findIndex(x=>x.includes("property")||x.includes("name"))] || "Unnamed",
-            type:     r[h.findIndex(x=>x.includes("type"))]     || "",
-            status:   (r[h.findIndex(x=>x.includes("status"))]  || "").toLowerCase(),
-            start:    r[h.findIndex(x=>x.includes("start"))]    || "",
-            duration: r[h.findIndex(x=>x.includes("duration"))] || "",
-            address:  r[h.findIndex(x=>x.includes("address"))]  || "",
-            priority: r[h.findIndex(x=>x.includes("priority"))] || "",
-            gate:     r[h.findIndex(x=>x.includes("gate")||x.includes("access"))] || "",
-            parking:  r[h.findIndex(x=>x.includes("parking"))]  || "",
-            notes:    r[h.findIndex(x=>x.includes("special"))]  || "",
-            contact:  r[h.findIndex(x=>x.includes("contact"))]  || "",
-            phone:    r[h.findIndex(x=>x.includes("phone"))]    || "",
-          }));
-        setJobs(parsed);
-      } catch(e) { console.warn(e); }
-      setLoading(false);
-    };
-    fetch_();
-  },[]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const inProgress = jobs.filter(j=>j.status==="in progress"||j.status==="active");
-  const completed  = jobs.filter(j=>j.status==="completed");
-  const pending    = jobs.filter(j=>!["in progress","active","completed"].includes(j.status));
-
-  if (selected) return (
-    <div style={{animation:"fadeUp 0.3s ease both"}}>
-      <button className="back-btn" style={{marginBottom:14}} onClick={()=>setSelected(null)}>
-        <Ic n="back"/> Back to Jobs
-      </button>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:2}}>{selected.name}</div>
-      <span className="truck-tag" style={{marginBottom:12,display:"inline-block"}}>{selected.truck}</span>
-      {selected.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",marginBottom:12,textTransform:"uppercase"}}>{selected.type}</div>}
-      {selected.address && (
-        <a href={`https://maps.apple.com/?q=${encodeURIComponent(selected.address)}`} target="_blank" rel="noreferrer"
-          style={{display:"block",background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:9,padding:"13px 15px",marginBottom:8,textDecoration:"none"}}>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Address</div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--lime)"}}>{selected.address}</div>
-        </a>
-      )}
-      {[
-        {label:"Start Time",    val:selected.start},
-        {label:"Est. Duration", val:selected.duration ? `${selected.duration} hrs` : ""},
-        {label:"Priority",      val:selected.priority},
-        {label:"Gate / Access", val:selected.gate},
-        {label:"Parking Instructions", val:selected.parking},
-        {label:"Special Instructions", val:selected.notes},
-      ].filter(s=>s.val).map(s=>(
-        <div key={s.label} className="detail-stat" style={{marginBottom:8}}>
-          <div className="detail-stat-info">
-            <div className="detail-stat-label">{s.label}</div>
-            <div className="detail-stat-val">{s.val}</div>
-          </div>
-        </div>
-      ))}
-      {(selected.contact||selected.phone) && (
-        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"13px 15px",display:"flex",alignItems:"center",gap:12}}>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:3}}>Site Contact</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{selected.contact}</div>
-            {selected.phone && <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{selected.phone}</div>}
-          </div>
-          {selected.phone && <a href={`tel:${selected.phone}`} className="call-btn"><Ic n="phone"/></a>}
-        </div>
-      )}
-    </div>
-  );
-
-  const JobRow = ({j}) => (
-    <div style={{background:"var(--bark)",borderLeft:`4px solid ${j.status==="in progress"||j.status==="active"?"var(--lime)":j.status==="completed"?"var(--mgr)":"var(--moss)"}`,
-      padding:"13px 14px 11px",marginBottom:0,borderBottom:"1px solid var(--moss)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:2}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{j.name}</div>
-        <span className="truck-tag">{j.truck}</span>
-      </div>
-      {j.type && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:13,color:"var(--cream)",marginBottom:2}}>{j.type}</div>}
-      {j.address && <div style={{fontSize:12,color:"var(--stone)",marginBottom:6}}>{j.address}</div>}
-      <button style={{padding:"6px 12px",background:"rgba(74,122,181,0.15)",border:"1px solid var(--mgr)",borderRadius:7,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,color:"var(--mgr-lt)",cursor:"pointer"}}
-        onClick={()=>setSelected(j)}>
-        View Job
-      </button>
-    </div>
-  );
-
-  if (loading) return <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1}}>Loading jobs...</div>;
-
-  return (
-    <div>
-      {inProgress.length > 0 && (
-        <>
-          <div className="section-hd" style={{color:"var(--lime)"}}>In Progress ({inProgress.length})</div>
-          <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)",marginBottom:14}}>
-            {inProgress.map((j,i)=><JobRow key={i} j={j}/>)}
-          </div>
-        </>
-      )}
-      {completed.length > 0 && (
-        <>
-          <div className="section-hd" style={{color:"var(--mgr)"}}>Completed ({completed.length})</div>
-          <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)",marginBottom:14}}>
-            {completed.map((j,i)=><JobRow key={i} j={j}/>)}
-          </div>
-        </>
-      )}
-      {pending.length > 0 && (
-        <>
-          <div className="section-hd" style={{color:"var(--stone)"}}>Pending ({pending.length})</div>
-          <div style={{borderRadius:9,overflow:"hidden",border:"1px solid var(--moss)",marginBottom:14}}>
-            {pending.map((j,i)=><JobRow key={i} j={j}/>)}
-          </div>
-        </>
-      )}
-      {jobs.length === 0 && (
-        <div style={{textAlign:"center",padding:"30px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>No jobs today</div>
-      )}
-    </div>
-  );
-}
 function MgrToolsTab({ checkouts }) {
   const allTools = TOOL_INVENTORY.flatMap(c=>c.tools.map(t=>({...t,category:c.category})));
   const totalOut = id => Object.values(checkouts).flat().filter(c=>c.toolId===id).reduce((s,c)=>s+c.qty,0);
@@ -1351,7 +945,7 @@ function MgrToolsTab({ checkouts }) {
   );
 }
 
-// ── MANAGER ZONE ──
+// ── MANAGER ZONE ── (no Jobs tab)
 const SHEETS_ID  = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
 const SHEETS_KEY = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
 
@@ -1363,7 +957,6 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
 
   const activeTrucks = Object.entries(signIns);
 
-  // Fetch today's receipts from both Receipts and Fuel Log sheets
   useEffect(()=>{
     const fetchReceipts = async () => {
       setReceiptsLoading(true);
@@ -1397,9 +990,8 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
       setReceiptsLoading(false);
     };
     fetchReceipts();
-  },[]); // eslint-disable-line react-hooks/exhaustive-deps
+  },[]);
 
-  // Get receipts for a specific truck
   const truckReceipts = (truckId) =>
     receipts.filter(r => r.truck === `Truck ${truckId}`);
 
@@ -1460,7 +1052,6 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
               </div>
             ))}
 
-            {/* Receipts & Fuel Logs */}
             <div className="section-hd" style={{marginTop:8,color:"var(--mgr)"}}>
               Receipts & Fuel Logs Today
             </div>
@@ -1487,7 +1078,6 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
               </div>
             ))}
 
-            {/* Tools */}
             <div className="section-hd" style={{marginTop:8}}>Tools Checked Out</div>
             {(checkouts[selectedTruck.truckId]||[]).length===0
               ? <div style={{fontSize:13,color:"var(--stone)",padding:"12px 0"}}>No tools checked out</div>
@@ -1505,15 +1095,12 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
         )}
 
         {tab==="tools" && <MgrToolsTab checkouts={checkouts}/>}
-        {tab==="jobs"  && <MgrJobsTab/>}
 
       </div>
+      {/* Manager nav — Fleet and Tools only */}
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
         <button className={`bnav-btn ${tab==="fleet"?"active":""}`} style={tab==="fleet"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>{setTab("fleet");setSelTruck(null);}}>
           <Ic n="truck"/>Fleet
-        </button>
-        <button className={`bnav-btn ${tab==="jobs"?"active":""}`} style={tab==="jobs"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("jobs")}>
-          <Ic n="clip"/>Jobs
         </button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`} style={tab==="tools"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("tools")}>
           <Ic n="wrench"/>Tools
@@ -1533,7 +1120,10 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   const [pin,       setPin]     = useState("");
   const [mgrPass,   setMgrPass] = useState("");
   const [error,     setError]   = useState("");
-  const [openHR,    setOpenHR]  = useState(null); // holds the HR_LINK object when open
+  const [openHR,    setOpenHR]  = useState(null);
+
+  // PIN length matches the selected truck's PIN length (1–2 digits)
+  const pinLength = selected ? selected.pin.length : 4;
 
   const handleKey = v => {
     setError("");
@@ -1544,18 +1134,15 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
       onTruckLogin(selected, division);
       return;
     }
-    if (pin.length<4) setPin(p=>p+v);
+    if (pin.length < pinLength) setPin(p=>p+v);
   };
 
   useEffect(()=>{
-    if(pin.length===4){
-      if(!selected) return;
+    if(selected && pin.length === pinLength){
       if(selected.pin !== pin){ setError("Wrong PIN — try again."); setPin(""); return; }
       onTruckLogin(selected, division);
     }
   },[pin]); // eslint-disable-line react-hooks/exhaustive-deps
-
-
 
   const tryMgr = () => {
     if (mgrPass === "ground25") onMgrLogin();
@@ -1567,10 +1154,10 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
       {/* Logo */}
       <div className="logo-wrap">
         <img className="logo-img"
-          src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjAwMCAyMDAwIiB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHhtbG5zOnNlcmlmPSJodHRwOi8vd3d3LnNlcmlmLmNvbS8iIHN0eWxlPSJmaWxsOiMzZDZiMTA7ZmlsbC1ydWxlOmV2ZW5vZGQ7Y2xpcC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjI7Ij48cGF0aCBkPSJNMTc5OC44LDc3Mi45NjNDMTc5OC44LDc3Mi45MTQgMTc5OC44LDc3Mi44NjUgMTc5OC44LDc3Mi44MTZMMTc5OC44LDc3Mi45NjFMMTc5OC44LDc3Mi45NjNaTTE3OTguOCw3NzIuOTYzQzE3OTYuNSw4MTYuNzc2IDE3OTMuNDUsODU4LjQ3MyAxNzkwLjk4LDg5NS4wMDVDMTc4OC45NCw5MjUuMjAxIDE3ODYuNDUsOTU2LjEyNiAxNzgzLjA5LDk4Ny4xODZMMTc4NC41NCw5NzEuMTU4QzE3ODQuNTQsOTcxLjE1OCAxNjM4LjE5LDkzMC45MTQgMTU2Mi41Miw5MjkuMjI1QzE1NjIuNTIsOTI5LjIyNSAxMzcyLjczLDkxMS44MTEgMTMwOC41Miw5MjUuMDMyQzEzMDguNTIsOTI1LjAzMiAxMTY2LjQ2LDkzMy4wODYgMTEyMS4xOSw5NDcuNDg4QzExMjEuMTksOTQ3LjQ4OCAxMTI3LjY5LDkzNi4wMTcgMTE5NS43LDkyMC45NjNDMTE5NS43LDkyMC45NjMgMTIxNy4wMyw4OTIuMjMzIDEyMzEuMDMsOTAzLjkwNkMxMjMxLjAzLDkwMy45MDYgMTIzNy45NSw4ODkuNTc2IDEyNDkuMTEsODk2LjM1NEMxMjQ5LjExLDg5Ni4zNTQgMTI1NS43NSw4NzIuMjYzIDEyODguNDMsODg3LjMxOUMxMjg4LjQzLDg4Ny4zMTkgMTMwNC43MSw4NzQuMTQ0IDEzMTMuMTIsODc0LjQ5NUMxMzEzLjEyLDg3NC40OTUgMTMyNi41Myw4NzUuMDY0IDEzMzMuNjcsODc0LjIzM0MxMzMzLjY3LDg3NC4yMzMgMTM1Ny4xMSw4NTAuMjgxIDEzOTQuMjIsODU3LjYwOEMxMzk0LjIyLDg1Ny42MDggMTQ1Mi44Miw4NTcuNzM0IDE0MzguMjEsODc1LjU0MkMxNDM4LjIxLDg3NS41NDIgMTUyMi44Miw4MTEuOTA2IDE0NTUuNzksNzE2LjU3MUMxNDU1Ljc5LDcxNi41NzEgMTQwMS42Nyw2NzguNTEzIDEzOTMuMDcsNjg2LjY0M0MxMzkzLjA3LDY4Ni42NDMgMTQwNi42LDcwMC4zMjMgMTM4My41MSw3MDEuNTU1QzEzODMuNTEsNzAxLjU1NSAxMzc4LjcxLDcwMi4xMDQgMTM3OC43Niw3MDQuMjY4QzEzNzguNzYsNzA0LjI2OCAxMzcwLjksNzA2LjY1IDEzNjUuNzcsNzA3LjIxM0MxMzY1Ljc3LDcwNy4yMTMgMTM2MC41NSw3MDYuNzA4IDEzNTEuODgsNzEyLjMxNUMxMzUxLjg4LDcxMi4zMTUgMTM0NS4xNyw3MTEuMzU1IDEzMzguNiw3MDguMTY4QzEzMzguNiw3MDguMTY4IDEzMzMuMDIsNzExLjM1OCAxMzE5Ljg4LDcwMC44NDVDMTMxOS44OCw3MDAuODQ1IDEzMDkuNTMsNzAzLjEyMyAxMzA0LjM2LDY5Mi40MDFDMTMwNC4zNiw2OTIuNDAxIDEzMDUuOTgsNjg3LjE0NSAxMzA5LjA1LDY4Ny45MzdDMTMwOS4wNSw2ODcuOTM3IDEzMDUuMTIsNjgzLjkyIDEyOTkuOTYsNjkxLjA5NkMxMjk5Ljk2LDY5MS4wOTYgMTI5NS42LDY5Mi41MjEgMTI5My44OSw2OTEuMzY4QzEyOTMuODksNjkxLjM2OCAxMjkwLjQyLDY5MC4zNDYgMTI3OC4zOCw2OTguMDZDMTI3OC4zOCw2OTguMDYgMTI2Ny4zMyw3MDcuMTI1IDEyNjAuMTYsNzAyLjE3QzEyNjAuMTYsNzAyLjE3IDEyNDMuNDcsNjk0Ljk0MiAxMjM2LjQxLDY4Ny40MDhDMTIzNi40MSw2ODcuNDA4IDEyMzQuNTEsNjgzLjA5NSAxMjI4LjEyLDY4OC4wNDlDMTIyOC4xMiw2ODguMDQ5IDEyMTYuNjMsNjkyLjE3MSAxMjA5LjQ2LDY4NS4wMTVDMTIwOS40Niw2ODUuMDE1IDEyMDMuNTksNjc5LjY1NiAxMTk3LjEzLDY3NS45NDdDMTE5Ny4xMyw2NzUuOTQ3IDExOTAuODUsNjY2LjAwNSAxMjAzLjksNjU2LjQwNEMxMjAzLjksNjU2LjQwNCAxMjE2Ljk0LDY0Ny41NjIgMTIxOS44OSw2NDcuNDQ1QzEyMTkuODksNjQ3LjQ0NSAxMjIzLjQ0LDYzOS4xNzcgMTIwOC42LDY0Ny4zNjNDMTIwOC42LDY0Ny4zNjMgMTIwMi4xNiw2NDUuNjI1IDExOTcuNTYsNjQwLjg2N0MxMTk3LjU2LDY0MC44NjcgMTE5MS45OCw2MzUuNjQ5IDExODQuMjcsNjM2LjI1QzExODQuMjcsNjM2LjI1IDExNzMsNjI5LjkgMTE3Mi4wNCw2MjEuNDQ2QzExNzIuMDQsNjIxLjQ0NiAxMTgwLjU3LDYwOC45NTcgMTE4OC43OCw2MDQuMzQ1QzExODguNzgsNjA0LjM0NSAxMTg2LjQyLDU4Ni42OSAxMjExLjMzLDU4NC44NDVDMTIxMS4zMyw1ODQuODQ1IDEyMzYuNjIsNTgxLjMzNiAxMjQwLjQ0LDU4Mi44ODRDMTI0MC40NCw1ODIuODg0IDEyMzUuMjIsNTc0LjExOSAxMjExLjIzLDU3Ni4xNTNDMTIxMS4yMyw1NzYuMTUzIDExODkuNDMsNTczLjMyOSAxMjIzLjc3LDU0Ni43MzdDMTIyMy43Nyw1NDYuNzM3IDEyMzguMjUsNTM5LjYzNCAxMjQ3LjM2LDUzMi4xMjNDMTI0Ny4zNiw1MzIuMTIzIDEyNDcuODksNTI3LjQ5NSAxMjc4LjM2LDUyOC4wNzNDMTI3OC4zNiw1MjguMDczIDEyODguMzQsNTI4LjAwMiAxMjk0LjYxLDUxOC4zODlDMTI5NC42MSw1MTguMzg5IDEyOTkuMTIsNTE0LjMyMiAxMzA1LjE3LDUxNy4xMjFDMTMwNS4xNyw1MTcuMTIxIDEzMjUuMDYsNTE4LjIwNiAxMzAzLjA3LDUxMi43NUMxMzAzLjA3LDUxMi43NSAxMjk0LjYzLDUxMC4xMjggMTI3OC42Niw1MjEuNzMxQzEyNzguNjYsNTIxLjczMSAxMjY5LDUyMS44ODQgMTI2NC43MSw1MTkuODQzQzEyNjQuNzEsNTE5Ljg0MyAxMjU3LjU4LDUxNy44MzMgMTI0MCw1MjEuNjY2QzEyNDAsNTIxLjY2NiAxMjIwLjYzLDUwOC44NDMgMTI0My4yMSw0OTguMTA0QzEyNDMuMjEsNDk4LjEwNCAxMjQ4LjMyLDQ5Ni45MjEgMTI0OS43MSw0ODguMjA0QzEyNDkuNzEsNDg4LjIwNCAxMjUyLjQyLDQ3NS4wNjEgMTI3MS40Myw0NzUuMDE5QzEyNzEuNDMsNDc1LjAxOSAxMjc2LjMyLDQ3Ny45MyAxMjg0LjU5LDQ2OC44OThDMTI4NC41OSw0NjguODk4IDEyOTAuNDgsNDYyLjE2IDEzMDQuMjcsNDYzLjc2OUMxMzA0LjI3LDQ2My43NjkgMTMxNS41Nyw0NjQuNzkyIDEzMjIuOTgsNDYzLjMzN0MxMzIyLjk4LDQ2My4zMzcgMTMxNy4xMSw0NTYuNjc3IDEzMDcuMzQsNDU4LjIzOUMxMzA3LjM0LDQ1OC4yMzkgMTI4Ni4zMiw0NTguNTc2IDEzMDkuMjEsNDQxLjcwNEMxMzA5LjIxLDQ0MS43MDQgMTMxOC4zNSw0NDAuMzM5IDEzMTcuNDIsNDM0LjMxQzEzMTcuNDIsNDM0LjMxIDEzMTYuMTUsNDI5LjU3NyAxMzI3LjUyLDQyMy45MkMxMzI3LjUyLDQyMy45MiAxMzM2LjczLDQxNC40NjQgMTM1Ni45MSw0MjEuNjk3QzEzNTYuOTEsNDIxLjY5NyAxMzU4Ljc5LDQyNS42OTkgMTM3MC41NCw0MTkuNDYyQzEzNzAuNTQsNDE5LjQ2MiAxMzc0LjUsNDE5LjYxOSAxMzgzLjYxLDQyMy4xNThDMTM4My42MSw0MjMuMTU4IDEzOTQuNzUsNDIwLjg4NCAxNDAwLjI4LDQyNi42NEMxNDAwLjI4LDQyNi42NCAxNDEyLjcsNDI2LjA4NCAxNDE4LjM1LDQyMy44NDFDMTQxOC4zNSw0MjMuODQxIDEzNjcuODYsNDE1LjQ2OCAxNDIyLjY5LDQwNC40NzFDMTQyMi42OSw0MDQuNDcxIDE0MjUsNDAwLjYzOCAxNDA3LjE5LDQwMS44MDZDMTQwNy4xOSw0MDEuODA2IDEzNzcuMDUsNDAyLjYxMiAxNDA3LjIsMzc3LjE4NEMxNDA3LjIsMzc3LjE4NCAxNDE2LjE0LDM2Mi41NjggMTQ0My44LDM2NC4wOTlDMTQ0My44LDM2NC4wOTkgMTQ2OC43NSwzNjQuODE4IDE0ODUuODIsMzYzLjc4MUMxNDg1LjgyLDM2My43ODEgMTQ0OS4wOSwzNTUuNTc1IDE1MDEuOSwzMzguNDY3QzE1MDEuOSwzMzguNDY3IDE1MTUuMDIsMzI2Ljc0OCAxNTM1LjQyLDMzNy45MTZDMTUzNS40MiwzMzcuOTE2IDE1NDcuMDIsMzUwLjAxOSAxNTYxLjUxLDMzOS41NDJDMTU2MS41MSwzMzkuNTQyIDE1ODIuNzMsMzMzLjI4IDE1OTYuMzUsMzQ0Ljg1MUMxNTk2LjM1LDM0NC44NTEgMTYwNy41NiwzNTUuMTc2IDE1OTguMjcsMzU2LjEzMUMxNTk4LjI3LDM1Ni4xMzEgMTU5MC45MSwzNTguNDk3IDE1ODkuNSwzNjEuOTE3QzE1ODkuNSwzNjEuOTE3IDE2MTkuMzcsMzUyLjgzOSAxNjI5Ljg3LDM2Mi42MTVDMTYyOS44NywzNjIuNjE1IDE2MzYuMzYsMzcwLjk5OSAxNjQxLjgxLDM3Mi4zMjFDMTY0MS44MSwzNzIuMzIxIDE2NjUuOTIsMzkwLjQxMyAxNjUwLjg4LDM5OS4yODZDMTY1MC44OCwzOTkuMjg2IDE2MzAuMzYsNDAyLjUxOSAxNjE4LjQ3LDQwOC4wNUMxNjE4LjQ3LDQwOC4wNSAxNjI0LjE0LDQxMS4wMTUgMTY0Mi4yMyw0MDUuMjEyQzE2NDIuMjMsNDA1LjIxMiAxNjUyLjQyLDQwNi4xNDggMTY0MC4wNiw0MTUuOTI4QzE2NDAuMDYsNDE1LjkyOCAxNjM1LjM0LDQxNi41OTEgMTY0Ni4zMyw0MTcuMjQ2QzE2NDYuMzMsNDE3LjI0NiAxNjY4LjA3LDQyMC41ODIgMTY3Ni44Nyw0MTEuOTg4QzE2NzYuODcsNDExLjk4OCAxNjg1LjcsNDAzLjk2NyAxNzAyLjUxLDQxNC42NjRDMTcwMi41MSw0MTQuNjY0IDE3MjguMDksNDIzLjk5MiAxNzI5LjgxLDQyOS4wMThDMTcyOS44MSw0MjkuMDE4IDE3MzQuNTQsNDMzLjg2MiAxNzM0LjQ0LDQzNi4zMDdDMTczNC40NCw0MzYuMzA3IDE3MzIuOTksNDQyLjA3OSAxNzQxLjAxLDQ0OC40MjdDMTc0MS4wMSw0NDguNDI3IDE3NTUuOTMsNDY1LjY4MiAxNzMzLjI3LDQ3NC43NjdDMTczMy4yNyw0NzQuNzY3IDE3MjguNDIsNDc3LjE0NCAxNzM3LjgxLDQ3OS45MDRDMTczNy44MSw0NzkuOTA0IDE3MzMuMTcsNDg3LjY4MiAxNzE3LjEzLDQ5MC45ODlDMTcxNy4xMyw0OTAuOTg5IDE3MjIuNzgsNDk3LjM4IDE3MzIuMjIsNDkwLjkyOEMxNzMyLjIyLDQ5MC45MjggMTc0MC4yNCw0ODMuMjU4IDE3NjMuNjEsNDkyLjQ4NkMxNzYzLjYxLDQ5Mi40ODYgMTc4MS44Miw0OTQuNjE0IDE3OTAuNTQsNTA4LjE4OUMxNzkwLjU0LDUwOC4xODkgMTc5NS42Miw1MjEuNzIyIDE3ODguNCw1MjYuNDI2QzE3ODguNCw1MjYuNDI2IDE3OTMuNjksNTI4LjkwNCAxNzk1LjU3LDUzMC43MjRDMTc5Ni42Nyw1MzkuODg2IDE3OTcuNjEsNTQ5LjIxNyAxNzk4LjQxLDU1OC42ODRDMTc5OC4zNSw1NTguMDYxIDE3OTguMjksNTU3LjcyNCAxNzk4LjI2LDU1Ny43NjFDMTc5OC4yNiw1NTcuNzYxIDE3OTYuNjUsNTU5LjEyIDE3OTYuNjcsNTYzLjAwNUMxNzk2LjY3LDU2My4wMDUgMTc5Mi45OCw1NzEuOTkxIDE3ODIuMTYsNTcxLjYwMkMxNzgyLjE2LDU3MS42MDIgMTc3NS4xNCw1NzEuMzc0IDE3ODcuMDQsNTc2LjMzOEMxNzg3LjA0LDU3Ni4zMzggMTc5OS4wNiw1ODMuMzA1IDE4MDAuMjMsNTg0LjQ5M0wxNzk5LjcsNjUyLjkzQzE3OTkuNyw2NTIuOTM0IDE3OTkuNjksNjUyLjkzOCAxNzk5LjY5LDY1Mi45NDJMMTc5OS43Niw2NTIuOTM3TDE3OTkuNzEsNjU3Ljc3NEwxNzk5LjY2LDY1Ny43NzJMMTc5OS41LDY3OC44NUMxNzk0LjQ4LDY4My42NTEgMTc4My4xNCw2OTIuMTUgMTc3Mi4xOSw2ODMuOTgzQzE3NzIuMTksNjgzLjk4MyAxNzY5LjE0LDY4My4xMjcgMTc2Ny43NSw2ODUuMzJDMTc2Ny43NSw2ODUuMzIgMTc1Mi41Miw2OTMuNjQ0IDE3NDAuMDEsNjkyLjg4NkMxNzQwLjAxLDY5Mi44ODYgMTczNC40Nyw2OTEuODMxIDE3MjYuOTYsNjk4LjAyN0MxNzI2Ljk2LDY5OC4wMjcgMTcxOC40Nyw3MDAuOTU3IDE3MTEuMTUsNjk0Ljg3OEMxNzExLjE1LDY5NC44NzggMTcwMS4xMSw2OTAuMTcxIDE2OTQuMzMsNjg5LjQyNEMxNjk0LjMzLDY4OS40MjQgMTcwMy4wOSw2OTcuMDk3IDE3MDEuNzEsNzAwLjkxN0MxNzAxLjcxLDcwMC45MTcgMTY5MS42Miw3MjQuMzg4IDE2NjEuMSw3MDMuMDQ1QzE2NjEuMSw3MDMuMDQ1IDE2NTguOTksNzAwLjA2MiAxNjQ3LjI4LDcwNi4wMjVDMTY0Ny4yOCw3MDYuMDI1IDE2MzYuMTMsNzEyLjg5MSAxNjE4Ljg2LDY5Ni45MTFDMTYxOC44Niw2OTYuOTExIDE2MTEuMzcsNjg5LjExNSAxNjI2LjcyLDY4OS41MzJDMTYyNi43Miw2ODkuNTMyIDE2MzcuMzIsNjgyLjczOCAxNjE3LjQ2LDY4Ny4xNTVDMTYxNy40Niw2ODcuMTU1IDE1NzIuMzEsNzAyLjQyNiAxNTYwLjcxLDcyMi43MTlDMTU2MC43MSw3MjIuNzE5IDE1MDYuMzksNzc0LjEwNCAxNTYwLjgsODY2Ljk2NUMxNTYwLjgsODY2Ljk2NSAxNTkwLjgsODk5LjQ2OCAxNTY5LjE5LDg2NS45NUMxNTY5LjE5LDg2NS45NSAxNTg1LjE4LDg0NS40NyAxNjA3LjQ1LDg1NS4yNjZDMTYwNy40NSw4NTUuMjY2IDE2MDUuOTIsODY3LjIxNiAxNjI3LjIsODQxLjY0NUMxNjI3LjIsODQxLjY0NSAxNjI2LjE4LDgzOS44NjcgMTYyOS45OCw4MzguMDUyQzE2MjkuOTgsODM4LjA1MiAxNjM1LjcsODM0LjY5NSAxNjM4LjI1LDgzMS44MTdDMTYzOC4yNSw4MzEuODE3IDE2MzcuMzUsODI3LjIzNSAxNjQ5LjE1LDgyOC45MTZDMTY0OS4xNSw4MjguOTE2IDE2NTYuNjcsODI3Ljc4OSAxNjYxLjgzLDgyMi44NzhDMTY2MS44Myw4MjIuODc4IDE2ODcuNDksODA4LjI4NiAxNjk4Ljc2LDgzNC4zODRDMTY5OC43Niw4MzQuMzg0IDE3MDEuNDQsODQ0LjM1NCAxNzA4LjQzLDgyOC40NjZDMTcwOC40Myw4MjguNDY2IDE3MTQuMzUsODEzLjA3MyAxNzIwLjQ3LDgxMS40OTJDMTcyMC40Nyw4MTEuNDkyIDE3MjguODgsODA5LjgwMiAxNzI2LjQ3LDgwMy4yNzJDMTcyNi40Nyw4MDMuMjcyIDE3MjkuMzEsNzkwLjAzMSAxNzUyLjA2LDc4OS41NDZDMTc1Mi4wNiw3ODkuNTQ2IDE3NTguMjYsNzkyLjI5NyAxNzY4LjE4LDc4My4wOTlDMTc2OC4xOCw3ODMuMDk5IDE3NzEuOSw3NzkuODA0IDE3NzkuMDMsNzc4LjI4M0MxNzc5LjAzLDc3OC4yODMgMTc4Ni44OSw3NjcuNzA2IDE3OTguOCw3NzIuOTYzWk0xNzk4LjgsNzcyLjgxNkwxODAwLjkxLDY3OC45MjRDMTgwMi4yOCw2NzcuNjEzIDE4MDEuNzcsNjc2LjUwNCAxODAyLjA2LDY3Ni4xNTlDMTgwMS43LDcwOC43MTMgMTgwMC40NSw3NDEuMzEgMTc5OC44LDc3Mi44MTZaTTE1MTkuMzIsNTk2LjAxNUMxNTE5LjMyLDU5Ni4wMTUgMTUyMy4wMiw2MTIuNDI0IDE1MjcuMSw2MTcuMDNDMTUyNy4xLDYxNy4wMyAxNTI5Ljg2LDYxMi40OTcgMTUyNi4wMiw2MDUuNDEyQzE1MjYuMDIsNjA1LjQxMiAxNTIwLjUyLDU5Ni42NjYgMTUxOS4zMiw1OTYuMDE1Wk0xNjA1LjY1LDYyOC45OTRDMTYwOS42Nyw2MjUuNjYzIDE1OTAuOTMsNjI4LjkzMiAxNTkwLjkzLDYyOC45MzJDMTU4Mi4zMiw2MjkuMjE3IDE1NzQuODgsNjM3LjM4NiAxNTc0Ljg4LDYzNy4zODZDMTU1Ni45NSw2NTIuNzAyIDE1NjkuNzYsNjUwLjc5NiAxNTY5Ljc2LDY1MC43OTZDMTU5My44Miw2NDcuOTA4IDE2MDUuNjUsNjI4Ljk5NCAxNjA1LjY1LDYyOC45OTRaTTE2NzIuMDcsNjY2LjYzMUMxNjcyLjA3LDY2Ni42MzEgMTY2Mi4yNSw2NjYuODczIDE2NjMuNzMsNjY5LjY3N0MxNjYzLjczLDY2OS42NzcgMTY2Ni4wOCw2NzEuNTk5IDE2NzMuMjIsNjcwLjUxNUMxNjczLjIyLDY3MC41MTUgMTY4MS41OSw2NjkuMTE0IDE2ODMuOTQsNjY3LjQ4QzE2ODMuOTQsNjY3LjQ4IDE2ODEuNjksNjY2LjI4NiAxNjcyLjA3LDY2Ni42MzFaTTE2NDkuMTMsNjc1Ljc1NEMxNjM4LjMyLDY3Ni4yOTQgMTY0MC45Niw2NzkuMDczIDE2NDAuOTYsNjc5LjA3M0MxNjQzLjIsNjgwLjk5IDE2NTIuMTYsNjgwLjEwMSAxNjUyLjE2LDY4MC4xMDFDMTY2Ni41Miw2NzYuNTQ1IDE2NDkuMTMsNjc1Ljc1NCAxNjQ5LjEzLDY3NS43NTRaTTEzNTMuNzksNjY1Ljk4M0MxMzU5LjY0LDY2Ny45MTEgMTM4Mi40Nyw2NzYuMTI3IDE0MDAuMzQsNjc1LjI0M0MxNDAwLjM0LDY3NS4yNDMgMTM5NC43Niw2NjUuMDgxIDEzODMuODYsNjYxLjcyN0MxMzgzLjg2LDY2MS43MjcgMTM3Mi42Miw2NTYuOTEgMTM2Ni4yOSw2NjEuNzIzQzEzNjUuNTcsNjYyLjI2MyAxMzU5Ljk1LDY2My45ODUgMTM1Ny43LDY2My45MjFDMTM1Mi44Niw2NjMuNzgzIDEzNTAuOTEsNjY1LjAzMiAxMzUzLjc5LDY2NS45ODNaTTE2NzQuNTYsNjc2LjIzN0MxNjY2LjIyLDY3Ni44MzMgMTY3NC4zMSw2NzcuNjg2IDE2NzQuMzEsNjc3LjY4NkMxNjgxLjY0LDY3Ni4zMTggMTY3NC41Niw2NzYuMjM3IDE2NzQuNTYsNjc2LjIzN1pNMTQ2NC43Nyw2MTkuOTg0QzE0NjcuMTQsNjE2LjgxNiAxNDU4Ljg5LDYxOS42OTggMTQ1OC44OSw2MTkuNjk4QzE0NDcuNjMsNjIxLjQ0MyAxNDUwLjgsNjM4LjQ1NiAxNDUwLjgsNjM4LjQ1NkMxNDQ4LjI5LDY0Ni4zNSAxNDYzLjc1LDY3Mi4xNDIgMTQ2My43NSw2NzIuMTQyQzE0ODYuMTcsNzE0LjQzNyAxNDk1LjgzLDcxNy40MjQgMTQ5NC45LDcxNi4yOTRDMTUwMi4zNSw3MDkuODg1IDE1MDksNjU0LjI0NiAxNTEwLjQxLDY1NC4xNzJDMTUwNi44NSw2MjQuNDY5IDE1MDEuOCw2MzYuMjc2IDE1MDEuOCw2MzYuMjc2QzE1MDEuMzYsNjQ2LjczNSAxNDkxLjgsNjQ1LjIzOSAxNDkxLjgsNjQ1LjIzOUMxNDg1LjE2LDY0NC44NDQgMTQ3OS4wNyw2MzcuNDQ4IDE0NzkuMDcsNjM3LjQ0OEMxNDc1Ljg0LDYzNi45OCAxNDY5LjcxLDYzMy44NzggMTQ2OS43MSw2MzMuODc4QzE0NDguNDYsNjI2LjkzNiAxNDY0Ljc3LDYxOS45ODQgMTQ2NC43Nyw2MTkuOTg0Wk0xNDE2LjE2LDYyMy45NzdDMTQxNi4xNiw2MjMuOTc3IDE0MDQuNjcsNjE5LjU4NyAxNDE2Ljk2LDYyOC4xMzNDMTQxNi45Niw2MjguMTMzIDE0MjQuNTUsNjMzLjM2MiAxNDI3LjYyLDYzNC4wODRDMTQyNy42Miw2MzQuMDg0IDE0MjkuNTgsNjMzLjEyOSAxNDMzLjQ1LDYzOC45OTFDMTQzMy40NSw2MzguOTkxIDE0MzcuNzgsNjQ4LjYzNSAxNDQwLjE5LDYzNy45ODdDMTQ0MC4xOSw2MzcuOTg3IDE0NDEuODEsNjI5LjU5NiAxNDQxLjQxLDYyNC4yMDdDMTQ0MS40MSw2MjQuMjA3IDE0NDAuOTEsNjE5LjAxOCAxNDM0LjUyLDYxOS40OThDMTQzNC41Miw2MTkuNDk4IDE0MjQuOTEsNjE5LjEwNiAxNDI2LjkzLDYyNC4yNjFDMTQyNi45Myw2MjQuMjYxIDE0MjguNzMsNjMxLjA3NiAxNDI3LjgzLDYzMS4zOTNDMTQyNy44Myw2MzEuMzkzIDE0MjAuOTEsNjI1LjI3MSAxNDE2LjE2LDYyMy45NzdaTTE2NjAuMjcsNjQ3Ljk1OEMxNjU4LjA5LDY0Ni4yMzQgMTY1MC4zNiw2NTQuMDc1IDE2NTAuMzYsNjU0LjA3NUMxNjQ0Ljk4LDY1Ny45MjUgMTYzMS44Miw2NTguOTQ4IDE2MzEuODIsNjU4Ljk0OEMxNjI4Ljk1LDY1OC45OTkgMTYxNS43NCw2NjIuMDE0IDE2MTUuNzQsNjYyLjAxNEMxNjA0LjE5LDY2OS40OTEgMTYwMy4zMSw2NzkuNTE5IDE2MDMuMzEsNjc5LjUxOUMxNjE0LjcsNjc5LjIzNyAxNjQ0Ljc4LDY2My4xMjEgMTY0NC43OCw2NjMuMTIxQzE2NTMuNjYsNjU3LjYzNiAxNjYwLjI3LDY0Ny45NTggMTY2MC4yNyw2NDcuOTU4Wk0xNTc1LjgzLDYxNS42MjRDMTU3NS41Myw2MTQuNDAyIDE1NzIuMTcsNjE5LjgyNiAxNTcyLjE3LDYxOS44MjZDMTU2NC45OCw2MzAuNTM0IDE1NjguMTYsNjMxLjA2NiAxNTY4LjE2LDYzMS4wNjZDMTU3Mi4wOSw2MzAuMzE0IDE1NzUuMTUsNjIyLjA4NSAxNTc1LjE1LDYyMi4wODVDMTU3NS43Miw2MTkuMzQ2IDE1NzUuODMsNjE1LjYyNCAxNTc1LjgzLDYxNS42MjRaTTE2OTAuNDUsNjQ4LjAwOEMxNjg4LjgyLDY0Ny42NTIgMTY4NCw2NTEuNjk2IDE2ODQsNjUxLjY5NkMxNjgwLjcxLDY1Mi42NTkgMTY3My45OCw2NTUuNjA0IDE2NzMuOTgsNjU1LjYwNEMxNjY5Ljk0LDY1Ni4xOTUgMTY2MC44OSw2NjIuNjU3IDE2NjAuODksNjYyLjY1N0MxNjUzLjk1LDY2OC42NDIgMTY2My4xNSw2NjUuMjc2IDE2NjMuMTUsNjY1LjI3NkMxNjYzLjM3LDY2MS44NCAxNjcyLjU0LDY2MC40NTUgMTY3Mi41NCw2NjAuNDU1QzE2NzYuMDgsNjU5LjU4OSAxNjgzLjYsNjU0LjUzOSAxNjgzLjYsNjU0LjUzOUMxNjg1Ljk0LDY1My4wNTggMTY5MC40NSw2NDguMDA4IDE2OTAuNDUsNjQ4LjAwOFpNMTM1MS40NSw2NTAuOTk2QzEzNTEuNDUsNjUwLjk5NiAxMzU4LjcxLDY1Ni4xNDYgMTM2NC45OSw2NTYuMjA4QzEzNjQuOTksNjU2LjIwOCAxMzY3Ljg2LDY1Ni4xNzQgMTM2MS45OCw2NTMuMDkyQzEzNjEuOTgsNjUzLjA5MiAxMzQ5LjY3LDY0OC43NDggMTM1MS40NSw2NTAuOTk2Wk0xNTM1Ljc1LDY2MC40MDJDMTU0Mi44OCw2NTYuNjQ1IDE1NjEuMSw2MjkuODc5IDE1NjEuMSw2MjkuODc5QzE1NjUuMjQsNjE0LjU3NCAxNTU5LjY3LDYxNy45OCAxNTU5LjY3LDYxNy45OEMxNTUwLjU5LDYxOS4wMSAxNTQ3LjY5LDYxMi4wMzQgMTU0Ny42OSw2MTIuMDM0QzE1NDYuNTYsNTk3LjQzMiAxNTQxLjk5LDYwNi41MzQgMTU0MS45OSw2MDYuNTM0QzE1MzMuOTksNjIzLjY3NyAxNTM1Ljc1LDY2MC40MDIgMTUzNS43NSw2NjAuNDAyWk0xMzkyLjUzLDY0My4wNzdDMTM3OC4xMiw2MzEuNTE5IDEzOTEuMDgsNjQ2LjIzNyAxMzkxLjA4LDY0Ni4yMzdDMTQwOS41LDY2Mi4yODQgMTM5Mi41Myw2NDMuMDc3IDEzOTIuNTMsNjQzLjA3N1pNMTY5NC41MSw2NTcuODQ1QzE2OTIuOTIsNjU4LjA5NyAxNjg4LjIzLDY1OS44MiAxNjg4LjIzLDY1OS44MkMxNjc5LjY4LDY2My4zNDEgMTY4Ni43Miw2NjMuNDIzIDE2ODYuNzIsNjYzLjQyM0MxNjkxLjU1LDY2My4wOTYgMTcwMC45Nyw2NTguOTc0IDE3MDAuOTcsNjU4Ljk3NEMxNzA2LjEzLDY1Ni4zODIgMTY5NC41MSw2NTcuODQ1IDE2OTQuNTEsNjU3Ljg0NVpNMTM3Ny45Miw2NDMuMzk5QzEzNzUuNzEsNjQyLjk3MyAxMzczLjA3LDY0NC40MjIgMTM3My4wNyw2NDQuNDIyQzEzNjguNjUsNjQ2LjgwNSAxMzc3LjMyLDY0OC45NjEgMTM3Ny4zMiw2NDguOTYxQzEzODQuNTEsNjUwLjc0NSAxMzg0LjIzLDY0OC40MjQgMTM4NC4yMyw2NDguNDI0QzEzODMuNyw2NDMuMjQgMTM3Ny45Miw2NDMuMzk5IDEzNzcuOTIsNjQzLjM5OVpNMTQ5Mi41OCw1ODYuODYzQzE0OTIuNTgsNTg2Ljg2MyAxNTA5LjIyLDYwNS4zNyAxNTAzLjEsNjA3Ljk3N0MxNTAzLjEsNjA3Ljk3NyAxNTAxLjIsNjA4LjY5OCAxNDk5LjcyLDYwOC44NThDMTQ5OS43Miw2MDguODU4IDE0OTguNjEsNjExLjU5MiAxNTEwLjIxLDYxNy4xMDNDMTUxMC4yMSw2MTcuMTAzIDE1MTMuNTUsNjE3LjQxNyAxNTA3LjY0LDYwNC44NjlDMTUwNy42NCw2MDQuODY5IDE1MDAuNTEsNTkxLjA4OCAxNDkyLjU4LDU4Ni44NjNaTTE0MDUuMjcsNjU3LjA4NEMxNDAzLjgxLDY1OC45MTEgMTQyMi41LDY3OC43MzIgMTQyMi41LDY3OC43MzJDMTQyNS4zNSw2ODIuNzYyIDE0NTkuMyw3MDEuMzI1IDE0NTkuMyw3MDEuMzI1QzE0NTguNCw2OTAuNTg1IDE0MzguMTksNjYwLjk5MSAxNDM4LjE5LDY2MC45OTFDMTQzNi4zMiw2NTQuOTUyIDE0MDUuMjcsNjU3LjA4NCAxNDA1LjI3LDY1Ny4wODRaTTEzOTUuMTcsNjM1LjY0NkMxMzk0LjExLDYzNS41MTIgMTQwNi4xLDY0Ny4wNTggMTQwNi4xLDY0Ny4wNThDMTQxNi45Niw2NTMuNTAzIDE0MjMuNjUsNjQ4LjI1OCAxNDIzLjY1LDY0OC4yNThDMTQyMy43Myw2MzkuMzE4IDEzOTUuMTcsNjM1LjY0NiAxMzk1LjE3LDYzNS42NDZaTTE1MzUuMTYsNzIxLjY1NEMxNTM2LjAyLDcxNy44OSAxNTY1LDY5OC4zMDQgMTU2NSw2OTguMzA0QzE1NzAuOTEsNjk1LjAzMiAxNTg0LjU5LDY4Mi45NTEgMTU4NC41OSw2ODIuOTUxQzE1OTAuOCw2NzcuMDQyIDE2MDIuMzEsNjYwLjY1NiAxNjAyLjMxLDY2MC42NTZDMTU5Ny42LDY2MS44MzcgMTU5MS4wNyw2NjAuODI0IDE1OTEuMDcsNjYwLjgyNEMxNTg2LjkyLDY1NS4wNDIgMTU4NC41LDY1OC4wODMgMTU4NC41LDY1OC4wODNDMTU2Ny40NSw2NjAuMTgzIDE1NTYuNTgsNjY3LjY1MiAxNTU2LjU4LDY2Ny42NTJDMTUzMy45OCw2ODMuMTEyIDE1MzQuOTgsNzE3Ljg0OCAxNTM1LjE2LDcyMS42NTRaTTE1MzUuMTYsNzIxLjY1NEMxNTM1LjEzLDcyMS43ODggMTUzNS4xNCw3MjEuOTAyIDE1MzUuMTgsNzIxLjk5NEMxNTM1LjE4LDcyMS45OTQgMTUzNS4xOCw3MjEuODc3IDE1MzUuMTYsNzIxLjY1NFpNMTYyNi44Miw2NTIuMjc5QzE2MjYuODIsNjUyLjI3OSAxNjM1LjYxLDY1MS41NjkgMTYzOC4wOCw2NTAuNjE1QzE2MzguMDgsNjUwLjYxNSAxNjQwLjA4LDY1MC4xMzQgMTYzOS41Myw2NDcuNzk5QzE2MzkuNTMsNjQ3Ljc5OSAxNjM5LjI0LDY0NS4yOCAxNjMzLjc0LDY0OC40N0MxNjMzLjc0LDY0OC40NyAxNjI3LjU4LDY1MS41MjggMTYyNi44Miw2NTIuMjc5Wk0yMDEuMTQyLDYzNC4xNEMyMDIuNTk4LDU0MS42NjYgMjEzLjE2NCw0NTMuNTUyIDI0NC42MDEsMzk2LjM5NkMzMDYuOTE3LDI4My4wOTggNDU5LjczOSwyMzcuNTU4IDU4Ni44MzcsMjEzLjc2N0M2MTcuMjA1LDIwOC4wODIgNjQ5LjUwMywyMDIuMTIyIDY4My43LDE5Ni40MjVMNjgzLjQ0NywxOTUuMTUzQzg1Ni4xMDQsMTYwLjM5MyAxMTE2LjQsMTUxLjM3MyAxMzE3LjU5LDE4OS41MTRDMTI3My4zOCwyMTEuNjM5IDg2NC44OSw0MjAuOTc4IDc2Mi43OTYsNjUyLjAzN0M3NjIuNzk2LDY1Mi4wMzcgNzY3LjczOSw2NTAuNzY2IDcxMC44NDMsNjcyLjU0OUM3MTAuODQzLDY3Mi41NDkgNTkyLjU1NSw3MzQuNTgyIDU3MC40NDQsODU5LjU3OUM1NzAuNDQ0LDg1OS41NzkgNjM4LDY5MS41MzYgODE1Ljk1LDY3Ni42MzRDODE1Ljk1LDY3Ni42MzQgNTUxLjU3NCw3OTUuNDg1IDU0NS43MTQsMTAwMEw1NTQuNjE3LDEwMDcuMDZDNTQ2LjMwNCwxMDAxLjE3IDUzNy44NTgsOTk1LjM0OCA1MjkuMjc2LDk4OS42MTRDNTMwLjczMSw5NzIuMjIxIDU0MS4wNDMsODU5LjMxMSA1NjYuNjQyLDgxOS4xNzRDNTY2LjY0Miw4MTkuMTc0IDYwMi4zMTMsNzAyLjAxNCA2NTMuNDgzLDYzNy4yMDFDNjUzLjQ4Myw2MzcuMjAxIDcyMi4zMDksNTM4LjMxOCA3NTIuNjg1LDUxMi42MjZDNzU4Ljk2Niw1MDguNjg1IDc2Mi41Nyw1MDYuNjUzIDc2Mi41Nyw1MDYuNjUzQzc2MC4xMzgsNTA3LjA1MyA3NTYuNzU3LDUwOS4xODEgNzUyLjY4NSw1MTIuNjI2QzcxNi40OTIsNTM1LjMzNiA1OTEuNDIyLDYyMS40NjIgNTU1LjA3LDc0Ny42OTJDNTU1LjA3LDc0Ny42OTIgNTU4LjAxNyw2ODIuOTI0IDYxMC45MzcsNTkzLjM4OUM2MTAuOTM3LDU5My4zODkgNTU4Ljc5Miw2MzcuMzk1IDUzNi4yMzMsNzIwLjY4N0M1MzYuMjMzLDcyMC42ODcgNDkxLjA5OCw3OTEuNjIyIDUwNy4yMzksOTE1Ljk1NkM1MDcuMjM5LDkxNS45NTYgNTE4LjU4OCw5NjIuNzA4IDUxOS44NjgsOTgzLjM5N0M0OTkuNzk4LDk3MC4yODIgNDc4Ljk5OSw5NTcuNjIyIDQ1Ny40NDcsOTQ1LjQ4OUM0NTguMjIxLDkzMS44ODIgNDY2Ljk1Miw3OTAuNjYzIDQ5OC4zMjQsNzQ4LjcyM0M0OTguMzI0LDc0OC43MjMgNTYwLjcxMyw2MDMuODY2IDYxOS4wMDEsNTYwLjk4NEM2MTkuMDAxLDU2MC45ODQgNzI5Ljk3LDQ0Ni44ODkgNzk2LjY2Myw0MjkuMDg1Qzc5Ni42NjMsNDI5LjA4NSA2ODQuMzI0LDQ0NS4wMTMgNjE2Ljg0Nyw1MTEuNDcxQzYxNi44NDcsNTExLjQ3MSA1MjEuMjEyLDU4NC44NiA0ODQuNjIyLDY5OS41NjRDNDg0LjYyMiw2OTkuNTY0IDQzMy45NzYsODMwLjM3MyA0NTAuMDM3LDk0MS4zNTVDNDIwLjgzNSw5MjUuMjA4IDM5MC4yNjgsOTEwLjAyNSAzNTguMjc1LDg5NS45NzZMMzY3LjY3Niw4OTkuMjFDMzY4LjQ2Myw4NTQuMDU5IDMxNi44NjUsNzQ3LjQ3MyAzMTYuODY1LDc0Ny40NzNDMjgzLjA4NCw2ODguOTQ0IDIwMS4xNDIsNjM0LjE0IDIwMS4xNDIsNjM0LjE0Wk0yMDEsNjY4Ljk0MkMyMDAuOTIsNjU3LjMwOCAyMDAuOTYsNjQ1LjY5IDIwMS4xNDIsNjM0LjE0TDIwMSw2NjguOTQyWk0yMDEsNjY4Ljk0MkMyNzguODkzLDczMS40MzkgMzQ0LjUxNCw4NDUuNjk5IDM0NC41MTQsODQ1LjY5OUMzNjQuMTA2LDg5MS40NjggMzU5LjUzLDg5NS41NDMgMzU3LjIyNiw4OTUuNTE2QzMxMC45MjgsODc1LjI0IDI2MS42NDksODU3LjMzNyAyMDkuMjEsODQyLjMxN0wyMTAuNzYzLDg3NC44MDZDMjA2LjU2Niw4MTMuNzkyIDIwMS40OTMsNzQxLjA1NyAyMDEsNjY4Ljk0MlpNNzAzLjQxMywyNjguOTI0QzY4NC45NTIsMjc5Ljg5OCA1ODIuMjY4LDM0Mi42NTYgNTUwLjk5LDM5OS4wMjhDNTUwLjk5LDM5OS4wMjggNDcyLjExNSw1MDIuMDggNDcwLjE5OSw1MzMuMTIzQzQ3MC4xOTksNTMzLjEyMyA0MjcuNzQ0LDYyNy44ODYgNDMwLjk0OSw2NzIuNkM0MzAuOTQ5LDY3Mi42IDQwOC43NDUsNzk0LjUyNiA0MjguNTU4LDgyOC45MjhDNDI4LjU1OCw4MjguOTI4IDQ0Mi42MzcsNjg3Ljk0NiA0ODAuMzU1LDY0Ny4zNTJDNDgwLjM1NSw2NDcuMzUyIDUxMy4zLDU3NS4zODYgNTUyLjQzMyw1NDEuOTYxQzU1Mi40MzMsNTQxLjk2MSA1NzEuOTIxLDUxMC4wMTcgNTc2LjQxNyw1MDYuMzg0QzU3Ni40MTcsNTA2LjM4NCA1MzYuMDMzLDUzNS40ODEgNTI4LjkzOCw1NTUuNDE1QzUyOC40MzMsNTU3LjE1OSA1MjguMTgxLDU1OC4wODcgNTI4LjE4MSw1NTguMDg3QzUyOC4zNTksNTU3LjIxOCA1MjguNjE0LDU1Ni4zMjYgNTI4LjkzOCw1NTUuNDE1QzUzNC40MTYsNTM2LjQ4MSA1NjkuNjA4LDQyMS4zNDggNjMzLjk5NCwzNTIuOTU5QzYzMy45OTQsMzUyLjk1OSA2ODguNDc2LDI4MC45NSA3MDMuNDEzLDI2OC45MjRaTTcwMy40MTMsMjY4LjkyNEM3MDUuMjY1LDI2Ny44MjQgNzA2LjI3LDI2Ny4yNDQgNzA2LjI3LDI2Ny4yNDRDNzA1LjYyOCwyNjcuMzM2IDcwNC42NTgsMjY3LjkyMiA3MDMuNDEzLDI2OC45MjRaTTQxOS4zNzgsOTEwLjAyQzQxNS40MDQsODk5LjcwMSAzODUuOTc3LDc5OS4wNjUgMzg1Ljk3Nyw3OTkuMDY1QzM3My45NjEsNzc1Ljg4MyAzNjQuNzQsNjc3LjU3MSAzNjQuNzQsNjc3LjU3MUMzNTEuMjcyLDU5Ny44NzYgMzU1LjQxMiw1MjAuODI0IDM1NS40MTIsNTIwLjgyNEMzNDcuOTksNDk0LjYzNiAzNjcuNDMxLDM0Ni40MTMgMzY3LjQzMSwzNDYuNDEzQzM2MS44MDYsMzQ4LjA1NyAzNDguMzYyLDQwNy4wMTQgMzQ4LjM2Miw0MDcuMDE0QzMzMS4zMjUsNDU4LjE5OSAzMzIuMjM5LDU3OC44MjQgMzMyLjIzOSw1NzguODI0QzMyOS41MzIsNTk3LjIxNyAzMzUuMjA2LDY3MS43MjkgMzM1LjIwNiw2NzEuNzI5QzMyOS4zMDUsNjUxLjk1OCAyODguNDE2LDU2OC42NTQgMjg4LjQxNiw1NjguNjU0QzI4Mi4zNTQsNTY5LjUyNyAzMTkuMjU4LDY5NC43MTIgMzE5LjI1OCw2OTQuNzEyQzMxNy40OTMsNzEwLjgzIDM1OC44MjYsNzg3LjcyIDM1OC44MjYsNzg3LjcyQzM2MC43MTQsODEzLjA0MiA0MTkuMzc4LDkxMC4wMiA0MTkuMzc4LDkxMC4wMlpNNDY2LjE3MSwzODcuOTc0QzQ2NS42MjEsMzY2LjU2NyA0MTIuNTc1LDQ4MS4wMTYgNDEyLjU3NSw0ODEuMDE2QzM2Ny4wMTQsNTY1Ljk0NiAzODQuNzgxLDY5NC45NCAzODQuNzgxLDY5NC45NEMzODcuMDIsODE2LjUyNCA0MTAuNzQ2LDgzNi4xOTkgNDEwLjc0Niw4MzYuMTk5QzM5NS44NTIsNzE1Ljk3OCA0MTMuMTY4LDY1Ni4zNCA0MTMuMTY4LDY1Ni4zNEM0MTQuNTU3LDYyMy4yOTEgNDM0LjAyMiw1NTIuNDUgNDM0LjAyMiw1NTIuNDVDNDM3LjcwMiw0ODguMzU1IDQ2Ni4xNzEsMzg3Ljk3NCA0NjYuMTcxLDM4Ny45NzRaTTEyODkuNCwxMDEzLjdDMTI5MS43MywxMDEzLjM2IDEyOTMuMzIsMTAxMy4yMSAxMjk0LjAxLDEwMTMuM0wxMjg5LjQsMTAxMy43Wk0xMjg5LjQsMTAxMy43QzEyNjQuODEsMTAxNy4yOSAxMTU3Ljk4LDEwNDIuNjMgMTE1Ny45OCwxMDQyLjYzQzExNTMuNiwxMDQxLjQ1IDExNDkuMTQsMTAyNi4wMyAxMTQ5LjE0LDEwMjYuMDNDMTE5Ni44NiwxMDE3LjQ2IDEzMTYuNDYsMTAwNy4xNSAxMjg5LjQsMTAxMy43Wk0xNzc3LjYsMTAzMS43NkwxNzgyLjc1LDk5MC4yOTFDMTc4MS4yMywxMDA0LjA5IDE3NzkuNTIsMTAxNy45NCAxNzc3LjYsMTAzMS43NlpNMTc3Ny4zMiwxMDMzLjc3TDE3NzcuNiwxMDMxLjc2TDE3NzcuMzUsMTAzMy43N0wxNzc3LjMyLDEwMzMuNzdaTTE3NzcuMzIsMTAzMy43N0MxNzY0LjI4LDExMjYuNjggMTc0MS41LDEyMTguNjggMTY5OC4wMywxMjkyLjU0QzE2MzIuNTYsMTQwMy43NyAxNTA2LjgsMTQ4My4xNSAxMzk4LjE3LDE1NjIuNDJDMTI5NC42LDE2MzguMDEgMTE2NS42NCwxNzA0LjkgMTA0NS4zNSwxNzc0Ljc3TDEwNDguODksMTc3Mi42NUMxMDQ4Ljg5LDE3NzIuNjUgOTg4LjY2MiwxNDQwLjY1IDczMS40NjMsMTE2Mi43QzczNC4xODEsMTEzNS44OSA3NDYuODgyLDEwMzguMDYgNzg4LjUyLDEwMjQuOEM3ODguNTIsMTAyNC44IDgyMS4yNSwxMDA3Ljc4IDg1NS44MzcsOTgyLjE5OUM4NTUuODM3LDk4Mi4xOTkgODcyLjkzLDk1OC4wNTYgODk1LjgxNCw5NTguNjQzQzg5NS44MTQsOTU4LjY0MyA4OTcuOTkxLDkyOC4yMjQgODk0LjY5OSw5MjQuNjVDODk0LjY5OSw5MjQuNjUgODg5LjI4Myw5MTQuMzI5IDg3Ny43ODYsOTAxLjA4NkM4NzcuNzg2LDkwMS4wODYgODY5LjcxOSw4OTEuMjg2IDg2NC40MzMsODc2LjY4M0M4NjQuNDMzLDg3Ni42ODMgODYyLjI1Miw4NzEuOTk2IDg2My42MTYsODY5LjEwNkM4NjMuNjE2LDg2OS4xMDYgODYzLjk5Miw4NTkuOTUyIDg1OC4wODksODU3LjA0MUM4NTguMDg5LDg1Ny4wNDEgODQwLjQ4NSw4MzguNjA2IDg0NS40OTEsODEwLjY1NkM4NDUuNDkxLDgxMC42NTYgODQ3LjM3NSw3ODQuNjMyIDg2NS4zOTUsNzY3LjcyOUM4NjUuMzk1LDc2Ny43MjkgODgxLjE2Myw3NDguODYzIDkwNC40ODcsNzQzLjI2NEM5MDQuNDg3LDc0My4yNjQgOTI2LjI1OSw3MzAuOTg0IDk0MS45ODQsNzM0LjA0NUM5NDEuOTg0LDczNC4wNDUgOTU3LjQzLDczMC4zNDEgOTkzLjEwMyw3NTIuMzI2Qzk5My4xMDMsNzUyLjMyNiAxMDI2LjE2LDc0NS42MDggMTAzNS4wOCw3NTEuNDA0QzEwMzUuMDgsNzUxLjQwNCAxMDYxLjUyLDc3My4yNDcgMTAwOS44Nyw3OTQuOTAyQzEwMDkuODcsNzk0LjkwMiAxMDA1LjUxLDc5Mi44NTUgMTAxMiw4MDcuNjFDMTAxMiw4MDcuNjEgMTAxNi40NSw4MTguODM2IDEwMTcuNzYsODcwLjI2OEMxMDE3Ljc2LDg3MC4yNjggMTAyMC4zMiw5NDEuNDQ1IDk4Ny4zNjEsOTI5Ljk0OEM5ODcuMzYxLDkyOS45NDggOTg0LjgzNCw5NjkuODMzIDk4Ni42NjksOTczLjMxN0M5ODYuNjY5LDk3My4zMTcgMTAyMy4yNSw5NzguOTQ1IDExMDYuNzUsMTAzNi40M0MxMTA2Ljc1LDEwMzYuNDMgMTE0NS45MywxMTE0LjMyIDExNjMuNzMsMTIwMi43MkMxMTYzLjczLDEyMDIuNzIgMTE4Mi43NiwxMjI5LjQyIDExNTkuNjMsMTI0OS4xOEMxMTU5LjYzLDEyNDkuMTggMTE4OS4yNywxMzMwLjgxIDExODIuOTUsMTM2OC4zN0MxMTgyLjk1LDEzNjguMzcgMTE4MS40OCwxNTI3LjYyIDExODIuMjgsMTUzNi43MkMxMTgyLjI4LDE1MzYuNzIgMTE4NC4wNywxNTc5LjI3IDExNTcuNTEsMTYxOC44MkwxMTY1LDE2MjguNzlDMTE2NSwxNjI4Ljc5IDEyMTcuNjUsMTU4MC41IDEyMTMuOCwxNTY1LjM1QzEyMTMuOCwxNTY1LjM1IDEzMjUuNDgsMTM4Ny41OSAxNDI2LjI2LDEzMTkuMTFDMTQyNi4yNiwxMzE5LjExIDE1NTUuMTYsMTE5MC4yMSAxNTk3LjY2LDExNzAuMjdDMTU5Ny42NiwxMTcwLjI3IDE3NDIuMTgsMTA2OSAxNzU5Ljc5LDEwNjUuOTlDMTc1OS43OSwxMDY1Ljk5IDE2NjkuMDcsMTA4MS4xNiAxNTUyLjU0LDExNjUuOTFDMTU1Mi41NCwxMTY1LjkxIDE0MjEuNzgsMTI0My4wOSAxMzE3LjI4LDEzNzguNjdDMTMxNy4yOCwxMzc4LjY3IDEyMjIuNDEsMTUwMy4zIDEyMTUuOTcsMTUyMy44M0MxMjE1Ljk3LDE1MjMuODMgMTIyMS41NiwxMzQ1LjA3IDEyMjEuMDIsMTMyMC44M0MxMjIxLjAyLDEzMjAuODMgMTI3MC45NiwxMjYwLjU4IDEzNTYuOTYsMTIwMC43NkMxMzU2Ljk2LDEyMDAuNzYgMTU0OS40MywxMDU1LjE3IDE3NzcuMzIsMTAzMy43N1pNMTc4Mi43NSw5OTAuMjkxQzE3NzkuNzIsOTkwLjYwMiAxNjU5LjMsMTAwMy4xMSAxNTU2LjQzLDEwMzkuNjZDMTU1Ni40MywxMDM5LjY2IDEzNTguMzgsMTEwMC4wOCAxMjA4LjUzLDEyMTEuNTNDMTIwOC41MywxMjExLjUzIDExOTcuMDUsMTE4Ny44MyAxMTg5LjU5LDExNDguNDRDMTE4OS41OSwxMTQ4LjQ0IDEyNDIuMzUsMTE0My44MyAxMjU5LjQ0LDExMzUuMDZDMTI1OS40NCwxMTM1LjA2IDEyMzIuODcsMTEzMS4yMSAxMTg5Ljg3LDExMzcuNUMxMTg5Ljg3LDExMzcuNSAxMTg0LjU1LDExMzEuNzcgMTE4Mi4wOSwxMTE3LjY2QzExODIuMDksMTExNy42NiAxMzM3LjY5LDEwNjMuOSAxNDQ4LjkyLDEwNTQuOEMxNDQ4LjkyLDEwNTQuOCAxMzE2LjI3LDEwNDguODMgMTE3NC43MiwxMDgyLjUyTDExNzAuNjgsMTA3Ny41OEMxMTcwLjY4LDEwNzcuNTggMTM2MC42LDEwMDcuMjcgMTUzNC42MiwxMDEzLjIzQzE1MzQuNjIsMTAxMy4yMyAxMzQzLjQ0LDk1Ny4yNTEgMTEyMy45LDEwMDBDMTEyMy45LDEwMDAgMTExMC4yMiw5OTYuNTM5IDExMzIuNDgsOTkzLjA2N0MxMTMyLjQ4LDk5My4wNjcgMTM1NS43LDk1NS4xNTEgMTM0Ny43MSw5NjQuMDEzQzEzNDcuNzEsOTY0LjAxMyAxMjg3Ljg0LDk4Ni45MTQgMTM0OC44Miw5NzIuNzI0QzEzNDguODIsOTcyLjcyNCAxNTU5Ljg1LDkzMS4wNDYgMTc4Mi43Niw5OTAuMjdMMTc4Mi43NSw5OTAuMjkxWk0xMDYwLjk1LDExOTIuMzJDMTA2MS4wNywxMTgyLjI3IDEwNjEuNTYsMTE3NS43NCAxMDYxLjU2LDExNzUuNzRDMTA2MC4yOCwxMTgwLjAyIDEwNjAuMTksMTE4NS43MyAxMDYwLjk1LDExOTIuMzJaTTEwNjAuOTUsMTE5Mi4zMkMxMDYwLjcyLDEyMTIuNzggMTA2Mi4wMSwxMjQ3LjgyIDEwNzIuMDgsMTI3Mi4xMUMxMDcyLjA4LDEyNzIuMTEgMTA2NS4yNiwxMzI2LjQyIDEwNzcuNTMsMTM0Ni4yM0MxMDc3LjUzLDEzNDYuMjMgMTA5Mi40OCwxNDIyLjcgMTA5NS4yOSwxNDQ5LjA4QzEwOTUuMjksMTQ0OS4wOCAxMTA3LjYxLDE1NzcuMjkgMTEyNC40NSwxNTc1LjUyQzExMjQuNDUsMTU3NS41MiAxMTEzLjQ4LDE1MTkuODEgMTEzNy43MiwxNTA3LjIzQzExMzcuNzIsMTUwNy4yMyAxMTI3LjI2LDE0NTEuMDkgMTEyOC42NCwxNDI5LjExQzExMjguNjQsMTQyOS4xMSAxMTAzLjM3LDEzNzEuMjEgMTEwMS42MSwxMzUzLjI1QzExMDEuNjEsMTM1My4yNSAxMDkwLjA2LDEzMDEuMyAxMDkzLjg4LDEyODguOEMxMDkzLjg4LDEyODguOCAxMDY1LjA3LDEyMjcuODEgMTA2MC45NSwxMTkyLjMyWk0xODAwLjI5LDY1Ny4zMTZMMTgwMC4yNCw2NTcuMzQ1TDE4MDAuMjQsNjU3LjMzNEwxODAwLjI5LDY1Ny4zMTZaTTE3OTUuNDcsNTI5Ljg5OUwxNzk1LjQ5LDUzMC4wNTNMMTc5NS40Nyw1MjkuODkzTDE3OTUuNDcsNTI5Ljg5OVpNNjk5Ljk4MiwxMTI5Ljk3QzY1Ny45MzksMTA4Ny45MSA2MTEuMDk2LDEwNDcuNTEgNTU4Ljk1NSwxMDEwLjE1QzU2MS4yODEsMTAwMi42NyA2MTAuMzkyLDg0Ny4wMjcgNjgyLjEyNiw4MTAuNDcyQzY4Mi4xMjYsODEwLjQ3MiA2NTMuMjYxLDkxOS45ODcgNjQ0LjExNiw5MzguMjE5QzY0NC4xMTYsOTM4LjIxOSA1NTEuOTU3LDk5NS4xOCA2NjYuMTM5LDk0OC4zNDlDNjY2LjEzOSw5NDguMzQ5IDY5NC4zOTYsOTQ0Ljc0MyA3MDQuNTU4LDk1MS45MkM3MDQuNTU4LDk1MS45MiA2MjQuNDkzLDk2OS43MDUgNTg5Ljk2MSwxMDAwQzU4OS45NjEsMTAwMCA2NzQuMzYyLDk2MC4yMjUgNzY3LjQzMiwxMDAwQzc2Ny40MzIsMTAwMCA3MjguMDc0LDEwMTAuMjEgNzIyLjQ4OCwxMDQ5Ljk2QzcyMi40ODgsMTA0OS45NiA3MDQuNDYsMTA2NS45MSA2MzIuNTE3LDEwMzEuODRDNjMyLjUxNywxMDMxLjg0IDY1Mi43OSwxMDU5LjczIDcwMy44MSwxMDgxLjkxQzcwMy44MSwxMDgxLjkxIDcwMi41NjIsMTExNS4xOCA2OTkuOTgyLDExMjkuOTdaTTk0My43OTIsMTY0NC4wNUw5MTguNDAyLDE1ODIuNzZDOTE4LjQwMiwxNTgyLjc2IDgzMC4xMTUsMTQ4MS4yNiA4MDUuMDY0LDE0NjUuNTRDODA1LjA2NCwxNDY1LjU0IDcxNC44MTgsMTM4My44NiA2MjkuMDUsMTMzMS4zNUM2MjkuMDUsMTMzMS4zNSA1MDkuMjAyLDEyNDMuODkgNDc0LjQ3NSwxMjExLjk0QzQ3NC40NzUsMTIxMS45NCAzNzUuMzczLDExMjQuNDcgMzQ3LjQ5MywxMDgzLjU1TDI1Ni43NzUsOTYzLjk3NEMyNTYuNzc1LDk2My45NzQgMjc2LjUwNCwxMDM2LjggMzQ1LjgxOCwxMTI3LjUxQzM0NS44MTgsMTEyNy41MSAzNTUuODUyLDExNjEuNDQgNDc4Ljg2MywxMjcxLjM5QzQ3OC44NjMsMTI3MS4zOSA1ODguMSwxMzY0LjIzIDYxMS43NSwxMzcxLjU3QzYxMS43NSwxMzcxLjU3IDcxMC4zNDEsMTQ0Ni45OCA3MjIuNzA4LDE0NTMuODZDNzIyLjcwOCwxNDUzLjg2IDgzMC44MTMsMTU0Mi4yNCA4NzYuODEzLDE1OTMuNzlDODc2LjgxMywxNTkzLjc5IDk1Mi4wMTQsMTY4MCA5OTYuMjYzLDE3NzEuODJDOTk4Ljg0MywxNzgyLjEyIDEwMDAsMTc4Ny42OSAxMDAwLDE3ODcuNjlMMTAwMS40NiwxNzkyLjM0TDEwMDAsMTc5OS42OEM4NjguMzE3LDE3MjAuNTkgNzIwLjc3LDE2NDYuOTQgNjA0Ljk1MiwxNTYyLjQyQzQ5Ni4zMjgsMTQ4My4xNSAzNzAuNTYyLDE0MDMuNzcgMzA1LjA5NCwxMjkyLjU0QzIzOS42MjYsMTE4MS4zIDIyMS4zMDgsMTAzMC43OCAyMTIuMTQzLDg5NS4wMDVMMjEyLjA1OSw4OTMuNzYzQzU1Mi44NDQsMTAwNC42MSA3NTMuMzUsMTI0Ny4yNSA4NjYuNzQ1LDE0NTEuOEM4NTMuNTM2LDE0MzEuNDMgODM3LjUxNCwxNDEwLjI3IDgxOS45ODIsMTM5NC41MUM4MTkuOTgyLDEzOTQuNTEgNzg4LjA1MSwxMzQ0LjA2IDcwOS4zMjgsMTI3NC45MkM3MDkuMzI4LDEyNzQuOTIgNTg3LjI4MSwxMTY0LjI1IDUxNy40MiwxMTM1LjUzQzUxNy40MiwxMTM1LjUzIDYwNi4xNDMsMTIwOC4zNyA2MjQuOTIsMTIzMi4xOEM2MjQuOTIsMTIzMi4xOCA3MTEuNDc0LDEzMjIuMyA3NDEuNzUsMTM1MC45Qzc0MS43NSwxMzUwLjkgODMxLjU0NiwxNDYwLjYzIDg1Ny42NTIsMTQ5NS42OEM4NTcuNjUyLDE0OTUuNjggOTE2LjU5MSwxNTc3LjExIDkyMC44NjIsMTU4NC45M0M5MjAuODYyLDE1ODQuOTMgOTMxLDE2MTEuNDYgOTQzLjc5MiwxNjQ0LjA1Wk05NDYuOTk1LDE2MjEuNzJDOTY0LjU0MSwxNjY2LjA5IDk3Ny4wMiwxNzA0LjA5IDk4NS40NDMsMTczMi40OUM5NzcuMTY4LDE3MDYuMzIgOTYzLjg0LDE2NjYuMDYgOTQ2Ljk5NSwxNjIxLjcyWk05OTMuODcyLDE3NjIuNTJDOTk0LjQ4MiwxNzY0Ljg0IDk5NS4wNDMsMTc2Ny4wMSA5OTUuNTU2LDE3NjkuMDJMOTkwLjEwNCwxNzU1Ljg2Qzk5MS43MDUsMTc1OS4wOCA5OTIuOTg2LDE3NjEuMzcgOTkzLjg3MiwxNzYyLjUyWk0xMDAzLjY3LDE3OTkuMzVMMTAwMy4xMywxNzk5LjY4TDEwMDIuMDEsMTc5NC4wOEwxMDAzLjY3LDE3OTkuMzVaTTUzMS42NDEsODQ4LjM0N0M1MzEuNjQxLDg0OC4zNDcgNTI2LjE4OCw4OTcuMDY0IDUyNy4wNDgsOTA1Ljc2MUM1MjcuMDQ4LDkwNS43NjEgNTIzLjg1NCw5NzAuOTU0IDUyMi42NzcsOTY1LjQ5NkM1MjIuNjc3LDk2NS40OTYgNTE3LjM2NCw5NDkuMTI0IDUyMi42MzgsOTA2LjM5MkM1MjIuNjM4LDkwNi4zOTIgNTI1Ljk3Myw4NTguMDIzIDUyOS4yMDksODUyLjUwNkM1MjkuMjA5LDg1Mi41MDYgNTI5LjU1NCw4MzkuNjA3IDUzMS42NDEsODQ4LjM0N1oiLz48cGF0aCBkPSJNMTc5Mi44LDczOC4xNEMxNzkyLjg5LDczMC40MDcgMTc5Mi44NCw3MjMuNzQ0IDE3OTMuMiw3MDguMzQzQzE3OTMuMjcsNzA1LjAwNCAxNzk0LjI4LDcwMS4wNjQgMTc5NS4xMiw2OTguMzIxQzE3OTMuNzMsNjk2LjcyOSAxNzkyLjk3LDY5NC41OTEgMTc5My4xNyw2OTIuMzJDMTc5My40NCw2ODkuMzg1IDE3OTUuMjcsNjg2Ljk2NCAxNzk3Ljc2LDY4NS43OTlDMTc5OC4zMyw2ODMuMzMgMTc5OS4zMSw2ODAuODE5IDE4MDAuOSw2NzguMDk2QzE4MDMuMTMsNjc0LjI4NiAxODA4LjA0LDY3My4wMDQgMTgxMS44NSw2NzUuMjM1QzE4MTUuNjYsNjc3LjQ2NiAxODE2Ljk0LDY4Mi4zNzEgMTgxNC43MSw2ODYuMTgxQzE4MTIuNzUsNjg5LjUzNCAxODEzLDY5Mi4yNjMgMTgxMy4yOSw2OTUuNjUzQzE4MTMuNzcsNzAxLjIwNiAxODE0LjY0LDcwNy45MDQgMTgxMy4yMSw3MTcuOTc1QzE4MTIuMTcsNzI1LjI4MyAxODEwLjE4LDczMS41ODYgMTgwOC44LDczOC4zOTJDMTgwOC43Myw3NDQuNDg2IDE4MDguNTksNzUxLjE3NCAxODA4LjEsNzYzLjI1QzE4MDcuOTMsNzY3LjM3NSAxODA0LjY1LDc3MC42OTUgMTgwMC41Myw3NzAuOTE0QzE3OTYuNDEsNzcxLjEzNCAxNzkyLjc5LDc2OC4xODEgMTc5Mi4xOSw3NjQuMDk4QzE3OTAuNjYsNzUzLjc4NCAxNzkxLjQsNzQ1LjY4NyAxNzkyLjgsNzM4LjE0WiIgc3R5bGU9ImZpbGw6IzNkNmIxMDsiLz48cGF0aCBkPSJNMTc5MC40OSw1NTcuNTM2QzE3OTAuMTQsNTU1LjM1NiAxNzkxLjYzLDU1My4zMDMgMTc5My44MSw1NTIuOTU0QzE3OTUuOTksNTUyLjYwNCAxNzk4LjA0LDU1NC4wOTEgMTc5OC4zOSw1NTYuMjcxQzE3OTguNTQsNTU3LjIxMyAxNzk5LjU5LDU2Mi44NzIgMTc5My4zNiw1NjcuMDlDMTc5MS41NCw1NjguMzI3IDE3ODkuMDUsNTY3Ljg0OCAxNzg3LjgxLDU2Ni4wMkMxNzg2LjU3LDU2NC4xOTIgMTc4Ny4wNSw1NjEuNzAzIDE3ODguODgsNTYwLjQ2NUMxNzkwLjYyLDU1OS4yODQgMTc5MC41Myw1NTcuOCAxNzkwLjQ5LDU1Ny41MzZaIi8+PC9zdmc+"
-          alt="GroundForce"/>
-        <div className="app-title">GroundForce</div>
-        <div className="app-sub">Landscape Operations Hub</div>
+          src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjAwMCAyMDAwIiB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHhtbG5zOnNlcmlmPSJodHRwOi8vd3d3LnNlcmlmLmNvbS8iIHN0eWxlPSJmaWxsOiMzZDZiMTA7ZmlsbC1ydWxlOmV2ZW5vZGQ7Y2xpcC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjI7Ij48cmVjdCB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiBmaWxsPSJub25lIi8+PC9zdmc+"
+          alt="J&J & Son"/>
+        <div className="app-title">J&amp;J &amp; Son</div>
+        <div className="app-sub">Operations Center</div>
       </div>
 
       {mode==="truck" && !pinStep && (
@@ -1625,7 +1212,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
           {/* HR Section */}
           <div style={{width:"100%",marginTop:28}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--stone)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
-              HR & Employee Portal
+              HR &amp; Employee Portal
               <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
             </div>
             {!openHR ? (
@@ -1637,7 +1224,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                     <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}> {f.name}</div>
                     <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div>
                   </div>
                   {f.url
@@ -1672,24 +1259,24 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
             <Ic n="truck" style={{width:20,height:20}}/>
             <div>
               <div className="pin-truck-name">{selected.label}</div>
-              <div className="pin-truck-sub">{division} · Enter your 4-digit PIN</div>
+              <div className="pin-truck-sub">{division} · Enter your PIN</div>
             </div>
           </div>
           <div className="pin-dots">
-            {[0,1,2,3].map(i=><div key={i} className={`pin-dot ${i<pin.length?"filled":""}`}/>)}
+            {Array.from({length: pinLength}).map((_,i)=><div key={i} className={`pin-dot ${i<pin.length?"filled":""}`}/>)}
           </div>
           <div className="numpad">
             {NUMKEYS.map(k=>(
               <button key={k}
                 className={`num-btn ${k==="0"?"zero":""}`}
-                style={k==="enter"?{background:"var(--moss)",color:"var(--lime)"}:{}}
+                style={k==="enter"?{background:"var(--moss)",color:"var(--lime)"}: {}}
                 onClick={()=>handleKey(k)}>
                 {k==="del"   ? <Ic n="del"  style={{width:18,height:18}}/> :
                  k==="enter" ? <Ic n="chev" style={{width:18,height:18,transform:"rotate(90deg)"}}/> : k}
               </button>
             ))}
           </div>
-          <button className="btn-enter" disabled={pin.length<4} onClick={()=>handleKey("enter")}>Sign In</button>
+          <button className="btn-enter" disabled={pin.length<pinLength} onClick={()=>handleKey("enter")}>Sign In</button>
           {error && <div className="error-msg">{error}</div>}
         </div>
       )}
