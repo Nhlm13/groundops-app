@@ -1119,7 +1119,31 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   const [pin,       setPin]     = useState("");
   const [mgrPass,   setMgrPass] = useState("");
   const [error,     setError]   = useState("");
-  const [openHR,    setOpenHR]  = useState(null);
+  const [openHR,      setOpenHR]      = useState(null);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptStep, setReceiptStep] = useState("form"); // "form" | "photo" | "success"
+  const [uploading,   setUploading]   = useState(false);
+  const [photoUrl,    setPhotoUrl]    = useState("");
+  const receiptPhotoRef = useRef();
+
+  const toBase64 = file => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.onerror=rej; r.readAsDataURL(file); });
+
+  const handleLoginReceiptPhoto = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const b64 = await toBase64(file);
+      await fetch(APPS_SCRIPT_URL, {
+        method:"POST", mode:"no-cors",
+        headers:{"Content-Type":"text/plain"},
+        body: JSON.stringify({ sheet:"Receipts", photo:b64, photoMime:file.type||"image/jpeg", photoName:`receipt_walkin_${Date.now()}.jpg`, photoOnly:true }),
+      });
+      setPhotoUrl(URL.createObjectURL(file));
+      setReceiptStep("success");
+    } catch(e){ console.warn(e); }
+    setUploading(false);
+  };
 
   // PIN length matches the selected truck's PIN length (1–2 digits)
   const pinLength = selected ? selected.pin.length : 4;
@@ -1207,6 +1231,93 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
           )}
 
           <div className="mgr-toggle" onClick={()=>{ setMode("manager"); setError(""); }}>Manager Zone →</div>
+
+          {/* ── WALK-IN RECEIPT SUBMISSION ── */}
+          <div style={{width:"100%",marginTop:28}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--stone)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+              Submit a Receipt
+              <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
+            </div>
+
+            {!receiptOpen ? (
+              /* Collapsed card */
+              <div
+                style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}
+                onClick={()=>{ setReceiptOpen(true); setReceiptStep("form"); setPhotoUrl(""); }}>
+                <div style={{width:34,height:34,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  <Ic n="camera" style={{width:15,height:15,color:"var(--lime)"}}/>
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>Receipt Submission</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Submit without logging into a truck</div>
+                </div>
+                <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
+              </div>
+            ) : receiptStep === "form" ? (
+              /* Step 1 — Embedded Google Form */
+              <div style={{animation:"fadeUp 0.3s ease both"}}>
+                <button className="back-btn" style={{marginBottom:12}} onClick={()=>setReceiptOpen(false)}>
+                  <Ic n="back"/> Close
+                </button>
+                <div style={{borderRadius:8,overflow:"hidden",marginBottom:12}}>
+                  <iframe
+                    src="https://docs.google.com/forms/d/e/1FAIpQLSecpqNGkQKSzMTS_9CyYjrFKvwcuSOggA0MnL5Ii7J5ph7JXw/viewform?embedded=true"
+                    style={{width:"100%",height:"580px",border:"none",display:"block"}}
+                    title="Receipt Form"
+                  />
+                </div>
+                <button
+                  onClick={()=>setReceiptStep("photo")}
+                  style={{width:"100%",padding:"16px",background:"var(--danger)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:3,color:"#fff",cursor:"pointer"}}>
+                  Final Step: Upload Photo
+                </button>
+              </div>
+            ) : receiptStep === "photo" ? (
+              /* Step 2 — Photo upload */
+              <div style={{animation:"fadeUp 0.3s ease both"}}>
+                <button className="back-btn" style={{marginBottom:12}} onClick={()=>setReceiptStep("form")}>
+                  <Ic n="back"/> Back to Form
+                </button>
+                <div className="success-banner" style={{marginBottom:16}}>
+                  <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt submitted! Now attach a photo.
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                  <span style={{fontSize:13,color:"var(--stone)"}}>Photograph the receipt to save it to Drive.</span>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:700,color:"var(--danger)",letterSpacing:1}}>REQUIRED</span>
+                </div>
+                <input ref={receiptPhotoRef} type="file" accept="image/*" capture="environment"
+                  style={{display:"none"}} onChange={handleLoginReceiptPhoto}/>
+                <div className="receipt-upload"
+                  onClick={()=>!uploading && receiptPhotoRef.current.click()}
+                  style={{opacity:uploading?0.6:1,marginBottom:12}}>
+                  <Ic n="camera" style={{width:24,height:24}}/>
+                  <span>{uploading?"Uploading...":"Tap to photograph receipt"}</span>
+                </div>
+              </div>
+            ) : (
+              /* Step 3 — Success */
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"30px 0 10px",animation:"fadeUp 0.3s ease both"}}>
+                <div style={{width:64,height:64,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
+                  <Ic n="check" style={{width:32,height:32,color:"var(--lime)"}}/>
+                </div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>All Done!</div>
+                <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:20}}>Receipt submitted and photo saved to Drive.</div>
+                {photoUrl && <img src={photoUrl} alt="receipt" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",marginBottom:16}}/>}
+                <div style={{display:"flex",gap:8,width:"100%"}}>
+                  <button
+                    onClick={()=>{ setReceiptStep("form"); setPhotoUrl(""); }}
+                    style={{flex:1,padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>
+                    Submit Another
+                  </button>
+                  <button
+                    onClick={()=>{ setReceiptOpen(false); setReceiptStep("form"); setPhotoUrl(""); }}
+                    style={{flex:1,padding:"14px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* HR Section */}
           <div style={{width:"100%",marginTop:28}}>
