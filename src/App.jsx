@@ -610,10 +610,9 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 // HR portal links
 const HR_LINKS = [
   { name: "Time Off Request",      desc: "Submit leave for approval",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
-  { name: "Document Upload",       desc: "Tax docs & employment forms",        url: "https://docs.google.com/forms/d/e/1FAIpQLSdgfiNB10GgUxFol4sFzq1m0mgVuCp8O5Ml3NQD_HTbNBnFSA/viewform?embedded=true" },
   { name: "Job Application",       desc: "Refer someone to the team",          url: "https://docs.google.com/forms/d/e/1FAIpQLSe405gWCY--4-chYWpku3PMaZ5zIl09W5HGCPUfDcbNuTuYYw/viewform?embedded=true" },
   { name: "Contact a Manager",     desc: "Send a message to management",       url: "https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true" },
-  { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "" },
+  { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "https://drive.google.com/file/d/1UPIOc2q7rs7h-VQcT6Cvv4eaG_-vePGs/preview" },
   { name: "Uniform Guidelines",    desc: "Dress code & uniform standards",     url: "" },
   { name: "Vehicle Guidelines",    desc: "Fleet use & driving policies",       url: "" },
 ];
