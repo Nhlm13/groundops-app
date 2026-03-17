@@ -609,7 +609,7 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
 
 // HR portal links
 const HR_LINKS = [
-  { name: "Time Off Request",      desc: "Submit request for time away",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
+  { name: "Time Off Request",      desc: "Submit leave for approval",          url: "https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true" },
   { name: "Job Application",       desc: "Refer someone to the team",          url: "https://docs.google.com/forms/d/e/1FAIpQLSe405gWCY--4-chYWpku3PMaZ5zIl09W5HGCPUfDcbNuTuYYw/viewform?embedded=true" },
   { name: "Contact a Manager",     desc: "Send a message to management",       url: "https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true" },
   { name: "Employee Handbook",     desc: "Company policies & procedures",      url: "https://drive.google.com/file/d/1UPIOc2q7rs7h-VQcT6Cvv4eaG_-vePGs/preview" },
@@ -1295,6 +1295,12 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
           <div className="mgr-toggle" style={{color:"var(--stone)"}} onClick={()=>{setMode("truck");setError("");}}>← Back to truck login</div>
         </div>
       )}
+
+      <div style={{marginTop:"auto",paddingTop:32,textAlign:"center"}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--moss)",letterSpacing:1,lineHeight:1.6}}>
+          Created by Salerni Creative Co LLC<br/>All Rights Reserved
+        </div>
+      </div>
     </div>
   );
 }
