@@ -1412,11 +1412,20 @@ function ManagerZone({ onLogout }) {
   const [lastRefresh,  setLastRefresh] = useState(null);
 
   const normDate = val => {
-    if (!val) return "";
-    if (val instanceof Date) return `${val.getMonth()+1}/${val.getDate()}/${val.getFullYear()}`;
+    if (!val && val !== 0) return "";
+    // Date object
+    if (val instanceof Date) {
+      return `${val.getMonth()+1}/${val.getDate()}/${val.getFullYear()}`;
+    }
+    // Google Sheets date serial number (days since Dec 30 1899)
+    if (typeof val === "number") {
+      const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+      return `${d.getUTCMonth()+1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
+    }
+    // String — normalize MM/DD/YYYY or M/D/YYYY both to M/D/YYYY
     const s = String(val).trim();
     const p = s.split("/");
-    if (p.length===3) return `${parseInt(p[0])}/${parseInt(p[1])}/${p[2]}`;
+    if (p.length === 3) return `${parseInt(p[0])}/${parseInt(p[1])}/${p[2]}`;
     return s;
   };
   const todayStr = () => { const d=new Date(); return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`; };
