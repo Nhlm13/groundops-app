@@ -665,7 +665,8 @@ const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohL
 const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzW5asagcFUOEiL7_yz2gpgwIYhuQczcjY3tQKjDFNtH3-aU4nQjLxoFMgO562ePiDfSw/exec";
 const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxE1AIzz93kV7cs2BI0KN0b7sWxRfxujBUNJ34VfHK3aQhonIIZs8PUSYJ21FfiIreUzg/exec";
 const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtIw5aUKXYjUQccYGGVV3we3Zt_UvMYF6cVG0y7jWrofd5AblnKVDwFqfoX5A9XgYWtg/exec";
-const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
+const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
+const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
 
 const HR_LINKS = [
@@ -685,27 +686,55 @@ function getTodayKey()  {
   return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
 }
 
+// ── PROPERTY INSPECTION SUB-COMPONENTS (defined outside form to prevent focus loss) ──
+function PICheckRow({ck, label, required, checks, onToggle}) {
+  const isChecked = !!checks[ck];
+  const isFlagged = required && !isChecked;
+  return (
+    <div className={`pi-check-row ${isChecked?"checked":""} ${isFlagged?"flagged":""}`} onClick={()=>onToggle(ck)}>
+      <div className={`pi-checkbox ${isChecked?"checked":""}`}>{isChecked&&<Ic n="check"/>}</div>
+      <span className="pi-check-label">{label}</span>
+    </div>
+  );
+}
+
+function PISection({sk, titleKey, isOpen, onToggle, children}) {
+  const t = useT();
+  return (
+    <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,marginBottom:8,overflow:"hidden"}}>
+      <div onClick={()=>onToggle(sk)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer",background:isOpen?"var(--bark2)":"var(--bark)",transition:"background 0.15s"}}>
+        <div style={{width:28,height:28,borderRadius:7,background:"rgba(74,109,32,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <Ic n="map" style={{width:13,height:13,color:"var(--leaf)"}}/>
+        </div>
+        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",flex:1}}>{t[titleKey]}</span>
+        <Ic n="chev" style={{width:14,height:14,color:"var(--stone)",transition:"transform 0.2s",transform:isOpen?"rotate(90deg)":"none"}}/>
+      </div>
+      {isOpen&&<div style={{padding:"4px 14px 14px",borderTop:"1px solid var(--moss)"}}>{children}</div>}
+    </div>
+  );
+}
+
 // ── PROPERTY INSPECTION FORM ──────────────────────────────────────────────────
 function PropertyInspectionForm({ truck, onBack, onDone }) {
   const t = useT();
   const photoRef = useRef();
-  const [name,       setName]       = useState("");
-  const [property,   setProperty]   = useState("");
-  const [checks,     setChecks]     = useState({});
-  const [damageNotes,setDamageNotes]= useState("");
-  const [notes,      setNotes]      = useState("");
-  const [photoPreview,setPhotoPreview] = useState(null);
-  const [photoB64,   setPhotoB64]   = useState(null);
-  const [photoMime,  setPhotoMime]  = useState(null);
-  const [nameErr,    setNameErr]    = useState(false);
-  const [propErr,    setPropErr]    = useState(false);
-  const [formErr,    setFormErr]    = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted,  setSubmitted]  = useState(false);
-  const [openSecs,   setOpenSecs]   = useState({s1:true,s2:true,s3:false});
+  const [name,        setName]        = useState("");
+  const [property,    setProperty]    = useState("");
+  const [checks,      setChecks]      = useState({});
+  const [damageNotes, setDamageNotes] = useState("");
+  const [notes,       setNotes]       = useState("");
+  const [photoPreview,setPhotoPreview]= useState(null);
+  const [photoB64,    setPhotoB64]    = useState(null);
+  const [photoMime,   setPhotoMime]   = useState(null);
+  const [nameErr,     setNameErr]     = useState(false);
+  const [propErr,     setPropErr]     = useState(false);
+  const [formErr,     setFormErr]     = useState("");
+  const [submitting,  setSubmitting]  = useState(false);
+  const [submitted,   setSubmitted]   = useState(false);
+  const [openSecs,    setOpenSecs]    = useState({s1:true,s2:true,s3:false});
 
-  const tog = k => setOpenSecs(p=>({...p,[k]:!p[k]}));
-  const toggleCheck = key => setChecks(p=>({...p,[key]:!p[key]}));
+  const togSec      = k => setOpenSecs(p=>({...p,[k]:!p[k]}));
+  const toggleCheck = key => { setChecks(p=>({...p,[key]:!p[key]})); setFormErr(""); };
 
   const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
 
@@ -751,33 +780,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     setFormErr(""); setPropErr(false); setSubmitted(false);
   };
 
-  const CheckRow = ({ck,label,required=false}) => {
-    const isChecked = !!checks[ck];
-    const isFlagged = required && !isChecked;
-    return (
-      <div className={`pi-check-row ${isChecked?"checked":""} ${isFlagged?"flagged":""}`} onClick={()=>{toggleCheck(ck);setFormErr("");}}>
-        <div className={`pi-checkbox ${isChecked?"checked":""}`}>{isChecked&&<Ic n="check"/>}</div>
-        <span className="pi-check-label">{label}</span>
-      </div>
-    );
-  };
-
-  const Section = ({sk,titleKey,children}) => {
-    const isOpen = openSecs[sk];
-    return (
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,marginBottom:8,overflow:"hidden"}}>
-        <div onClick={()=>tog(sk)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer",background:isOpen?"var(--bark2)":"var(--bark)",transition:"background 0.15s"}}>
-          <div style={{width:28,height:28,borderRadius:7,background:"rgba(74,109,32,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <Ic n="map" style={{width:13,height:13,color:"var(--leaf)"}}/>
-          </div>
-          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",flex:1}}>{t[titleKey]}</span>
-          <Ic n="chev" style={{width:14,height:14,color:"var(--stone)",transition:"transform 0.2s",transform:isOpen?"rotate(90deg)":"none"}}/>
-        </div>
-        {isOpen&&<div style={{padding:"4px 14px 14px",borderTop:"1px solid var(--moss)"}}>{children}</div>}
-      </div>
-    );
-  };
-
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
       <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
@@ -819,27 +821,27 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
       </div>
 
       {/* Arrival */}
-      <Section sk="s1" titleKey="piSec1">
+      <PISection sk="s1" titleKey="piSec1" isOpen={openSecs.s1} onToggle={togSec}>
         <div style={{marginTop:8}}>
-          <CheckRow ck="parked"           label={t.piArrival_parked}   required/>
-          <CheckRow ck="hazards_inspected"label={t.piArrival_hazards}  required/>
-          <CheckRow ck="unusual_reported" label={t.piArrival_unusual}/>
+          <PICheckRow ck="parked"            label={t.piArrival_parked}   required checks={checks} onToggle={toggleCheck}/>
+          <PICheckRow ck="hazards_inspected" label={t.piArrival_hazards}  required checks={checks} onToggle={toggleCheck}/>
+          <PICheckRow ck="unusual_reported"  label={t.piArrival_unusual}           checks={checks} onToggle={toggleCheck}/>
         </div>
-      </Section>
+      </PISection>
 
       {/* Safety */}
-      <Section sk="s2" titleKey="piSec2">
+      <PISection sk="s2" titleKey="piSec2" isOpen={openSecs.s2} onToggle={togSec}>
         <div style={{marginTop:8}}>
-          <CheckRow ck="wet_surfaces" label={t.piSafety_wet}       required/>
-          <CheckRow ck="obstacles"    label={t.piSafety_obstacles}  required/>
-          <CheckRow ck="pets"         label={t.piSafety_pets}       required/>
+          <PICheckRow ck="wet_surfaces" label={t.piSafety_wet}       required checks={checks} onToggle={toggleCheck}/>
+          <PICheckRow ck="obstacles"    label={t.piSafety_obstacles}  required checks={checks} onToggle={toggleCheck}/>
+          <PICheckRow ck="pets"         label={t.piSafety_pets}       required checks={checks} onToggle={toggleCheck}/>
         </div>
-      </Section>
+      </PISection>
 
       {/* Damage */}
-      <Section sk="s3" titleKey="piSec3">
+      <PISection sk="s3" titleKey="piSec3" isOpen={openSecs.s3} onToggle={togSec}>
         <div style={{marginTop:8}}>
-          <CheckRow ck="damage_noted" label={t.piDamage_noted}/>
+          <PICheckRow ck="damage_noted" label={t.piDamage_noted} checks={checks} onToggle={toggleCheck}/>
           {checks.damage_noted && (
             <div style={{animation:"fadeUp 0.2s ease both",marginTop:8}}>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.piDamageNotesLabel}</div>
@@ -860,7 +862,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
             </div>
           )}
         </div>
-      </Section>
+      </PISection>
 
       {/* Notes */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:14}}>
@@ -1391,25 +1393,31 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
   useEffect(()=>{
     const fetchAll = async () => {
       setDataLoading(true);
-      const todayFmt = getTodayKey(); // M/D/YYYY — matches sheet format
+      // Build both date formats to match whatever the sheet stored
+      const d = new Date();
+      const dateFormats = [
+        `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,           // M/D/YYYY
+        `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`, // MM/DD/YYYY
+      ];
+      const isToday = val => dateFormats.includes(val);
       try {
         const [r1,r2,r3,r4] = await Promise.all([
           fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/DOT%20walkaround?key=${SHEETS_KEY}`).then(r=>r.json()),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
+          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/DOT%20walkaround?key=${SHEETS_KEY}`).then(r=>r.json()),
+          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
+          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
         ]);
         // Receipts — date in col A
-        const rRows = (r1.values||[]).slice(1).filter(r=>r[0]===todayFmt);
+        const rRows = (r1.values||[]).slice(1).filter(r=>isToday(r[0]));
         setReceipts(rRows.map(r=>({time:r[1]||"",truck:r[2]||"",division:r[3]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photoUrl:r[7]||""})));
         // DOT — date col A, truck col C, name col D, time col B, status last col
-        const dRows = (r2.values||[]).slice(1).filter(r=>r[0]===todayFmt);
+        const dRows = (r2.values||[]).slice(1).filter(r=>isToday(r[0]));
         setDotData(dRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||"",status:r[r.length-1]||""})));
         // Briefing — date col A, time col B, truck col C, name col D
-        const bRows = (r3.values||[]).slice(1).filter(r=>r[0]===todayFmt);
+        const bRows = (r3.values||[]).slice(1).filter(r=>isToday(r[0]));
         setBriefingData(bRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||""})));
         // Property Inspection — date col A, time col B, truck col C, name col D, property col E, status last col
-        const pRows = (r4.values||[]).slice(1).filter(r=>r[0]===todayFmt);
+        const pRows = (r4.values||[]).slice(1).filter(r=>isToday(r[0]));
         setPiData(pRows.map(r=>({truck:r[2]||"",name:r[3]||"",property:r[4]||"",time:r[1]||"",status:r[r.length-1]||""})));
       } catch(e){console.warn("Data fetch failed",e);}
       setDataLoading(false);
