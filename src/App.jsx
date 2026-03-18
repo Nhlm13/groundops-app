@@ -1407,7 +1407,8 @@ function ManagerZone({ onLogout }) {
   const [receipts,    setReceipts]   = useState([]);
   const [tab,         setTab]        = useState("forms");
   const [loading,     setLoading]    = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
+  const [lastRefresh, setLastRefresh]= useState(null);
+  const [debugInfo,   setDebugInfo]  = useState("");
 
   const fetchAll = async () => {
     setLoading(true);
