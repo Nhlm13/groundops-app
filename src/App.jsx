@@ -1307,16 +1307,52 @@ function HRContent({link}){if(link.name==="Uniform Guidelines")return<UniformGui
 function HRTab(){const t=useT();const[openHR,setOpenHR]=useState(null);return(<div>{!openHR?(<><div className="section-hd">HR &amp; Employee Portal</div>{HR_LINKS.map(f=>(<div key={f.name} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}} onClick={()=>{if(f.url)setOpenHR(f);}}><div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/></div><div style={{flex:1}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div></div>{f.url?<Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>:<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.comingSoon}</span>}</div>))}</>):(<div style={{animation:"fadeUp 0.3s ease both"}}><button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}><Ic n="back"/> {t.backHR}</button><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div><HRContent link={openHR}/></div>)}</div>);}
 function ReceiptTab({truck,division,onGoHome}){return(<div style={{padding:"16px 16px 100px"}}><div className="section-hd">Submit a Receipt</div><NativeReceiptFlow truckLabel={truck.label} divisionLabel={division} onGoHome={onGoHome}/></div>);}
 
+// ── FORM STATE PERSISTENCE ────────────────────────────────────────────────────
+// Saves DOT/Briefing/PropInspect completion per truck, expires at 11pm same day
+function getFormStateKey(truckId) { return `jj_forms_${truckId}`; }
+
+function loadFormState(truckId) {
+  try {
+    const raw = localStorage.getItem(getFormStateKey(truckId));
+    if (!raw) return null;
+    const state = JSON.parse(raw);
+    const now = new Date();
+    const expiry = new Date();
+    expiry.setHours(23, 0, 0, 0); // 11pm today
+    // Expire if saved on a different day or after 11pm
+    if (state.date !== getTodayDateStr()) { localStorage.removeItem(getFormStateKey(truckId)); return null; }
+    if (now > expiry) { localStorage.removeItem(getFormStateKey(truckId)); return null; }
+    return state;
+  } catch(e) { return null; }
+}
+
+function saveFormState(truckId, dot, briefing, propCount) {
+  try {
+    localStorage.setItem(getFormStateKey(truckId), JSON.stringify({
+      date: getTodayDateStr(),
+      dotComplete: dot,
+      briefingComplete: briefing,
+      propInspectCount: propCount,
+    }));
+  } catch(e) {}
+}
+
 // ── TRUCK HOME ────────────────────────────────────────────────────────────────
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
   const t = useT();
+  const saved = loadFormState(truck.id);
   const [tab,              setTab]             = useState("home");
   const [activeForm,       setActiveForm]      = useState(null); // "dot"|"briefing"|"propinspect"
-  const [dotComplete,      setDotComplete]     = useState(false);
-  const [briefingComplete, setBriefingComplete]= useState(false);
-  const [propInspectCount, setPropInspectCount]= useState(0);
+  const [dotComplete,      setDotComplete]     = useState(saved?.dotComplete      || false);
+  const [briefingComplete, setBriefingComplete]= useState(saved?.briefingComplete || false);
+  const [propInspectCount, setPropInspectCount]= useState(saved?.propInspectCount || 0);
   const [division]                             = useState(initialDivision||"");
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
+
+  // Persist whenever any completion state changes
+  useEffect(() => {
+    saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount);
+  }, [dotComplete, briefingComplete, propInspectCount, truck.id]);
 
   return (
     <div className="screen">
@@ -1457,7 +1493,7 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
                   <Ic n="truck" style={{width:18,height:18,color:"var(--lime)",flexShrink:0}}/>
                   <div className="fleet-truck-num">{truckId}</div>
                   <div className="fleet-info">
-                    <div className="fleet-division">{info.division||""}</div>
+                    <div className="fleet-division">{info.division||"No division selected"}</div>
                     <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:5}}>
                       <Badge label={brief?"Brief ✓":"Brief —"} ok={!!brief} neutral={!brief}/>
                       <Badge label={dot?(dot.status.startsWith("PASS")?"DOT ✓":"DOT ✗"):"DOT —"} ok={!!dot&&dot.status.startsWith("PASS")} neutral={!dot}/>
@@ -1483,7 +1519,7 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
 
               {/* Signed In */}
               <div className="detail-stat"><div className="detail-stat-icon"><Ic n="clock"/></div><div className="detail-stat-info"><div className="detail-stat-label">Signed In</div><div className="detail-stat-val">{selectedTruck.signInTime}</div></div></div>
-              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||""}</div></div></div>
+              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||"Not selected"}</div></div></div>
 
               {/* Daily Briefing */}
               <div className="detail-stat" style={{borderLeft:`3px solid ${brief?"var(--lime)":"var(--moss)"}`}}>
