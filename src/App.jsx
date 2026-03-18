@@ -665,6 +665,7 @@ const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohL
 const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzW5asagcFUOEiL7_yz2gpgwIYhuQczcjY3tQKjDFNtH3-aU4nQjLxoFMgO562ePiDfSw/exec";
 const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxE1AIzz93kV7cs2BI0KN0b7sWxRfxujBUNJ34VfHK3aQhonIIZs8PUSYJ21FfiIreUzg/exec";
 const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtIw5aUKXYjUQccYGGVV3we3Zt_UvMYF6cVG0y7jWrofd5AblnKVDwFqfoX5A9XgYWtg/exec";
+const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycby9q8UUqz2ugp8hYopz0bMNAPtutkfoMqFtyzGkA77SzFeWOmmudFK1aD_PeXhc3gA9WQ/exec";
 const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
 const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
@@ -1416,68 +1417,75 @@ function MgrToolsTab({ checkouts }) {
   );
 }
 
-function ManagerZone({ onLogout, checkouts, signIns }) {
+function ManagerZone({ onLogout, checkouts }) {
   const [tab,           setTab]          = useState("fleet");
   const [selectedTruck, setSelTruck]     = useState(null);
+  const [activeTrucks,  setActiveTrucks] = useState([]); // from sheet: [{truckId, label, signInTime}]
   const [receipts,      setReceipts]     = useState([]);
   const [dotData,       setDotData]      = useState([]);
   const [briefingData,  setBriefingData] = useState([]);
   const [piData,        setPiData]       = useState([]);
   const [dataLoading,   setDataLoading]  = useState(false);
-  const activeTrucks = Object.entries(signIns);
+  const [lastRefresh,   setLastRefresh]  = useState(null);
 
+  const isToday = val => {
+    if (!val) return false;
+    const d = new Date();
+    const parsed = new Date(val);
+    if (!isNaN(parsed)) {
+      return parsed.getFullYear()===d.getFullYear() &&
+             parsed.getMonth()===d.getMonth() &&
+             parsed.getDate()===d.getDate();
+    }
+    const formats = [
+      `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
+      `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
+    ];
+    return formats.includes((val||"").trim());
+  };
+
+  const fetchAll = async () => {
+    setDataLoading(true);
+    try {
+      const [r1,r2,r3,r4,r5] = await Promise.all([
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/DOT%20walkaround?key=${SHEETS_KEY}`).then(r=>r.json()),
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Sign%20Ins?key=${SHEETS_KEY}`).then(r=>r.json()),
+      ]);
+
+      // Active trucks from Sign Ins sheet — today's ACTIVE rows only
+      const signInRows = (r5.values||[]).slice(1).filter(r=>isToday(r[0]) && r[4]==="ACTIVE");
+      setActiveTrucks(signInRows.map(r=>{
+        const label = r[1]||"";
+        const num   = label.replace("Truck ","");
+        return { truckId:num, label, signInTime:r[2]||"" };
+      }));
+
+      // Receipts
+      const rRows = (r1.values||[]).slice(1).filter(r=>isToday(r[0]));
+      setReceipts(rRows.map(r=>({time:r[1]||"",truck:r[2]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photoUrl:r[7]||""})));
+      // DOT
+      const dRows = (r2.values||[]).slice(1).filter(r=>isToday(r[0]));
+      setDotData(dRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||"",status:r[r.length-1]||""})));
+      // Briefing
+      const bRows = (r3.values||[]).slice(1).filter(r=>isToday(r[0]));
+      setBriefingData(bRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||""})));
+      // Property Inspection
+      const pRows = (r4.values||[]).slice(1).filter(r=>isToday(r[0]));
+      setPiData(pRows.map(r=>({truck:r[2]||"",name:r[3]||"",property:r[4]||"",time:r[1]||"",status:r[r.length-1]||""})));
+
+      setLastRefresh(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
+    } catch(e){ console.warn("Data fetch failed",e); }
+    setDataLoading(false);
+  };
+
+  // Initial fetch + 10-minute auto-refresh
   useEffect(()=>{
-    const fetchAll = async () => {
-      setDataLoading(true);
-      // Match any date format the sheet might use
-      const d = new Date();
-      const isToday = val => {
-        if (!val) return false;
-        // Try parsing the cell value as a date and compare to today
-        const parsed = new Date(val);
-        if (!isNaN(parsed)) {
-          return parsed.getFullYear()===d.getFullYear() &&
-                 parsed.getMonth()===d.getMonth() &&
-                 parsed.getDate()===d.getDate();
-        }
-        // Fallback: string-match both M/D/YYYY and MM/DD/YYYY
-        const formats = [
-          `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
-          `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
-        ];
-        return formats.includes(val.trim());
-      };
-      try {
-        const [r1,r2,r3,r4] = await Promise.all([
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/DOT%20walkaround?key=${SHEETS_KEY}`).then(r=>r.json()),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
-        ]);
-
-        // Log raw results so we can debug what's coming back
-        console.log("DOT raw rows:", (r2.values||[]).slice(0,3));
-        console.log("Briefing raw rows:", (r3.values||[]).slice(0,3));
-        console.log("PI raw rows:", (r4.values||[]).slice(0,3));
-        console.log("DOT error:", r2.error);
-        console.log("Briefing error:", r3.error);
-
-        // Receipts
-        const rRows = (r1.values||[]).slice(1).filter(r=>isToday(r[0]));
-        setReceipts(rRows.map(r=>({time:r[1]||"",truck:r[2]||"",division:r[3]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photoUrl:r[7]||""})));
-        // DOT
-        const dRows = (r2.values||[]).slice(1).filter(r=>isToday(r[0]));
-        setDotData(dRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||"",status:r[r.length-1]||""})));
-        // Briefing
-        const bRows = (r3.values||[]).slice(1).filter(r=>isToday(r[0]));
-        setBriefingData(bRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||""})));
-        // Property Inspection
-        const pRows = (r4.values||[]).slice(1).filter(r=>isToday(r[0]));
-        setPiData(pRows.map(r=>({truck:r[2]||"",name:r[3]||"",property:r[4]||"",time:r[1]||"",status:r[r.length-1]||""})));
-      } catch(e){console.warn("Data fetch failed",e);}
-      setDataLoading(false);
-    };
     fetchAll();
+    const interval = setInterval(fetchAll, 10 * 60 * 1000);
+    return () => clearInterval(interval);
   },[]);
 
   const truckReceipts = tid => receipts.filter(r=>r.truck===`Truck ${tid}`);
@@ -1494,26 +1502,44 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
   return (
     <div className="screen" style={{background:"#ddd9d0"}}>
       <div className="mgr-topbar">
-        <div style={{display:"flex",alignItems:"center",gap:8}}><Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/><div className="mgr-topbar-title">Manager Zone</div></div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><span className="mgr-badge">Admin</span><button className="logout-btn" onClick={onLogout}>Out</button></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+          <div className="mgr-topbar-title">Manager Zone</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span className="mgr-badge">Admin</span>
+          <button className="logout-btn" onClick={onLogout}>Out</button>
+        </div>
       </div>
       <div className="content" style={{background:"#ddd9d0"}}>
 
         {tab==="fleet"&&!selectedTruck&&(
           <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>Active Trucks</div>
-            {activeTrucks.length===0&&<div style={{textAlign:"center",padding:"30px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>No trucks signed in</div>}
-            {activeTrucks.map(([truckId,info])=>{
-              const dot=truckDOT(truckId);
-              const brief=truckBriefing(truckId);
-              const pis=truckPI(truckId);
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <div className="section-hd" style={{color:"var(--mgr)",marginBottom:0}}>Active Trucks</div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                {lastRefresh&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>}
+                <button onClick={fetchAll} disabled={dataLoading}
+                  style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"3px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>
+                  {dataLoading?"…":"Refresh"}
+                </button>
+              </div>
+            </div>
+            {activeTrucks.length===0&&(
+              <div style={{textAlign:"center",padding:"30px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
+                {dataLoading?"Loading...":"No trucks signed in"}
+              </div>
+            )}
+            {activeTrucks.map(info=>{
+              const dot=truckDOT(info.truckId);
+              const brief=truckBriefing(info.truckId);
+              const pis=truckPI(info.truckId);
               return (
-                <div key={truckId} className="fleet-row" onClick={()=>setSelTruck({truckId,...info})}>
+                <div key={info.truckId} className="fleet-row" onClick={()=>setSelTruck(info)}>
                   <Ic n="truck" style={{width:18,height:18,color:"var(--lime)",flexShrink:0}}/>
-                  <div className="fleet-truck-num">{truckId}</div>
+                  <div className="fleet-truck-num">{info.truckId}</div>
                   <div className="fleet-info">
-                    <div className="fleet-division">{info.division||""}</div>
-                    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:5}}>
+                    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:2}}>
                       <Badge label={brief?"Brief ✓":"Brief —"} ok={!!brief} neutral={!brief}/>
                       <Badge label={dot?(dot.status.startsWith("PASS")?"DOT ✓":"DOT ✗"):"DOT —"} ok={!!dot&&dot.status.startsWith("PASS")} neutral={!dot}/>
                       <Badge label={pis.length>0?`Prop ×${pis.length}`:"Prop —"} ok={pis.length>0} neutral={pis.length===0}/>
@@ -1537,36 +1563,51 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:"var(--lime)",letterSpacing:2,marginBottom:14}}>Truck {selectedTruck.truckId}</div>
 
               {/* Signed In */}
-              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="clock"/></div><div className="detail-stat-info"><div className="detail-stat-label">Signed In</div><div className="detail-stat-val">{selectedTruck.signInTime}</div></div></div>
-              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||"—"}</div></div></div>
+              <div className="detail-stat">
+                <div className="detail-stat-icon"><Ic n="clock"/></div>
+                <div className="detail-stat-info">
+                  <div className="detail-stat-label">Signed In</div>
+                  <div className="detail-stat-val">{selectedTruck.signInTime}</div>
+                </div>
+              </div>
 
               {/* Daily Briefing */}
               <div className="detail-stat" style={{borderLeft:`3px solid ${brief?"var(--lime)":"var(--moss)"}`}}>
-                <div className="detail-stat-icon" style={{background:brief?"rgba(74,109,32,0.15)":"var(--moss)"}}><Ic n={brief?"check":"book"} style={{width:15,height:15,color:brief?"var(--lime)":"var(--leaf)"}}/></div>
+                <div className="detail-stat-icon" style={{background:brief?"rgba(74,109,32,0.15)":"var(--moss)"}}>
+                  <Ic n={brief?"check":"book"} style={{width:15,height:15,color:brief?"var(--lime)":"var(--leaf)"}}/>
+                </div>
                 <div className="detail-stat-info">
                   <div className="detail-stat-label">Daily Briefing</div>
-                  <div className="detail-stat-val" style={{color:brief?"var(--lime)":"var(--stone)"}}>{dataLoading?"Loading...":(brief?`Acknowledged at ${brief.time} by ${brief.name}`:"Not yet completed")}</div>
+                  <div className="detail-stat-val" style={{color:brief?"var(--lime)":"var(--stone)"}}>
+                    {dataLoading?"Loading...":(brief?`Acknowledged at ${brief.time} by ${brief.name}`:"Not yet completed")}
+                  </div>
                 </div>
               </div>
 
               {/* DOT */}
               <div className="detail-stat" style={{borderLeft:`3px solid ${!dot?"var(--moss)":dotPass?"var(--lime)":"var(--danger)"}`}}>
-                <div className="detail-stat-icon" style={{background:!dot?"var(--moss)":dotPass?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)"}}><Ic n={!dot?"dot":dotPass?"check":"alert"} style={{width:15,height:15,color:!dot?"var(--leaf)":dotPass?"var(--lime)":"var(--danger)"}}/></div>
+                <div className="detail-stat-icon" style={{background:!dot?"var(--moss)":dotPass?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)"}}>
+                  <Ic n={!dot?"dot":dotPass?"check":"alert"} style={{width:15,height:15,color:!dot?"var(--leaf)":dotPass?"var(--lime)":"var(--danger)"}}/>
+                </div>
                 <div className="detail-stat-info">
                   <div className="detail-stat-label">DOT Walk-Around</div>
-                  <div className="detail-stat-val" style={{color:!dot?"var(--stone)":dotPass?"var(--lime)":"var(--danger)"}}>{dataLoading?"Loading...":(dot?`${dot.status} · ${dot.time} · ${dot.name}`:"Not yet completed")}</div>
+                  <div className="detail-stat-val" style={{color:!dot?"var(--stone)":dotPass?"var(--lime)":"var(--danger)"}}>
+                    {dataLoading?"Loading...":(dot?`${dot.status} · ${dot.time} · ${dot.name}`:"Not yet completed")}
+                  </div>
                 </div>
               </div>
 
               {/* Property Inspections */}
               <div className="detail-stat" style={{borderLeft:`3px solid ${pis.length>0?"var(--lime)":"var(--moss)"}`}}>
-                <div className="detail-stat-icon" style={{background:pis.length>0?"rgba(74,109,32,0.15)":"var(--moss)"}}><Ic n="map" style={{width:15,height:15,color:pis.length>0?"var(--lime)":"var(--leaf)"}}/></div>
+                <div className="detail-stat-icon" style={{background:pis.length>0?"rgba(74,109,32,0.15)":"var(--moss)"}}>
+                  <Ic n="map" style={{width:15,height:15,color:pis.length>0?"var(--lime)":"var(--leaf)"}}/>
+                </div>
                 <div className="detail-stat-info">
                   <div className="detail-stat-label">Property Inspections</div>
                   <div className="detail-stat-val" style={{color:pis.length>0?"var(--lime)":"var(--stone)"}}>
                     {dataLoading?"Loading...":pis.length===0?"None today":`${pis.length} completed today`}
                   </div>
-                  {pis.length>0&&pis.map((pi,i)=>(
+                  {pis.map((pi,i)=>(
                     <div key={i} style={{fontSize:11,color:"var(--stone)",marginTop:3}}>{pi.property} · {pi.time} · {pi.status}</div>
                   ))}
                 </div>
@@ -1574,17 +1615,42 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
 
               {/* Receipts */}
               <div className="section-hd" style={{marginTop:8,color:"var(--mgr)"}}>Receipts & Fuel Logs Today</div>
-              {dataLoading?<div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>Loading...</div>:truckReceipts(selectedTruck.truckId).length===0?<div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>No submissions today</div>:truckReceipts(selectedTruck.truckId).map((r,i)=>(
-                <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.type}</div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--sand)"}}>{r.time}</div></div>
-                  <div style={{display:"flex",justifyContent:"space-between"}}><div style={{fontSize:12,color:"var(--stone)"}}>{r.merchant||"—"}</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)"}}>${r.total}</div></div>
-                  {r.photoUrl&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}><Ic n="check" style={{width:12,height:12,color:"var(--lime)",flexShrink:0}}/><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>Photo Uploaded</span></div>}
-                </div>
-              ))}
+              {dataLoading
+                ?<div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>Loading...</div>
+                :truckReceipts(selectedTruck.truckId).length===0
+                  ?<div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>No submissions today</div>
+                  :truckReceipts(selectedTruck.truckId).map((r,i)=>(
+                    <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.type}</div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--sand)"}}>{r.time}</div>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between"}}>
+                        <div style={{fontSize:12,color:"var(--stone)"}}>{r.merchant||"—"}</div>
+                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)"}}>${r.total}</div>
+                      </div>
+                      {r.photoUrl&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}>
+                        <Ic n="check" style={{width:12,height:12,color:"var(--lime)",flexShrink:0}}/>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>Photo Uploaded</span>
+                      </div>}
+                    </div>
+                  ))
+              }
 
               {/* Tools */}
               <div className="section-hd" style={{marginTop:8}}>Tools Checked Out</div>
-              {(checkouts[selectedTruck.truckId]||[]).length===0?<div style={{fontSize:13,color:"var(--stone)",padding:"12px 0"}}>No tools checked out</div>:(checkouts[selectedTruck.truckId]||[]).map(co=>(<div key={co.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}><div style={{flex:1}}><div className="tool-name">{co.toolName}</div><div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>Since {co.time}</div></div><span className="co-qty-badge">×{co.qty}</span></div>))}
+              {(checkouts[selectedTruck.truckId]||[]).length===0
+                ?<div style={{fontSize:13,color:"var(--stone)",padding:"12px 0"}}>No tools checked out</div>
+                :(checkouts[selectedTruck.truckId]||[]).map(co=>(
+                  <div key={co.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{flex:1}}>
+                      <div className="tool-name">{co.toolName}</div>
+                      <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>Since {co.time}</div>
+                    </div>
+                    <span className="co-qty-badge">×{co.qty}</span>
+                  </div>
+                ))
+              }
             </div>
           );
         })()}
@@ -1618,9 +1684,36 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
   const[receiptOpen,setReceiptOpen]=useState(false);
   const[hrOpen,setHrOpen]=useState(false);
   const[openHR,setOpenHR]=useState(null);
-  const handleSelectTruck=truck=>{saveMemory(truck);onTruckLogin(truck,"");};
-  const handleChangeTruck=()=>{clearMemory();setSel(null);setError("");};
-  const tryMgr=()=>{if(mgrPass==="ground25")onMgrLogin();else{setError(t.wrongPass);setMgrPass("");}};
+  const[activeTrucks,setActiveTrucks]=useState([]); // truck labels currently ACTIVE in sheet
+
+  // Fetch which trucks are currently signed in so we can gray them out
+  useEffect(()=>{
+    const fetchActive = async () => {
+      try {
+        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Sign%20Ins?key=${SHEETS_KEY}`);
+        const data = await res.json();
+        const today = getTodayKey();
+        const d = new Date();
+        const formats = [
+          `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
+          `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
+        ];
+        const rows = (data.values||[]).slice(1);
+        const active = rows
+          .filter(r => formats.includes((r[0]||"").trim()) && r[4]==="ACTIVE")
+          .map(r => r[1]); // col B = truck label
+        setActiveTrucks(active);
+      } catch(e) { /* silently fail — don't block login */ }
+    };
+    fetchActive();
+  },[]);
+
+  const isTruckInUse = tr => activeTrucks.includes(tr.label) && (!rememberedTruck || rememberedTruck.id !== tr.id);
+
+  const handleSelectTruck = truck => { saveMemory(truck); onTruckLogin(truck,""); };
+  const handleChangeTruck = () => { clearMemory(); setSel(null); setError(""); };
+  const tryMgr = () => { if(mgrPass==="ground25")onMgrLogin(); else{setError(t.wrongPass);setMgrPass("");} };
+
   return (
     <div className="splash">
       <FlagSelector lang={lang} setLang={setLang}/>
@@ -1640,7 +1733,24 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
                   {selected?<span className="truck-dropdown-value">{selected.label}</span>:<span className="truck-dropdown-placeholder">{t.chooseTruck}</span>}
                   <Ic n="chevD" className={`truck-dropdown-chevron ${dropOpen?"open":""}`} style={{width:16,height:16}}/>
                 </div>
-                {dropOpen&&<div className="truck-dropdown-list">{TRUCKS.map(tr=>(<div key={tr.id} className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`} onClick={()=>{setSel(tr);setDropOpen(false);setError("");}}><Ic n="truck" style={{width:14,height:14}}/>{tr.label}{selected?.id===tr.id&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}</div>))}</div>}
+                {dropOpen&&(
+                  <div className="truck-dropdown-list">
+                    {TRUCKS.map(tr=>{
+                      const inUse = isTruckInUse(tr);
+                      return (
+                        <div key={tr.id}
+                          className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`}
+                          onClick={()=>{ if(inUse)return; setSel(tr); setDropOpen(false); setError(""); }}
+                          style={{opacity:inUse?0.45:1,cursor:inUse?"default":"pointer",background:inUse?"var(--bark2)":""}}>
+                          <Ic n="truck" style={{width:14,height:14,color:inUse?"var(--stone)":"currentColor"}}/>
+                          <span style={{flex:1}}>{tr.label}</span>
+                          {inUse && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>In Use</span>}
+                          {selected?.id===tr.id&&!inUse&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               {selected&&<button className="btn-select-truck" onClick={()=>handleSelectTruck(selected)}>{t.makeMyTruck}</button>}
             </>
@@ -1717,17 +1827,51 @@ export default function App() {
   const[truck,setTruck]=useState(null);
   const[truckDiv,setTruckDiv]=useState("");
   const[checkouts,setCheckouts]=useState({});
-  const[signIns,setSignIns]=useState({});
   const[lang,setLang]=useState(detectLang);
-  const handleTruckLogin=t=>{const time=getTimeStr();setSignIns(prev=>({...prev,[t.id]:{signInTime:time,division:""}}));setTruck(t);setTruckDiv("");setScreen("truck");};
-  const handleLogout=()=>{setTruck(null);setTruckDiv("");setScreen("login");};
+
+  const postSignIn = async (tr) => {
+    try {
+      await fetch(SIGNIN_SCRIPT_URL,{
+        method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+        body:JSON.stringify({
+          sheet:"Sign Ins", action:"signin",
+          date:getTodayKey(), truck:tr.label,
+          signInTime:getTimeStr(),
+        }),
+      });
+    } catch(e){ console.warn("Sign-in post failed",e); }
+  };
+
+  const postSignOut = async (tr) => {
+    try {
+      await fetch(SIGNIN_SCRIPT_URL,{
+        method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+        body:JSON.stringify({
+          sheet:"Sign Ins", action:"signout",
+          date:getTodayKey(), truck:tr.label,
+          signOutTime:getTimeStr(),
+        }),
+      });
+    } catch(e){ console.warn("Sign-out post failed",e); }
+  };
+
+  const handleTruckLogin = tr => {
+    setTruck(tr); setTruckDiv(""); setScreen("truck");
+    postSignIn(tr);
+  };
+
+  const handleLogout = () => {
+    if(truck) postSignOut(truck);
+    setTruck(null); setTruckDiv(""); setScreen("login");
+  };
+
   return (
     <LangContext.Provider value={lang}>
       <style>{css}</style>
       <div className="app">
         {screen==="login"   &&<LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={()=>setScreen("manager")} lang={lang} setLang={setLang}/>}
         {screen==="truck"   &&truck&&<TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout} checkouts={checkouts} setCheckouts={setCheckouts}/>}
-        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")} checkouts={checkouts} signIns={signIns}/>}
+        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")} checkouts={checkouts}/>}
       </div>
     </LangContext.Provider>
   );
