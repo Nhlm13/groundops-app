@@ -1408,7 +1408,6 @@ function ManagerZone({ onLogout }) {
   const [tab,         setTab]        = useState("forms");
   const [loading,     setLoading]    = useState(false);
   const [lastRefresh, setLastRefresh]= useState(null);
-  const [debugInfo,   setDebugInfo]  = useState("");
 
   const fetchAll = async () => {
     setLoading(true);
@@ -1417,10 +1416,6 @@ function ManagerZone({ onLogout }) {
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/History?key=${SHEETS_KEY}`).then(r=>r.json()),
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
       ]);
-
-      // Debug — capture raw first 3 rows
-      const rawRows = (r1.values||[]);
-      setDebugInfo(`Total rows in History: ${rawRows.length} | Header: ${JSON.stringify(rawRows[0]||[])} | Row 2: ${JSON.stringify(rawRows[1]||[])} | Error: ${JSON.stringify(r1.error||null)}`);
 
       // History: skip header, take last 50, reverse so newest first
       // Cols: Date=0, Time=1, Type=2, Truck=3, Employee=4, Detail=5, Status=6
@@ -1519,13 +1514,6 @@ function ManagerZone({ onLogout }) {
             {loading?"…":"Refresh"}
           </button>
         </div>
-
-        {/* Debug panel — remove once working */}
-        {debugInfo&&(
-          <div style={{background:"#1a1a1a",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:10,color:"#00ff88",fontFamily:"monospace",wordBreak:"break-all",lineHeight:1.6}}>
-            {debugInfo}
-          </div>
-        )}
 
         {/* Forms tab */}
         {tab==="forms"&&(
