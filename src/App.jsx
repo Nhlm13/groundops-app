@@ -1402,259 +1402,205 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
 }
 
 // ── MANAGER ───────────────────────────────────────────────────────────────────
-function MgrToolsTab({ checkouts }) {
-  const allTools=TOOL_INVENTORY.flatMap(c=>c.tools.map(t=>({...t,category:c.category})));
-  const totalOut=id=>Object.values(checkouts).flat().filter(c=>c.toolId===id).reduce((s,c)=>s+c.qty,0);
-  const trucksWithTool=id=>{const res=[];Object.entries(checkouts).forEach(([tid,cos])=>{const qty=cos.filter(c=>c.toolId===id).reduce((s,c)=>s+c.qty,0);if(qty>0)res.push({tid,qty});});return res;};
-  const toolsOut=allTools.filter(t=>totalOut(t.id)>0);
-  return(
-    <div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:18}}>{[{label:"Total Tools",val:allTools.reduce((s,t)=>s+t.total,0),color:"var(--stone)"},{label:"Checked Out",val:Object.values(checkouts).flat().reduce((s,c)=>s+c.qty,0),color:"var(--warn)"},{label:"Available",val:allTools.reduce((s,t)=>s+(t.total-totalOut(t.id)),0),color:"var(--lime)"}].map(stat=>(<div key={stat.label} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:"12px 10px",textAlign:"center"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:stat.color,lineHeight:1}}>{stat.val}</div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginTop:3}}>{stat.label}</div></div>))}</div>
-      {toolsOut.length>0&&(<><div className="section-hd" style={{color:"var(--warn)"}}>Currently Out</div>{toolsOut.map(tool=>{const out=totalOut(tool.id);const trucks=trucksWithTool(tool.id);return(<div key={tool.id} className="mgr-tool-row"><div className="mgr-tool-top"><span className="mgr-tool-name">{tool.name}</span><div className="mgr-tool-nums"><span className="num-chip nc-total">{tool.total} total</span><span className="num-chip nc-out">{out} out</span><span className="num-chip nc-avail">{tool.total-out} left</span></div></div><div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>{trucks.map(t=><span key={t.tid} className="truck-tag">Truck {t.tid} ×{t.qty}</span>)}</div></div>);})}</>)}
-      <div className="section-hd" style={{marginTop:16}}>Full Inventory</div>
-      {TOOL_INVENTORY.map(cat=>(<div key={cat.category} style={{marginBottom:14}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>{cat.category}</div>{cat.tools.map(tool=>{const out=totalOut(tool.id);const avl=tool.total-out;return(<div key={tool.id} className="mgr-tool-row" style={{marginBottom:6}}><div className="mgr-tool-top"><span className="mgr-tool-name">{tool.name}</span><div className="mgr-tool-nums"><span className="num-chip nc-total">{tool.total}</span>{out>0&&<span className="num-chip nc-out">{out} out</span>}<span className={`num-chip ${avl===0?"nc-out":"nc-avail"}`}>{avl} avail</span></div></div></div>);})}</div>))}
-    </div>
-  );
-}
+function ManagerZone({ onLogout }) {
+  const [tab,          setTab]         = useState("briefing");
+  const [receipts,     setReceipts]    = useState([]);
+  const [dotData,      setDotData]     = useState([]);
+  const [briefingData, setBriefingData]= useState([]);
+  const [piData,       setPiData]      = useState([]);
+  const [loading,      setLoading]     = useState(false);
+  const [lastRefresh,  setLastRefresh] = useState(null);
 
-function ManagerZone({ onLogout, checkouts }) {
-  const [tab,           setTab]          = useState("fleet");
-  const [selectedTruck, setSelTruck]     = useState(null);
-  const [activeTrucks,  setActiveTrucks] = useState([]); // from sheet: [{truckId, label, signInTime}]
-  const [receipts,      setReceipts]     = useState([]);
-  const [dotData,       setDotData]      = useState([]);
-  const [briefingData,  setBriefingData] = useState([]);
-  const [piData,        setPiData]       = useState([]);
-  const [dataLoading,   setDataLoading]  = useState(false);
-  const [lastRefresh,   setLastRefresh]  = useState(null);
-
-  const isToday = val => {
-    if (!val) return false;
-    const d = new Date();
-    const formats = [
-      `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
-      `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
-    ];
-    return formats.includes((val||"").trim());
+  const normDate = val => {
+    if (!val) return "";
+    if (val instanceof Date) return `${val.getMonth()+1}/${val.getDate()}/${val.getFullYear()}`;
+    const s = String(val).trim();
+    const p = s.split("/");
+    if (p.length===3) return `${parseInt(p[0])}/${parseInt(p[1])}/${p[2]}`;
+    return s;
   };
+  const todayStr = () => { const d=new Date(); return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`; };
+  const isToday  = val => normDate(val) === todayStr();
 
   const fetchAll = async () => {
-    setDataLoading(true);
+    setLoading(true);
     try {
-      const [r1,r2,r3,r4,r5] = await Promise.all([
+      const [r1,r2,r3,r4] = await Promise.all([
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/DOT%20walkaround?key=${SHEETS_KEY}`).then(r=>r.json()),
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Sign%20Ins?key=${SHEETS_KEY}`).then(r=>r.json()),
       ]);
-
-      // Active trucks from Sign Ins sheet — today's ACTIVE rows only
-      const signInRows = (r5.values||[]).slice(1).filter(r=>isToday(r[0]) && r[4]==="ACTIVE");
-      setActiveTrucks(signInRows.map(r=>{
-        const label = r[1]||"";
-        const num   = label.replace("Truck ","");
-        return { truckId:num, label, signInTime:r[2]||"" };
-      }));
-
-      // Receipts
-      const rRows = (r1.values||[]).slice(1).filter(r=>isToday(r[0]));
-      setReceipts(rRows.map(r=>({time:r[1]||"",truck:r[2]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photoUrl:r[7]||""})));
-      // DOT
-      const dRows = (r2.values||[]).slice(1).filter(r=>isToday(r[0]));
-      setDotData(dRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||"",status:r[r.length-1]||""})));
-      // Briefing
-      const bRows = (r3.values||[]).slice(1).filter(r=>isToday(r[0]));
-      setBriefingData(bRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||""})));
-      // Property Inspection
-      const pRows = (r4.values||[]).slice(1).filter(r=>isToday(r[0]));
-      setPiData(pRows.map(r=>({truck:r[2]||"",name:r[3]||"",property:r[4]||"",time:r[1]||"",status:r[r.length-1]||""})));
-
+      // Receipts: date=col0, time=1, truck=2, type=4, total=5, merchant=6
+      setReceipts((r1.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
+        time:r[1]||"", truck:r[2]||"", type:r[4]||"", total:r[5]||"", merchant:r[6]||"", photo:!!r[7]
+      })));
+      // DOT: date=0, time=1, truck=2, name=3, status=last
+      setDotData((r2.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
+        time:r[1]||"", truck:r[2]||"", name:r[3]||"", status:r[r.length-1]||""
+      })));
+      // Briefing: date=0, time=1, truck=2, name=3
+      setBriefingData((r3.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
+        time:r[1]||"", truck:r[2]||"", name:r[3]||""
+      })));
+      // Property: date=0, time=1, truck=2, name=3, property=4, status=last
+      setPiData((r4.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
+        time:r[1]||"", truck:r[2]||"", name:r[3]||"", property:r[4]||"", status:r[r.length-1]||""
+      })));
       setLastRefresh(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
-    } catch(e){ console.warn("Data fetch failed",e); }
-    setDataLoading(false);
+    } catch(e){ console.warn("Fetch failed",e); }
+    setLoading(false);
   };
 
-  // Initial fetch + 10-minute auto-refresh
   useEffect(()=>{
     fetchAll();
-    const interval = setInterval(fetchAll, 10 * 60 * 1000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchAll, 10*60*1000);
+    return ()=>clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const truckReceipts = tid => receipts.filter(r=>r.truck===`Truck ${tid}`);
-  const truckDOT      = tid => dotData.find(d=>d.truck===`Truck ${tid}`);
-  const truckBriefing = tid => briefingData.find(d=>d.truck===`Truck ${tid}`);
-  const truckPI       = tid => piData.filter(d=>d.truck===`Truck ${tid}`);
-
-  const Badge = ({label,ok,neutral}) => (
-    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,background:neutral?"var(--bark2)":ok?"rgba(74,109,32,0.12)":"rgba(192,68,42,0.12)",border:`1px solid ${neutral?"var(--moss)":ok?"var(--leaf)":"var(--danger)"}`,borderRadius:4,padding:"2px 7px",color:neutral?"var(--stone)":ok?"var(--lime)":"var(--danger)"}}>
-      {label}
-    </span>
+  const EmptyState = ({msg}) => (
+    <div style={{textAlign:"center",padding:"40px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
+      {loading ? "Loading..." : msg}
+    </div>
   );
+
+  const RefreshBar = () => (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+      {lastRefresh && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>}
+      <button onClick={fetchAll} disabled={loading}
+        style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase",marginLeft:"auto"}}>
+        {loading ? "…" : "Refresh"}
+      </button>
+    </div>
+  );
+
+  // Status badge
+  const StatusBadge = ({status}) => {
+    const pass = status && (status.startsWith("PASS") || status==="ACKNOWLEDGED" || status==="COMPLETE");
+    const fail = status && (status.startsWith("FLAG") || status==="INCOMPLETE");
+    const bg  = pass?"rgba(74,109,32,0.12)":fail?"rgba(192,68,42,0.12)":"var(--bark2)";
+    const col = pass?"var(--lime)":fail?"var(--danger)":"var(--stone)";
+    const bdr = pass?"var(--leaf)":fail?"var(--danger)":"var(--moss)";
+    return <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,background:bg,border:`1px solid ${bdr}`,borderRadius:4,padding:"2px 8px",color:col,textTransform:"uppercase",flexShrink:0}}>{status||"—"}</span>;
+  };
+
+  // Shared card layout
+  const Card = ({time, truck, name, right, children}) => (
+    <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck}</span>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{time}</span>
+        </div>
+        {right}
+      </div>
+      {name && <div style={{fontSize:12,color:"var(--stone)",marginBottom:children?6:0}}>{name}</div>}
+      {children}
+    </div>
+  );
+
+  const todayLabel = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
   return (
     <div className="screen" style={{background:"#ddd9d0"}}>
       <div className="mgr-topbar">
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
-          <div className="mgr-topbar-title">Manager Zone</div>
+        <div style={{display:"flex",flexDirection:"column"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+            <div className="mgr-topbar-title">Manager Zone</div>
+          </div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginTop:1}}>{todayLabel}</div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span className="mgr-badge">Admin</span>
           <button className="logout-btn" onClick={onLogout}>Out</button>
         </div>
       </div>
-      <div className="content" style={{background:"#ddd9d0"}}>
 
-        {tab==="fleet"&&!selectedTruck&&(
+      <div className="content" style={{background:"#ddd9d0"}}>
+        <RefreshBar/>
+
+        {/* ── BRIEFING TAB ── */}
+        {tab==="briefing"&&(
           <>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-              <div className="section-hd" style={{color:"var(--mgr)",marginBottom:0}}>Active Trucks</div>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                {lastRefresh&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>}
-                <button onClick={fetchAll} disabled={dataLoading}
-                  style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"3px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>
-                  {dataLoading?"…":"Refresh"}
-                </button>
-              </div>
-            </div>
-            {activeTrucks.length===0&&(
-              <div style={{textAlign:"center",padding:"30px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
-                {dataLoading?"Loading...":"No trucks signed in"}
-              </div>
-            )}
-            {activeTrucks.map(info=>{
-              const dot=truckDOT(info.truckId);
-              const brief=truckBriefing(info.truckId);
-              const pis=truckPI(info.truckId);
-              return (
-                <div key={info.truckId} className="fleet-row" onClick={()=>setSelTruck(info)}>
-                  <Ic n="truck" style={{width:18,height:18,color:"var(--lime)",flexShrink:0}}/>
-                  <div className="fleet-truck-num">{info.truckId}</div>
-                  <div className="fleet-info">
-                    <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:2}}>
-                      <Badge label={brief?"Brief ✓":"Brief —"} ok={!!brief} neutral={!brief}/>
-                      <Badge label={dot?(dot.status.startsWith("PASS")?"DOT ✓":"DOT ✗"):"DOT —"} ok={!!dot&&dot.status.startsWith("PASS")} neutral={!dot}/>
-                      <Badge label={pis.length>0?`Prop ×${pis.length}`:"Prop —"} ok={pis.length>0} neutral={pis.length===0}/>
-                    </div>
-                  </div>
-                  <div style={{color:"var(--moss)"}}><Ic n="chev" style={{width:16,height:16}}/></div>
-                </div>
-              );
-            })}
+            <div className="section-hd" style={{color:"var(--mgr)"}}>Daily Briefing — Today ({briefingData.length})</div>
+            {briefingData.length===0
+              ? <EmptyState msg="No briefings submitted today"/>
+              : briefingData.map((r,i)=>(
+                  <Card key={i} time={r.time} truck={r.truck} name={r.name}
+                    right={<StatusBadge status="ACKNOWLEDGED"/>}/>
+                ))
+            }
           </>
         )}
 
-        {tab==="fleet"&&selectedTruck&&(()=>{
-          const dot=truckDOT(selectedTruck.truckId);
-          const brief=truckBriefing(selectedTruck.truckId);
-          const pis=truckPI(selectedTruck.truckId);
-          const dotPass=dot&&dot.status.startsWith("PASS");
-          return (
-            <div className="truck-detail">
-              <button className="back-btn" style={{marginBottom:16}} onClick={()=>setSelTruck(null)}><Ic n="back"/>Back to Fleet</button>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:"var(--lime)",letterSpacing:2,marginBottom:14}}>Truck {selectedTruck.truckId}</div>
-
-              {/* Signed In */}
-              <div className="detail-stat">
-                <div className="detail-stat-icon"><Ic n="clock"/></div>
-                <div className="detail-stat-info">
-                  <div className="detail-stat-label">Signed In</div>
-                  <div className="detail-stat-val">{selectedTruck.signInTime}</div>
-                </div>
-              </div>
-
-              {/* Daily Briefing */}
-              <div className="detail-stat" style={{borderLeft:`3px solid ${brief?"var(--lime)":"var(--moss)"}`}}>
-                <div className="detail-stat-icon" style={{background:brief?"rgba(74,109,32,0.15)":"var(--moss)"}}>
-                  <Ic n={brief?"check":"book"} style={{width:15,height:15,color:brief?"var(--lime)":"var(--leaf)"}}/>
-                </div>
-                <div className="detail-stat-info">
-                  <div className="detail-stat-label">Daily Briefing</div>
-                  <div className="detail-stat-val" style={{color:brief?"var(--lime)":"var(--stone)"}}>
-                    {dataLoading?"Loading...":(brief?`Acknowledged at ${brief.time} by ${brief.name}`:"Not yet completed")}
-                  </div>
-                </div>
-              </div>
-
-              {/* DOT */}
-              <div className="detail-stat" style={{borderLeft:`3px solid ${!dot?"var(--moss)":dotPass?"var(--lime)":"var(--danger)"}`}}>
-                <div className="detail-stat-icon" style={{background:!dot?"var(--moss)":dotPass?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)"}}>
-                  <Ic n={!dot?"dot":dotPass?"check":"alert"} style={{width:15,height:15,color:!dot?"var(--leaf)":dotPass?"var(--lime)":"var(--danger)"}}/>
-                </div>
-                <div className="detail-stat-info">
-                  <div className="detail-stat-label">DOT Walk-Around</div>
-                  <div className="detail-stat-val" style={{color:!dot?"var(--stone)":dotPass?"var(--lime)":"var(--danger)"}}>
-                    {dataLoading?"Loading...":(dot?`${dot.status} · ${dot.time} · ${dot.name}`:"Not yet completed")}
-                  </div>
-                </div>
-              </div>
-
-              {/* Property Inspections */}
-              <div className="detail-stat" style={{borderLeft:`3px solid ${pis.length>0?"var(--lime)":"var(--moss)"}`}}>
-                <div className="detail-stat-icon" style={{background:pis.length>0?"rgba(74,109,32,0.15)":"var(--moss)"}}>
-                  <Ic n="map" style={{width:15,height:15,color:pis.length>0?"var(--lime)":"var(--leaf)"}}/>
-                </div>
-                <div className="detail-stat-info">
-                  <div className="detail-stat-label">Property Inspections</div>
-                  <div className="detail-stat-val" style={{color:pis.length>0?"var(--lime)":"var(--stone)"}}>
-                    {dataLoading?"Loading...":pis.length===0?"None today":`${pis.length} completed today`}
-                  </div>
-                  {pis.map((pi,i)=>(
-                    <div key={i} style={{fontSize:11,color:"var(--stone)",marginTop:3}}>{pi.property} · {pi.time} · {pi.status}</div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Receipts */}
-              <div className="section-hd" style={{marginTop:8,color:"var(--mgr)"}}>Receipts & Fuel Logs Today</div>
-              {dataLoading
-                ?<div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>Loading...</div>
-                :truckReceipts(selectedTruck.truckId).length===0
-                  ?<div style={{fontSize:13,color:"var(--stone)",padding:"8px 0"}}>No submissions today</div>
-                  :truckReceipts(selectedTruck.truckId).map((r,i)=>(
-                    <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.type}</div>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--sand)"}}>{r.time}</div>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between"}}>
-                        <div style={{fontSize:12,color:"var(--stone)"}}>{r.merchant||"—"}</div>
-                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)"}}>${r.total}</div>
-                      </div>
-                      {r.photoUrl&&<div style={{display:"flex",alignItems:"center",gap:5,marginTop:6}}>
-                        <Ic n="check" style={{width:12,height:12,color:"var(--lime)",flexShrink:0}}/>
-                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>Photo Uploaded</span>
-                      </div>}
-                    </div>
-                  ))
-              }
-
-              {/* Tools */}
-              <div className="section-hd" style={{marginTop:8}}>Tools Checked Out</div>
-              {(checkouts[selectedTruck.truckId]||[]).length===0
-                ?<div style={{fontSize:13,color:"var(--stone)",padding:"12px 0"}}>No tools checked out</div>
-                :(checkouts[selectedTruck.truckId]||[]).map(co=>(
-                  <div key={co.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 13px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{flex:1}}>
-                      <div className="tool-name">{co.toolName}</div>
-                      <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>Since {co.time}</div>
-                    </div>
-                    <span className="co-qty-badge">×{co.qty}</span>
-                  </div>
+        {/* ── DOT TAB ── */}
+        {tab==="dot"&&(
+          <>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>DOT Walk-Around — Today ({dotData.length})</div>
+            {dotData.length===0
+              ? <EmptyState msg="No DOT inspections submitted today"/>
+              : dotData.map((r,i)=>(
+                  <Card key={i} time={r.time} truck={r.truck} name={r.name}
+                    right={<StatusBadge status={r.status}/>}/>
                 ))
-              }
-            </div>
-          );
-        })()}
+            }
+          </>
+        )}
 
-        {tab==="tools"&&<MgrToolsTab checkouts={checkouts}/>}
+        {/* ── PROPERTY TAB ── */}
+        {tab==="property"&&(
+          <>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>Property Inspections — Today ({piData.length})</div>
+            {piData.length===0
+              ? <EmptyState msg="No property inspections submitted today"/>
+              : piData.map((r,i)=>(
+                  <Card key={i} time={r.time} truck={r.truck} name={r.name}
+                    right={<StatusBadge status={r.status}/>}>
+                    {r.property&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:700}}>{r.property}</div>}
+                  </Card>
+                ))
+            }
+          </>
+        )}
+
+        {/* ── RECEIPTS TAB ── */}
+        {tab==="receipts"&&(
+          <>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>Receipts & Fuel — Today ({receipts.length})</div>
+            {receipts.length===0
+              ? <EmptyState msg="No receipts submitted today"/>
+              : receipts.map((r,i)=>(
+                  <Card key={i} time={r.time} truck={r.truck} name={r.merchant||"—"}
+                    right={<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)"}}>
+                      {r.total ? `$${r.total}` : r.type}
+                    </span>}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.type}</span>
+                      {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
+                    </div>
+                  </Card>
+                ))
+            }
+          </>
+        )}
       </div>
+
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-        <button className={`bnav-btn ${tab==="fleet"?"active":""}`} style={tab==="fleet"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>{setTab("fleet");setSelTruck(null);}}><Ic n="truck"/>Fleet</button>
-        <button className={`bnav-btn ${tab==="tools"?"active":""}`} style={tab==="tools"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("tools")}><Ic n="wrench"/>Tools</button>
+        {[
+          {key:"briefing", icon:"book",   label:"Briefing"},
+          {key:"dot",      icon:"dot",    label:"DOT"},
+          {key:"property", icon:"map",    label:"Property"},
+          {key:"receipts", icon:"camera", label:"Receipts"},
+        ].map(({key,icon,label})=>(
+          <button key={key}
+            className={`bnav-btn ${tab===key?"active":""}`}
+            style={tab===key?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
+            onClick={()=>setTab(key)}>
+            <Ic n={icon}/>{label}
+          </button>
+        ))}
       </nav>
     </div>
   );
@@ -1865,7 +1811,7 @@ export default function App() {
       <div className="app">
         {screen==="login"   &&<LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={()=>setScreen("manager")} lang={lang} setLang={setLang}/>}
         {screen==="truck"   &&truck&&<TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout} checkouts={checkouts} setCheckouts={setCheckouts}/>}
-        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")} checkouts={checkouts}/>}
+        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")}/>}
       </div>
     </LangContext.Provider>
   );
