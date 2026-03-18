@@ -662,10 +662,10 @@ const DOT_CATEGORIES = [
 const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires_trailer","lights_trailer","hitch","safety_chains","trailer_brakes","load_secured","brake_fluid","seatbelts","fire_extinguisher","first_aid","ppe","warning_triangles","no_leaks"];
 
 const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzW5asagcFUOEiL7_yz2gpgwIYhuQczcjY3tQKjDFNtH3-aU4nQjLxoFMgO562ePiDfSw/exec";
-const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxE1AIzz93kV7cs2BI0KN0b7sWxRfxujBUNJ34VfHK3aQhonIIZs8PUSYJ21FfiIreUzg/exec";
-const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtIw5aUKXYjUQccYGGVV3we3Zt_UvMYF6cVG0y7jWrofd5AblnKVDwFqfoX5A9XgYWtg/exec";
-const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycby9q8UUqz2ugp8hYopz0bMNAPtutkfoMqFtyzGkA77SzFeWOmmudFK1aD_PeXhc3gA9WQ/exec";
+const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
+const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
+const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
+const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
 const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
 const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
@@ -1431,12 +1431,6 @@ function ManagerZone({ onLogout, checkouts }) {
   const isToday = val => {
     if (!val) return false;
     const d = new Date();
-    const parsed = new Date(val);
-    if (!isNaN(parsed)) {
-      return parsed.getFullYear()===d.getFullYear() &&
-             parsed.getMonth()===d.getMonth() &&
-             parsed.getDate()===d.getDate();
-    }
     const formats = [
       `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
       `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
