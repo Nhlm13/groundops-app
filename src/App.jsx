@@ -1429,13 +1429,24 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
   useEffect(()=>{
     const fetchAll = async () => {
       setDataLoading(true);
-      // Build both date formats to match whatever the sheet stored
+      // Match any date format the sheet might use
       const d = new Date();
-      const dateFormats = [
-        `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,           // M/D/YYYY
-        `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`, // MM/DD/YYYY
-      ];
-      const isToday = val => dateFormats.includes(val);
+      const isToday = val => {
+        if (!val) return false;
+        // Try parsing the cell value as a date and compare to today
+        const parsed = new Date(val);
+        if (!isNaN(parsed)) {
+          return parsed.getFullYear()===d.getFullYear() &&
+                 parsed.getMonth()===d.getMonth() &&
+                 parsed.getDate()===d.getDate();
+        }
+        // Fallback: string-match both M/D/YYYY and MM/DD/YYYY
+        const formats = [
+          `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
+          `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
+        ];
+        return formats.includes(val.trim());
+      };
       try {
         const [r1,r2,r3,r4] = await Promise.all([
           fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
@@ -1443,16 +1454,24 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
           fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
           fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
         ]);
-        // Receipts — date in col A
+
+        // Log raw results so we can debug what's coming back
+        console.log("DOT raw rows:", (r2.values||[]).slice(0,3));
+        console.log("Briefing raw rows:", (r3.values||[]).slice(0,3));
+        console.log("PI raw rows:", (r4.values||[]).slice(0,3));
+        console.log("DOT error:", r2.error);
+        console.log("Briefing error:", r3.error);
+
+        // Receipts
         const rRows = (r1.values||[]).slice(1).filter(r=>isToday(r[0]));
         setReceipts(rRows.map(r=>({time:r[1]||"",truck:r[2]||"",division:r[3]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photoUrl:r[7]||""})));
-        // DOT — date col A, truck col C, name col D, time col B, status last col
+        // DOT
         const dRows = (r2.values||[]).slice(1).filter(r=>isToday(r[0]));
         setDotData(dRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||"",status:r[r.length-1]||""})));
-        // Briefing — date col A, time col B, truck col C, name col D
+        // Briefing
         const bRows = (r3.values||[]).slice(1).filter(r=>isToday(r[0]));
         setBriefingData(bRows.map(r=>({truck:r[2]||"",name:r[3]||"",time:r[1]||""})));
-        // Property Inspection — date col A, time col B, truck col C, name col D, property col E, status last col
+        // Property Inspection
         const pRows = (r4.values||[]).slice(1).filter(r=>isToday(r[0]));
         setPiData(pRows.map(r=>({truck:r[2]||"",name:r[3]||"",property:r[4]||"",time:r[1]||"",status:r[r.length-1]||""})));
       } catch(e){console.warn("Data fetch failed",e);}
@@ -1493,7 +1512,7 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
                   <Ic n="truck" style={{width:18,height:18,color:"var(--lime)",flexShrink:0}}/>
                   <div className="fleet-truck-num">{truckId}</div>
                   <div className="fleet-info">
-                    <div className="fleet-division">{info.division||"No division selected"}</div>
+                    <div className="fleet-division">{info.division||""}</div>
                     <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:5}}>
                       <Badge label={brief?"Brief ✓":"Brief —"} ok={!!brief} neutral={!brief}/>
                       <Badge label={dot?(dot.status.startsWith("PASS")?"DOT ✓":"DOT ✗"):"DOT —"} ok={!!dot&&dot.status.startsWith("PASS")} neutral={!dot}/>
@@ -1519,7 +1538,7 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
 
               {/* Signed In */}
               <div className="detail-stat"><div className="detail-stat-icon"><Ic n="clock"/></div><div className="detail-stat-info"><div className="detail-stat-label">Signed In</div><div className="detail-stat-val">{selectedTruck.signInTime}</div></div></div>
-              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||"Not selected"}</div></div></div>
+              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||"—"}</div></div></div>
 
               {/* Daily Briefing */}
               <div className="detail-stat" style={{borderLeft:`3px solid ${brief?"var(--lime)":"var(--moss)"}`}}>
