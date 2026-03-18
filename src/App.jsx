@@ -1486,6 +1486,7 @@ function ManagerZone({ onLogout, checkouts }) {
     fetchAll();
     const interval = setInterval(fetchAll, 10 * 60 * 1000);
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   const truckReceipts = tid => receipts.filter(r=>r.truck===`Truck ${tid}`);
@@ -1692,7 +1693,6 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
       try {
         const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Sign%20Ins?key=${SHEETS_KEY}`);
         const data = await res.json();
-        const today = getTodayKey();
         const d = new Date();
         const formats = [
           `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
