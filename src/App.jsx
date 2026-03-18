@@ -1403,58 +1403,35 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
 
 // ── MANAGER ───────────────────────────────────────────────────────────────────
 function ManagerZone({ onLogout }) {
-  const [tab,          setTab]         = useState("briefing");
-  const [receipts,     setReceipts]    = useState([]);
-  const [dotData,      setDotData]     = useState([]);
-  const [briefingData, setBriefingData]= useState([]);
-  const [piData,       setPiData]      = useState([]);
-  const [loading,      setLoading]     = useState(false);
-  const [lastRefresh,  setLastRefresh] = useState(null);
-
-  const normDate = val => {
-    if (!val && val !== 0) return "";
-    // Date object
-    if (val instanceof Date) {
-      return `${val.getMonth()+1}/${val.getDate()}/${val.getFullYear()}`;
-    }
-    // Google Sheets date serial number (days since Dec 30 1899)
-    if (typeof val === "number") {
-      const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-      return `${d.getUTCMonth()+1}/${d.getUTCDate()}/${d.getUTCFullYear()}`;
-    }
-    // String — normalize MM/DD/YYYY or M/D/YYYY both to M/D/YYYY
-    const s = String(val).trim();
-    const p = s.split("/");
-    if (p.length === 3) return `${parseInt(p[0])}/${parseInt(p[1])}/${p[2]}`;
-    return s;
-  };
-  const todayStr = () => { const d=new Date(); return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`; };
-  const isToday  = val => normDate(val) === todayStr();
+  const [tab,         setTab]        = useState("all");
+  const [history,     setHistory]    = useState([]);
+  const [loading,     setLoading]    = useState(false);
+  const [lastRefresh, setLastRefresh]= useState(null);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [r1,r2,r3,r4] = await Promise.all([
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/DOT%20walkaround?key=${SHEETS_KEY}`).then(r=>r.json()),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Daily%20Briefing?key=${SHEETS_KEY}`).then(r=>r.json()),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Property%20Inspection?key=${SHEETS_KEY}`).then(r=>r.json()),
-      ]);
-      // Receipts: date=col0, time=1, truck=2, type=4, total=5, merchant=6
-      setReceipts((r1.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
-        time:r[1]||"", truck:r[2]||"", type:r[4]||"", total:r[5]||"", merchant:r[6]||"", photo:!!r[7]
-      })));
-      // DOT: date=0, time=1, truck=2, name=3, status=last
-      setDotData((r2.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
-        time:r[1]||"", truck:r[2]||"", name:r[3]||"", status:r[r.length-1]||""
-      })));
-      // Briefing: date=0, time=1, truck=2, name=3
-      setBriefingData((r3.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
-        time:r[1]||"", truck:r[2]||"", name:r[3]||""
-      })));
-      // Property: date=0, time=1, truck=2, name=3, property=4, status=last
-      setPiData((r4.values||[]).slice(1).filter(r=>isToday(r[0])).map(r=>({
-        time:r[1]||"", truck:r[2]||"", name:r[3]||"", property:r[4]||"", status:r[r.length-1]||""
+      const res  = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/History?key=${SHEETS_KEY}`);
+      const data = await res.json();
+      const rows = (data.values||[]).slice(1); // skip header
+      // History cols: Date=0, Time=1, Type=2, Truck=3, Employee=4, Property/Notes=5, Status=6
+      // Filter to today by comparing the raw string — History dates are written by the app as M/D/YYYY strings
+      const d = new Date();
+      const todayFormats = [
+        `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
+        `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
+      ];
+      const todayRows = rows.filter(r => todayFormats.includes((String(r[0]||"")).trim()));
+      // Sort newest first by time string
+      todayRows.sort((a,b)=>String(b[1]||"").localeCompare(String(a[1]||"")));
+      setHistory(todayRows.map(r=>({
+        date:    r[0]||"",
+        time:    r[1]||"",
+        type:    r[2]||"",
+        truck:   r[3]||"",
+        name:    r[4]||"",
+        detail:  r[5]||"",
+        status:  r[6]||"",
       })));
       setLastRefresh(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
     } catch(e){ console.warn("Fetch failed",e); }
@@ -1468,46 +1445,51 @@ function ManagerZone({ onLogout }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  const EmptyState = ({msg}) => (
-    <div style={{textAlign:"center",padding:"40px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
-      {loading ? "Loading..." : msg}
-    </div>
-  );
+  const TABS = [
+    {key:"all",       label:"All",      icon:"clip"},
+    {key:"briefing",  label:"Briefing", icon:"book"},
+    {key:"dot",       label:"DOT",      icon:"dot"},
+    {key:"property",  label:"Property", icon:"map"},
+  ];
 
-  const RefreshBar = () => (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-      {lastRefresh && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>}
-      <button onClick={fetchAll} disabled={loading}
-        style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase",marginLeft:"auto"}}>
-        {loading ? "…" : "Refresh"}
-      </button>
-    </div>
-  );
+  const TYPE_MAP = {
+    briefing:  "Daily Briefing",
+    dot:       "DOT Walk-Around",
+    property:  "Property Inspection",
+  };
 
-  // Status badge
+  const filtered = tab==="all" ? history : history.filter(r=>r.type===TYPE_MAP[tab]);
+
   const StatusBadge = ({status}) => {
     const pass = status && (status.startsWith("PASS") || status==="ACKNOWLEDGED" || status==="COMPLETE");
     const fail = status && (status.startsWith("FLAG") || status==="INCOMPLETE");
     const bg  = pass?"rgba(74,109,32,0.12)":fail?"rgba(192,68,42,0.12)":"var(--bark2)";
     const col = pass?"var(--lime)":fail?"var(--danger)":"var(--stone)";
     const bdr = pass?"var(--leaf)":fail?"var(--danger)":"var(--moss)";
-    return <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,background:bg,border:`1px solid ${bdr}`,borderRadius:4,padding:"2px 8px",color:col,textTransform:"uppercase",flexShrink:0}}>{status||"—"}</span>;
+    const lbl = pass&&status==="ACKNOWLEDGED"?"✓ Done":pass?"✓ "+status:fail?"✗ "+status:status||"—";
+    return (
+      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,
+        background:bg,border:`1px solid ${bdr}`,borderRadius:4,padding:"2px 8px",
+        color:col,textTransform:"uppercase",flexShrink:0,whiteSpace:"nowrap"}}>
+        {lbl}
+      </span>
+    );
   };
 
-  // Shared card layout
-  const Card = ({time, truck, name, right, children}) => (
-    <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck}</span>
-          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{time}</span>
-        </div>
-        {right}
-      </div>
-      {name && <div style={{fontSize:12,color:"var(--stone)",marginBottom:children?6:0}}>{name}</div>}
-      {children}
-    </div>
-  );
+  const TypePill = ({type}) => {
+    const colors = {
+      "Daily Briefing":     {bg:"rgba(42,90,149,0.12)",  col:"var(--mgr-lt)"},
+      "DOT Walk-Around":    {bg:"rgba(160,96,16,0.12)",  col:"var(--warn)"},
+      "Property Inspection":{bg:"rgba(74,109,32,0.12)",  col:"var(--leaf)"},
+    };
+    const c = colors[type]||{bg:"var(--bark2)",col:"var(--stone)"};
+    return (
+      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,
+        background:c.bg,borderRadius:4,padding:"2px 6px",color:c.col,textTransform:"uppercase",flexShrink:0}}>
+        {type==="Daily Briefing"?"Briefing":type==="DOT Walk-Around"?"DOT":"Property"}
+      </span>
+    );
+  };
 
   const todayLabel = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
@@ -1528,81 +1510,52 @@ function ManagerZone({ onLogout }) {
       </div>
 
       <div className="content" style={{background:"#ddd9d0"}}>
-        <RefreshBar/>
+        {/* Refresh bar */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          {lastRefresh
+            ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>
+            : <span/>
+          }
+          <button onClick={fetchAll} disabled={loading}
+            style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",
+              fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",
+              cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>
+            {loading?"…":"Refresh"}
+          </button>
+        </div>
 
-        {/* ── BRIEFING TAB ── */}
-        {tab==="briefing"&&(
-          <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>Daily Briefing — Today ({briefingData.length})</div>
-            {briefingData.length===0
-              ? <EmptyState msg="No briefings submitted today"/>
-              : briefingData.map((r,i)=>(
-                  <Card key={i} time={r.time} truck={r.truck} name={r.name}
-                    right={<StatusBadge status="ACKNOWLEDGED"/>}/>
-                ))
-            }
-          </>
-        )}
+        {/* Count header */}
+        <div className="section-hd" style={{color:"var(--mgr)"}}>
+          {tab==="all"?"All Submissions":""}
+          {tab==="briefing"?"Daily Briefings":""}
+          {tab==="dot"?"DOT Walk-Arounds":""}
+          {tab==="property"?"Property Inspections":""}
+          {" "}— Today ({filtered.length})
+        </div>
 
-        {/* ── DOT TAB ── */}
-        {tab==="dot"&&(
-          <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>DOT Walk-Around — Today ({dotData.length})</div>
-            {dotData.length===0
-              ? <EmptyState msg="No DOT inspections submitted today"/>
-              : dotData.map((r,i)=>(
-                  <Card key={i} time={r.time} truck={r.truck} name={r.name}
-                    right={<StatusBadge status={r.status}/>}/>
-                ))
-            }
-          </>
+        {/* Entries */}
+        {loading && history.length===0 && (
+          <div style={{textAlign:"center",padding:"40px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
         )}
-
-        {/* ── PROPERTY TAB ── */}
-        {tab==="property"&&(
-          <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>Property Inspections — Today ({piData.length})</div>
-            {piData.length===0
-              ? <EmptyState msg="No property inspections submitted today"/>
-              : piData.map((r,i)=>(
-                  <Card key={i} time={r.time} truck={r.truck} name={r.name}
-                    right={<StatusBadge status={r.status}/>}>
-                    {r.property&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:700}}>{r.property}</div>}
-                  </Card>
-                ))
-            }
-          </>
+        {!loading && filtered.length===0 && (
+          <div style={{textAlign:"center",padding:"40px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Nothing submitted today</div>
         )}
-
-        {/* ── RECEIPTS TAB ── */}
-        {tab==="receipts"&&(
-          <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>Receipts & Fuel — Today ({receipts.length})</div>
-            {receipts.length===0
-              ? <EmptyState msg="No receipts submitted today"/>
-              : receipts.map((r,i)=>(
-                  <Card key={i} time={r.time} truck={r.truck} name={r.merchant||"—"}
-                    right={<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)"}}>
-                      {r.total ? `$${r.total}` : r.type}
-                    </span>}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.type}</span>
-                      {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
-                    </div>
-                  </Card>
-                ))
-            }
-          </>
-        )}
+        {filtered.map((r,i)=>(
+          <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+              <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
+              {tab==="all"&&<TypePill type={r.type}/>}
+              <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
+            </div>
+            {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginBottom:r.detail?4:0}}>{r.name}</div>}
+            {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600}}>{r.detail}</div>}
+          </div>
+        ))}
       </div>
 
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-        {[
-          {key:"briefing", icon:"book",   label:"Briefing"},
-          {key:"dot",      icon:"dot",    label:"DOT"},
-          {key:"property", icon:"map",    label:"Property"},
-          {key:"receipts", icon:"camera", label:"Receipts"},
-        ].map(({key,icon,label})=>(
+        {TABS.map(({key,icon,label})=>(
           <button key={key}
             className={`bnav-btn ${tab===key?"active":""}`}
             style={tab===key?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
