@@ -1457,7 +1457,7 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
                   <Ic n="truck" style={{width:18,height:18,color:"var(--lime)",flexShrink:0}}/>
                   <div className="fleet-truck-num">{truckId}</div>
                   <div className="fleet-info">
-                    <div className="fleet-division">{info.division||"No division selected"}</div>
+                    <div className="fleet-division">{info.division||""}</div>
                     <div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:5}}>
                       <Badge label={brief?"Brief ✓":"Brief —"} ok={!!brief} neutral={!brief}/>
                       <Badge label={dot?(dot.status.startsWith("PASS")?"DOT ✓":"DOT ✗"):"DOT —"} ok={!!dot&&dot.status.startsWith("PASS")} neutral={!dot}/>
@@ -1483,7 +1483,7 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
 
               {/* Signed In */}
               <div className="detail-stat"><div className="detail-stat-icon"><Ic n="clock"/></div><div className="detail-stat-info"><div className="detail-stat-label">Signed In</div><div className="detail-stat-val">{selectedTruck.signInTime}</div></div></div>
-              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||"Not selected"}</div></div></div>
+              <div className="detail-stat"><div className="detail-stat-icon"><Ic n="home"/></div><div className="detail-stat-info"><div className="detail-stat-label">Division</div><div className="detail-stat-val">{selectedTruck.division||""}</div></div></div>
 
               {/* Daily Briefing */}
               <div className="detail-stat" style={{borderLeft:`3px solid ${brief?"var(--lime)":"var(--moss)"}`}}>
