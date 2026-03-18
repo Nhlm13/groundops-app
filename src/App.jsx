@@ -1139,17 +1139,6 @@ function HomeTab({ truck, division, onOpenDOT, dotComplete }) {
         </div>
       </div>
 
-      {/* Trailer Checklist */}
-      <div className="action-card" onClick={()=>window.open("https://forms.gle/7GE4hZFKo9DUeuqf6","_blank")}>
-        <div className="action-card-icon"><Ic n="clip"/></div>
-        <div className="action-card-info">
-          <div className="action-card-name">{t.trailerCheck}</div>
-          <div className="action-card-desc">{t.trailerDesc}</div>
-          <span className="status-chip chip-pending">{t.pending}</span>
-        </div>
-        <div className="action-card-arrow"><Ic n="chev"/></div>
-      </div>
-
       <div className="section-hd" style={{marginTop:8}}>{t.contactMgr}</div>
       <ContactDropdown/>
     </div>
