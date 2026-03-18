@@ -1267,7 +1267,6 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
             {(()=>{
               const dot = truckDOT(selectedTruck.truckId);
               const pass = dot && dot.status.startsWith("PASS");
-              const flagged = dot && !pass;
               return (
                 <div className="detail-stat" style={{borderLeft:`3px solid ${!dot?"var(--moss)":pass?"var(--lime)":"var(--danger)"}`}}>
                   <div className="detail-stat-icon" style={{background:!dot?"var(--moss)":pass?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)"}}><Ic n={!dot?"dot":pass?"check":"alert"} style={{width:15,height:15,color:!dot?"var(--leaf)":pass?"var(--lime)":"var(--danger)"}}/></div>
