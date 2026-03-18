@@ -777,6 +777,8 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
           location: isFuel ? (fields.atShop ? "Shop" : "Gas Station") : "",
           total:    isFuel ? (fields.atShop ? "" : fields.total) : fields.total,
           notes:    fields.notes,
+          sendEmail:    true,
+          emailTo:      "admin@jandjandsonlawncare.com",
         }),
       });
       setStep("photo");
@@ -1039,6 +1041,49 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   );
 }
 
+// ── HR TAB ──
+function HRTab() {
+  const [openHR, setOpenHR] = useState(null);
+  return (
+    <div>
+      {!openHR ? (
+        <>
+          <div className="section-hd">HR &amp; Employee Portal</div>
+          {HR_LINKS.map(f=>(
+            <div key={f.name}
+              style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}}
+              onClick={()=>{ if(f.url) setOpenHR(f); }}>
+              <div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div>
+                <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div>
+              </div>
+              {f.url
+                ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
+                : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
+              }
+            </div>
+          ))}
+        </>
+      ) : (
+        <div style={{animation:"fadeUp 0.3s ease both"}}>
+          <button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}>
+            <Ic n="back"/> Back to HR Portal
+          </button>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div>
+          <iframe
+            src={openHR.url}
+            style={{width:"100%",height:"calc(100dvh - 180px)",border:"none",display:"block",borderRadius:8}}
+            title={openHR.name}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── RECEIPT TAB (truck view) ──
 function ReceiptTab({ truck, division, onGoHome }) {
   return (
@@ -1072,14 +1117,16 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         {tab==="home"    && <HomeTab truck={truck} division={division}/>}
         {tab==="receipt" && <ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
         {tab==="tools"   && <ToolsTab truck={truck} division={division} checkouts={checkouts} setCheckouts={setCheckouts}/>}
+        {tab==="hr"      && <HRTab/>}
       </div>
       <nav className="bottom-nav">
-        <button className={`bnav-btn ${tab==="home"?"active":""}`}     onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
-        <button className={`bnav-btn ${tab==="receipt"?"active":""}`}  onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
-        <button className={`bnav-btn ${tab==="tools"?"active":""}`}    onClick={()=>setTab("tools")} style={{position:"relative"}}>
+        <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
+        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
+        <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
           <Ic n="wrench"/>Tools
           {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
         </button>
+        <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>HR</button>
       </nav>
     </div>
   );
@@ -1326,19 +1373,56 @@ function ManagerZone({ onLogout, checkouts, signIns }) {
 }
 
 // ── LOGIN SCREEN ──
+const MEMORY_KEY = "jj_truck_memory";
+
+function getTodayDateStr() {
+  return new Date().toLocaleDateString("en-US");
+}
+
+function loadMemory() {
+  try {
+    const raw = localStorage.getItem(MEMORY_KEY);
+    if (!raw) return null;
+    const mem = JSON.parse(raw);
+    // Reset if saved on a different day
+    if (mem.date !== getTodayDateStr()) {
+      localStorage.removeItem(MEMORY_KEY);
+      return null;
+    }
+    return mem;
+  } catch(e) { return null; }
+}
+
+function saveMemory(truck, division) {
+  try {
+    localStorage.setItem(MEMORY_KEY, JSON.stringify({
+      truckId:  truck.id,
+      division: division,
+      date:     getTodayDateStr(),
+    }));
+  } catch(e) {}
+}
+
+function clearMemory() {
+  try { localStorage.removeItem(MEMORY_KEY); } catch(e) {}
+}
+
 function LoginScreen({ onTruckLogin, onMgrLogin }) {
-  const [mode,      setMode]    = useState("truck");
-  const [division,  setDivision]= useState("");
-  const [dropOpen,  setDropOpen]= useState(false);
-  const [selected,  setSel]     = useState(null);
-  const [pinStep,   setPinStep] = useState(false);
-  const [pin,       setPin]     = useState("");
-  const [mgrPass,   setMgrPass] = useState("");
-  const [error,     setError]   = useState("");
-  const [openHR,      setOpenHR]      = useState(null);
+  const memory = loadMemory();
+  const rememberedTruck    = memory ? TRUCKS.find(t=>t.id===memory.truckId) || null : null;
+  const rememberedDivision = memory ? memory.division : "";
+
+  // If we have a remembered truck, start straight at PIN
+  const [mode,        setMode]      = useState("truck");
+  const [division,    setDivision]  = useState(rememberedDivision);
+  const [dropOpen,    setDropOpen]  = useState(false);
+  const [selected,    setSel]       = useState(rememberedTruck);
+  const [pinStep,     setPinStep]   = useState(!!rememberedTruck);
+  const [pin,         setPin]       = useState("");
+  const [mgrPass,     setMgrPass]   = useState("");
+  const [error,       setError]     = useState("");
   const [receiptOpen, setReceiptOpen] = useState(false);
 
-  // PIN length matches the selected truck's PIN length (1–2 digits)
   const pinLength = selected ? selected.pin.length : 4;
 
   const handleKey = v => {
@@ -1347,6 +1431,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
     if (v==="enter") {
       if(!selected) return;
       if(selected.pin !== pin){ setError("Wrong PIN — try again."); setPin(""); return; }
+      saveMemory(selected, division);
       onTruckLogin(selected, division);
       return;
     }
@@ -1356,6 +1441,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   useEffect(()=>{
     if(selected && pin.length === pinLength){
       if(selected.pin !== pin){ setError("Wrong PIN — try again."); setPin(""); return; }
+      saveMemory(selected, division);
       onTruckLogin(selected, division);
     }
   },[pin]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1363,6 +1449,15 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
   const tryMgr = () => {
     if (mgrPass === "ground25") onMgrLogin();
     else { setError("Incorrect password."); setMgrPass(""); }
+  };
+
+  const handleChangeTruck = () => {
+    clearMemory();
+    setSel(null);
+    setDivision("");
+    setPinStep(false);
+    setPin("");
+    setError("");
   };
 
   return (
@@ -1378,7 +1473,6 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
 
       {mode==="truck" && !pinStep && (
         <>
-          {/* Step 1: Division */}
           <div className="select-label">Select Your Division</div>
           <div className="division-grid" style={{width:"100%",marginBottom:20}}>
             {DIVISIONS.map(d=>(
@@ -1389,7 +1483,6 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
             ))}
           </div>
 
-          {/* Step 2: Truck — only shown after division selected */}
           {division && (
             <>
               <div className="select-label">Select Your Truck</div>
@@ -1431,9 +1524,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
               Submit a Receipt
               <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
             </div>
-
             {!receiptOpen ? (
-              /* Collapsed card */
               <div
                 style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}
                 onClick={()=>{ setReceiptOpen(true); }}>
@@ -1454,56 +1545,15 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
               />
             )}
           </div>
-
-          {/* HR Section */}
-          <div style={{width:"100%",marginTop:28}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--stone)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
-              HR &amp; Employee Portal
-              <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
-            </div>
-            {!openHR ? (
-              HR_LINKS.map(f=>(
-                <div key={f.name}
-                  style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}}
-                  onClick={()=>{ if(f.url) setOpenHR(f); }}>
-                  <div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                    <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}> {f.name}</div>
-                    <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div>
-                  </div>
-                  {f.url
-                    ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
-                    : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
-                  }
-                </div>
-              ))
-            ) : (
-              <div style={{animation:"fadeUp 0.3s ease both"}}>
-                <button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}>
-                  <Ic n="back"/> Back to HR Portal
-                </button>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div>
-                <iframe
-                  src={openHR.url}
-                  style={{width:"100%",height:"580px",border:"none",display:"block",borderRadius:8}}
-                  title={openHR.name}
-                />
-              </div>
-            )}
-          </div>
         </>
       )}
 
+      {/* ── PIN SCREEN — shown immediately if truck remembered ── */}
       {mode==="truck" && pinStep && selected && (
         <div className="pin-screen">
-          <button className="back-btn" onClick={()=>{ setPinStep(false); setPin(""); setError(""); }}>
-            <Ic n="back"/> Choose a different truck
-          </button>
           <div className="pin-truck-header">
             <Ic n="truck" style={{width:20,height:20}}/>
-            <div>
+            <div style={{flex:1}}>
               <div className="pin-truck-name">{selected.label}</div>
               <div className="pin-truck-sub">{division} · Enter your PIN</div>
             </div>
@@ -1524,6 +1574,14 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
           </div>
           <button className="btn-enter" disabled={pin.length<pinLength} onClick={()=>handleKey("enter")}>Sign In</button>
           {error && <div className="error-msg">{error}</div>}
+          {/* Not your truck? */}
+          <div style={{textAlign:"center",marginTop:20}}>
+            <span
+              onClick={handleChangeTruck}
+              style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:3}}>
+              Not your truck? Change it
+            </span>
+          </div>
         </div>
       )}
 
@@ -1568,6 +1626,13 @@ export default function App() {
     setScreen("truck");
   };
 
+  const handleLogout = () => {
+    // Don't clear memory on logout — remember the truck for next login
+    setTruck(null);
+    setTruckDiv("");
+    setScreen("login");
+  };
+
   return (
     <>
       <style>{css}</style>
@@ -1582,7 +1647,7 @@ export default function App() {
           <TruckHome
             truck={truck}
             initialDivision={truckDiv}
-            onLogout={()=>{ setTruck(null); setTruckDiv(""); setScreen("login"); }}
+            onLogout={handleLogout}
             checkouts={checkouts}
             setCheckouts={setCheckouts}
           />
