@@ -1403,9 +1403,9 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
 
 // ── MANAGER ───────────────────────────────────────────────────────────────────
 function ManagerZone({ onLogout }) {
-  const [tab,         setTab]        = useState("all");
   const [history,     setHistory]    = useState([]);
   const [receipts,    setReceipts]   = useState([]);
+  const [tab,         setTab]        = useState("forms");
   const [loading,     setLoading]    = useState(false);
   const [lastRefresh, setLastRefresh]= useState(null);
 
@@ -1417,27 +1417,20 @@ function ManagerZone({ onLogout }) {
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
       ]);
 
-      // History cols: Date=0, Time=1, Type=2, Truck=3, Employee=4, Property/Notes=5, Status=6
-      const d = new Date();
-      const todayFormats = [
-        `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
-        `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
-      ];
-      const todayRows = (r1.values||[]).slice(1)
-        .filter(r => todayFormats.includes((String(r[0]||"")).trim()));
-      todayRows.sort((a,b)=>String(b[1]||"").localeCompare(String(a[1]||"")));
-      setHistory(todayRows.map(r=>({
-        time:r[1]||"", type:r[2]||"", truck:r[3]||"",
-        name:r[4]||"", detail:r[5]||"", status:r[6]||"",
+      // History: skip header, take last 50, reverse so newest first
+      // Cols: Date=0, Time=1, Type=2, Truck=3, Employee=4, Detail=5, Status=6
+      const hRows = (r1.values||[]).slice(1).slice(-50).reverse();
+      setHistory(hRows.map(r=>({
+        date:r[0]||"", time:r[1]||"", type:r[2]||"",
+        truck:r[3]||"", name:r[4]||"", detail:r[5]||"", status:r[6]||"",
       })));
 
-      // Receipts cols: Date=0, Time=1, Truck=2, Division=3, Type=4, Total=5, Vendor=6, Photo=7
-      const rRows = (r2.values||[]).slice(1)
-        .filter(r => todayFormats.includes((String(r[0]||"")).trim()));
-      rRows.sort((a,b)=>String(b[1]||"").localeCompare(String(a[1]||"")));
+      // Receipts: skip header, take last 50, reverse so newest first
+      // Cols: Date=0, Time=1, Truck=2, Division=3, Type=4, Total=5, Vendor=6, Photo=7
+      const rRows = (r2.values||[]).slice(1).slice(-50).reverse();
       setReceipts(rRows.map(r=>({
-        time:r[1]||"", truck:r[2]||"", type:r[4]||"",
-        total:r[5]||"", merchant:r[6]||"", photo:!!r[7],
+        date:r[0]||"", time:r[1]||"", truck:r[2]||"",
+        type:r[4]||"", total:r[5]||"", merchant:r[6]||"", photo:!!r[7],
       })));
 
       setLastRefresh(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
@@ -1451,22 +1444,6 @@ function ManagerZone({ onLogout }) {
     return ()=>clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
-
-  const TABS = [
-    {key:"all",       label:"All",      icon:"clip"},
-    {key:"briefing",  label:"Briefing", icon:"book"},
-    {key:"dot",       label:"DOT",      icon:"dot"},
-    {key:"property",  label:"Property", icon:"map"},
-    {key:"receipts",  label:"Receipts", icon:"camera"},
-  ];
-
-  const TYPE_MAP = {
-    briefing: "Daily Briefing",
-    dot:      "DOT Walk-Around",
-    property: "Property Inspection",
-  };
-
-  const filtered = tab==="receipts" ? receipts : tab==="all" ? history : history.filter(r=>r.type===TYPE_MAP[tab]);
 
   const StatusBadge = ({status}) => {
     const pass = status && (status.startsWith("PASS") || status==="ACKNOWLEDGED" || status==="COMPLETE");
@@ -1485,23 +1462,28 @@ function ManagerZone({ onLogout }) {
   };
 
   const TypePill = ({type}) => {
-    const colors = {
-      "Daily Briefing":     {bg:"rgba(42,90,149,0.12)",  col:"var(--mgr-lt)"},
-      "DOT Walk-Around":    {bg:"rgba(160,96,16,0.12)",  col:"var(--warn)"},
-      "Property Inspection":{bg:"rgba(74,109,32,0.12)",  col:"var(--leaf)"},
+    const map = {
+      "Daily Briefing":     {lbl:"Briefing", bg:"rgba(42,90,149,0.12)",  col:"var(--mgr-lt)"},
+      "DOT Walk-Around":    {lbl:"DOT",      bg:"rgba(160,96,16,0.12)",  col:"var(--warn)"},
+      "Property Inspection":{lbl:"Property", bg:"rgba(74,109,32,0.12)",  col:"var(--leaf)"},
     };
-    const c = colors[type]||{bg:"var(--bark2)",col:"var(--stone)"};
-    const lbl = type==="Daily Briefing"?"Briefing":type==="DOT Walk-Around"?"DOT":"Property";
+    const c = map[type]||{lbl:type, bg:"var(--bark2)", col:"var(--stone)"};
     return (
       <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,
-        background:c.bg,borderRadius:4,padding:"2px 6px",color:c.col,textTransform:"uppercase",flexShrink:0}}>
-        {lbl}
+        background:c.bg,borderRadius:4,padding:"2px 7px",color:c.col,textTransform:"uppercase",flexShrink:0}}>
+        {c.lbl}
       </span>
     );
   };
 
-  const sectionLabel = {all:"All Submissions",briefing:"Daily Briefings",dot:"DOT Walk-Arounds",property:"Property Inspections",receipts:"Receipts & Fuel"}[tab]||"";
-  const todayLabel   = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  const EmptyState = ({msg}) => (
+    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",
+      fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
+      {loading?"Loading...":msg}
+    </div>
+  );
+
+  const todayLabel = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
   return (
     <div className="screen" style={{background:"#ddd9d0"}}>
@@ -1523,8 +1505,8 @@ function ManagerZone({ onLogout }) {
         {/* Refresh bar */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           {lastRefresh
-            ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>
-            : <span/>}
+            ?<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>
+            :<span/>}
           <button onClick={fetchAll} disabled={loading}
             style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",
               fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",
@@ -1533,59 +1515,68 @@ function ManagerZone({ onLogout }) {
           </button>
         </div>
 
-        <div className="section-hd" style={{color:"var(--mgr)"}}>{sectionLabel} — Today ({filtered.length})</div>
-
-        {loading && filtered.length===0 && (
-          <div style={{textAlign:"center",padding:"40px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+        {/* Forms tab */}
+        {tab==="forms"&&(
+          <>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>Recent Activity ({history.length})</div>
+            {history.length===0
+              ?<EmptyState msg="No submissions yet"/>
+              :history.map((r,i)=>(
+                <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,flexWrap:"wrap"}}>
+                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.date} · {r.time}</span>
+                    <TypePill type={r.type}/>
+                    <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
+                  </div>
+                  {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginBottom:r.detail?3:0}}>{r.name}</div>}
+                  {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600}}>{r.detail}</div>}
+                </div>
+              ))
+            }
+          </>
         )}
-        {!loading && filtered.length===0 && (
-          <div style={{textAlign:"center",padding:"40px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Nothing submitted today</div>
+
+        {/* Receipts tab */}
+        {tab==="receipts"&&(
+          <>
+            <div className="section-hd" style={{color:"var(--mgr)"}}>Recent Receipts ({receipts.length})</div>
+            {receipts.length===0
+              ?<EmptyState msg="No receipts yet"/>
+              :receipts.map((r,i)=>(
+                <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.date} · {r.time}</span>
+                    </div>
+                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.total?`$${r.total}`:""}</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.merchant||"—"}</div>
+                      <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{r.type}</div>
+                    </div>
+                    {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
+                  </div>
+                </div>
+              ))
+            }
+          </>
         )}
-
-        {/* History entries (all/briefing/dot/property tabs) */}
-        {tab!=="receipts" && filtered.map((r,i)=>(
-          <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-              <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
-              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
-              {tab==="all"&&<TypePill type={r.type}/>}
-              <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
-            </div>
-            {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginBottom:r.detail?4:0}}>{r.name}</div>}
-            {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600}}>{r.detail}</div>}
-          </div>
-        ))}
-
-        {/* Receipts entries */}
-        {tab==="receipts" && filtered.map((r,i)=>(
-          <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
-              </div>
-              <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.total?`$${r.total}`:r.type}</span>
-            </div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.merchant||"—"}</div>
-                <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{r.type}</div>
-              </div>
-              {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
-            </div>
-          </div>
-        ))}
       </div>
 
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-        {TABS.map(({key,icon,label})=>(
-          <button key={key}
-            className={`bnav-btn ${tab===key?"active":""}`}
-            style={tab===key?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
-            onClick={()=>setTab(key)}>
-            <Ic n={icon}/>{label}
-          </button>
-        ))}
+        <button className={`bnav-btn ${tab==="forms"?"active":""}`}
+          style={tab==="forms"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
+          onClick={()=>setTab("forms")}>
+          <Ic n="clip"/>Activity
+        </button>
+        <button className={`bnav-btn ${tab==="receipts"?"active":""}`}
+          style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
+          onClick={()=>setTab("receipts")}>
+          <Ic n="camera"/>Receipts
+        </button>
       </nav>
     </div>
   );
