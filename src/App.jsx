@@ -471,7 +471,7 @@ const TRUCKS = Array.from({ length: 20 }, (_, i) => ({
 }));
 
 // Only Maintenance and Construction
-const DIVISIONS = ["Maintenance", "Construction"];
+
 
 const CONTACTS = [
   { name: "Jonny", role: "General Manager",     initials: "JF", phone: "tel:+15085550001" },
@@ -517,8 +517,7 @@ const TOOL_INVENTORY = [
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
 
-// Dynamic numpad — max digits based on truck PIN length
-const NUMKEYS = ["1","2","3","4","5","6","7","8","9","del","0","enter"];
+
 
 function getTodayStr() {
   return new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
