@@ -470,6 +470,399 @@ const TRUCKS = Array.from({ length: 20 }, (_, i) => ({
   pin: String(i + 1),
 }));
 
+// ── TRANSLATIONS ──
+const LANG_KEY = "jj_lang";
+const LANGS = { en:"en", es:"es", pt:"pt" };
+const FLAGS = { en:"🇺🇸", es:"🇪🇸", pt:"🇧🇷" };
+
+function detectLang() {
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (saved && LANGS[saved]) return saved;
+  } catch(e) {}
+  const nav = (navigator.language || "en").toLowerCase();
+  if (nav.startsWith("pt")) return "pt";
+  if (nav.startsWith("es")) return "es";
+  return "en";
+}
+
+function saveLang(lang) {
+  try { localStorage.setItem(LANG_KEY, lang); } catch(e) {}
+}
+
+const T = {
+  en: {
+    appSub:           "Operations Center",
+    selectTruck:      "Select Your Truck",
+    chooseTruck:      "Choose a truck...",
+    makeMyTruck:      "Make This My Truck",
+    signInAs:         t => `Sign In as ${t}`,
+    notYourTruck:     "Not your truck? Change it",
+    truckToday:       "Your truck from today",
+    mgrZone:          "Manager Zone",
+    mgrPassword:      "Password",
+    enterMgrZone:     "Enter Manager Zone",
+    backToLogin:      "← Back",
+    signOut:          "Sign Out",
+    submitReceipt:    "Submit a Receipt",
+    receiptCard:      "Receipt Submission",
+    receiptSub:       "Submit without logging into a truck",
+    empResources:     "Employee Resources",
+    empResourcesSub:  "Request time away & view company policies",
+    backToResources:  "Back to Employee Resources",
+    back:             "Back",
+    // Receipt form
+    yourName:         "Your Name",
+    namePlaceholder:  "First & Last name",
+    truck:            "Truck",
+    division:         "Division",
+    maintenance:      "Maintenance",
+    construction:     "Construction",
+    receiptType:      "Receipt Type",
+    fuel:             "Fuel",
+    materials:        "Materials",
+    toolsSupplies:    "Tools / Supplies",
+    other:            "Other",
+    part1:            "Part 1 — General Information",
+    part2Fuel:        "Part 2 — Fuel Details",
+    part2Purchase:    "Part 2 — Purchase Details",
+    gallons:          "Gallons Pumped",
+    gallonsPlaceholder: "e.g. 14.3",
+    fuelType:         "Fuel Type",
+    regular:          "Regular",
+    diesel:           "Diesel",
+    premium:          "Premium",
+    whereDidYouFuel:  "Where did you fuel up?",
+    atShop:           "At the Shop",
+    gasStation:       "Gas Station",
+    totalCost:        "Total Cost ($)",
+    shopConfirm:      "✓ No cost to record — shop fuel logged by gallons only.",
+    vendor:           "Vendor / Merchant",
+    vendorPlaceholder:"e.g. Home Depot, Lowe's",
+    totalAmount:      "Total Amount ($)",
+    notes:            "Notes",
+    notesPlaceholder: "Any additional details...",
+    nextPhoto:        "Next: Attach Photo →",
+    saving:           "Saving...",
+    cancel:           "Cancel",
+    receiptSaved:     "Receipt saved! Now attach a photo.",
+    photoDesc:        "Take a photo of the physical receipt — it will be saved directly to Drive.",
+    tapCamera:        "Tap to Open Camera",
+    uploading:        "Uploading photo...",
+    required:         "REQUIRED",
+    allDone:          "All Done!",
+    submitAnother:    "Submit Another",
+    goHome:           "Go to Home",
+    done:             "Done",
+    // Home tab
+    readyToRoll:      "Ready to roll",
+    dailyForms:       "Daily Forms",
+    morningRollout:   "Morning Rollout",
+    morningDesc:      "Start-of-day checklist",
+    trailerCheck:     "Trailer Checklist",
+    trailerDesc:      "Pre-departure equipment check",
+    comingSoon:       "Coming Soon",
+    pending:          "Pending",
+    contactMgr:       "Contact a Manager",
+    chooseMgr:        "Choose a manager...",
+    // Tools tab
+    checkedOut:       "Checked Out",
+    toolInventory:    "Tool Inventory",
+    avail:            n => `${n} avail`,
+    of:               (a,b) => `${a} of ${b} available`,
+    noneAvail:        "None available",
+    allOut:           "ALL OUT",
+    checkOut:         "Check Out",
+    return_:          "Return",
+    since:            t => `Since ${t}`,
+    // Nav
+    home:             "Home",
+    receipts:         "Receipts",
+    tools:            "Tools",
+    hr:               "HR",
+    // Error messages
+    errName:          "Please enter your name.",
+    errDivision:      "Please select a division.",
+    errType:          "Please select a receipt type.",
+    errGallons:       "Please enter gallons pumped.",
+    errFuelType:      "Please select a fuel type.",
+    errLocation:      "Please select where you fueled up.",
+    errCost:          "Please enter the total cost.",
+    errVendor:        "Please enter a vendor / merchant.",
+    errTotal:         "Please enter the total amount.",
+    wrongPass:        "Incorrect password.",
+    // Manager
+    fleet:            "Fleet",
+    activeTrucks:     "Active Trucks",
+    noTrucks:         "No trucks signed in",
+    signedIn:         t => `Signed in at ${t}`,
+    noDivision:       "No division selected",
+    morningStatus:    "Morning Rollout",
+    trailerStatus:    "Trailer Checklist",
+    receiptsToday:    "Receipts & Fuel Logs Today",
+    noSubmissions:    "No submissions today",
+    toolsOut:         "Tools Checked Out",
+    noTools:          "No tools checked out",
+    loading:          "Loading...",
+    totalTools:       "Total Tools",
+    currentlyOut:     "Currently Out",
+    fullInventory:    "Full Inventory",
+    // HR
+    backHR:           "Back to HR Portal",
+  },
+
+  es: {
+    appSub:           "Centro de Operaciones",
+    selectTruck:      "Elige tu Camión",
+    chooseTruck:      "Elige un camión...",
+    makeMyTruck:      "Este es mi Camión",
+    signInAs:         t => `Entrar como ${t}`,
+    notYourTruck:     "¿No es tu camión? Cámbialo",
+    truckToday:       "Tu camión de hoy",
+    mgrZone:          "Manager Zone",
+    mgrPassword:      "Contraseña",
+    enterMgrZone:     "Entrar al Manager Zone",
+    backToLogin:      "← Volver",
+    signOut:          "Cerrar Sesión",
+    submitReceipt:    "Enviar un Recibo",
+    receiptCard:      "Envío de Recibo",
+    receiptSub:       "Envía sin iniciar sesión en un camión",
+    empResources:     "Recursos para Empleados",
+    empResourcesSub:  "Solicita tiempo libre y consulta las políticas",
+    backToResources:  "Volver a Recursos",
+    back:             "Volver",
+    yourName:         "Tu Nombre",
+    namePlaceholder:  "Nombre y Apellido",
+    truck:            "Camión",
+    division:         "División",
+    maintenance:      "Mantenimiento",
+    construction:     "Construcción",
+    receiptType:      "Tipo de Recibo",
+    fuel:             "Combustible",
+    materials:        "Materiales",
+    toolsSupplies:    "Herramientas / Suministros",
+    other:            "Otro",
+    part1:            "Parte 1 — Información General",
+    part2Fuel:        "Parte 2 — Detalles de Combustible",
+    part2Purchase:    "Parte 2 — Detalles de Compra",
+    gallons:          "Galones Cargados",
+    gallonsPlaceholder: "ej. 14.3",
+    fuelType:         "Tipo de Combustible",
+    regular:          "Regular",
+    diesel:           "Diésel",
+    premium:          "Premium",
+    whereDidYouFuel:  "¿Dónde cargaste?",
+    atShop:           "En el Taller",
+    gasStation:       "Gasolinera",
+    totalCost:        "Costo Total ($)",
+    shopConfirm:      "✓ Sin costo — combustible del taller registrado por galones.",
+    vendor:           "Proveedor / Comercio",
+    vendorPlaceholder:"ej. Home Depot, Lowe's",
+    totalAmount:      "Monto Total ($)",
+    notes:            "Notas",
+    notesPlaceholder: "Detalles adicionales...",
+    nextPhoto:        "Siguiente: Adjuntar Foto →",
+    saving:           "Guardando...",
+    cancel:           "Cancelar",
+    receiptSaved:     "¡Recibo guardado! Ahora adjunta una foto.",
+    photoDesc:        "Toma una foto del recibo físico — se guardará en Drive.",
+    tapCamera:        "Toca para Abrir la Cámara",
+    uploading:        "Subiendo foto...",
+    required:         "OBLIGATORIO",
+    allDone:          "¡Todo Listo!",
+    submitAnother:    "Enviar Otro",
+    goHome:           "Ir al Inicio",
+    done:             "Listo",
+    readyToRoll:      "Listo para salir",
+    dailyForms:       "Formularios Diarios",
+    morningRollout:   "Salida de Mañana",
+    morningDesc:      "Lista de inicio del día",
+    trailerCheck:     "Lista del Remolque",
+    trailerDesc:      "Revisión antes de salir",
+    comingSoon:       "Próximamente",
+    pending:          "Pendiente",
+    contactMgr:       "Contactar a un Gerente",
+    chooseMgr:        "Elige un gerente...",
+    checkedOut:       "Llevado",
+    toolInventory:    "Inventario de Herramientas",
+    avail:            n => `${n} disp.`,
+    of:               (a,b) => `${a} de ${b} disponibles`,
+    noneAvail:        "No disponible",
+    allOut:           "AGOTADO",
+    checkOut:         "Llevar",
+    return_:          "Devolver",
+    since:            t => `Desde ${t}`,
+    home:             "Inicio",
+    receipts:         "Recibos",
+    tools:            "Herramientas",
+    hr:               "Recursos",
+    errName:          "Por favor ingresa tu nombre.",
+    errDivision:      "Por favor elige una división.",
+    errType:          "Por favor elige el tipo de recibo.",
+    errGallons:       "Por favor ingresa los galones cargados.",
+    errFuelType:      "Por favor elige el tipo de combustible.",
+    errLocation:      "Por favor indica dónde cargaste.",
+    errCost:          "Por favor ingresa el costo total.",
+    errVendor:        "Por favor ingresa el proveedor.",
+    errTotal:         "Por favor ingresa el monto total.",
+    wrongPass:        "Contraseña incorrecta.",
+    fleet:            "Flota",
+    activeTrucks:     "Camiones Activos",
+    noTrucks:         "No hay camiones activos",
+    signedIn:         t => `Ingresó a las ${t}`,
+    noDivision:       "Sin división seleccionada",
+    morningStatus:    "Salida de Mañana",
+    trailerStatus:    "Lista del Remolque",
+    receiptsToday:    "Recibos y Combustible Hoy",
+    noSubmissions:    "Sin envíos hoy",
+    toolsOut:         "Herramientas Llevadas",
+    noTools:          "Sin herramientas llevadas",
+    loading:          "Cargando...",
+    totalTools:       "Total Herramientas",
+    currentlyOut:     "Actualmente Fuera",
+    fullInventory:    "Inventario Completo",
+    backHR:           "Volver al Portal",
+  },
+
+  pt: {
+    appSub:           "Central de Operações",
+    selectTruck:      "Escolha seu Caminhão",
+    chooseTruck:      "Escolha um caminhão...",
+    makeMyTruck:      "Esse é meu Caminhão",
+    signInAs:         t => `Entrar como ${t}`,
+    notYourTruck:     "Não é seu caminhão? Mude",
+    truckToday:       "Seu caminhão de hoje",
+    mgrZone:          "Manager Zone",
+    mgrPassword:      "Senha",
+    enterMgrZone:     "Entrar no Manager Zone",
+    backToLogin:      "← Voltar",
+    signOut:          "Sair",
+    submitReceipt:    "Enviar um Recibo",
+    receiptCard:      "Envio de Recibo",
+    receiptSub:       "Envie sem entrar em um caminhão",
+    empResources:     "Recursos para Funcionários",
+    empResourcesSub:  "Solicite folga e veja as políticas da empresa",
+    backToResources:  "Voltar aos Recursos",
+    back:             "Voltar",
+    yourName:         "Seu Nome",
+    namePlaceholder:  "Nome e Sobrenome",
+    truck:            "Caminhão",
+    division:         "Divisão",
+    maintenance:      "Manutenção",
+    construction:     "Construção",
+    receiptType:      "Tipo de Recibo",
+    fuel:             "Combustível",
+    materials:        "Materiais",
+    toolsSupplies:    "Ferramentas / Suprimentos",
+    other:            "Outro",
+    part1:            "Parte 1 — Informações Gerais",
+    part2Fuel:        "Parte 2 — Detalhes do Combustível",
+    part2Purchase:    "Parte 2 — Detalhes da Compra",
+    gallons:          "Galões Abastecidos",
+    gallonsPlaceholder: "ex. 14.3",
+    fuelType:         "Tipo de Combustível",
+    regular:          "Comum",
+    diesel:           "Diesel",
+    premium:          "Premium",
+    whereDidYouFuel:  "Onde você abasteceu?",
+    atShop:           "No Depósito",
+    gasStation:       "Posto de Gasolina",
+    totalCost:        "Custo Total ($)",
+    shopConfirm:      "✓ Sem custo — combustível do depósito registrado por galões.",
+    vendor:           "Fornecedor / Estabelecimento",
+    vendorPlaceholder:"ex. Home Depot, Lowe's",
+    totalAmount:      "Valor Total ($)",
+    notes:            "Observações",
+    notesPlaceholder: "Detalhes adicionais...",
+    nextPhoto:        "Próximo: Anexar Foto →",
+    saving:           "Salvando...",
+    cancel:           "Cancelar",
+    receiptSaved:     "Recibo salvo! Agora anexe uma foto.",
+    photoDesc:        "Tire uma foto do recibo físico — ela será salva no Drive.",
+    tapCamera:        "Toque para Abrir a Câmera",
+    uploading:        "Enviando foto...",
+    required:         "OBRIGATÓRIO",
+    allDone:          "Tudo Certo!",
+    submitAnother:    "Enviar Outro",
+    goHome:           "Ir para Início",
+    done:             "Pronto",
+    readyToRoll:      "Pronto para sair",
+    dailyForms:       "Formulários Diários",
+    morningRollout:   "Saída da Manhã",
+    morningDesc:      "Lista de início do dia",
+    trailerCheck:     "Lista do Reboque",
+    trailerDesc:      "Verificação antes de sair",
+    comingSoon:       "Em Breve",
+    pending:          "Pendente",
+    contactMgr:       "Contatar um Gerente",
+    chooseMgr:        "Escolha um gerente...",
+    checkedOut:       "Retirado",
+    toolInventory:    "Inventário de Ferramentas",
+    avail:            n => `${n} disp.`,
+    of:               (a,b) => `${a} de ${b} disponíveis`,
+    noneAvail:        "Indisponível",
+    allOut:           "ESGOTADO",
+    checkOut:         "Pegar",
+    return_:          "Devolver",
+    since:            t => `Desde ${t}`,
+    home:             "Início",
+    receipts:         "Recibos",
+    tools:            "Ferramentas",
+    hr:               "RH",
+    errName:          "Por favor insira seu nome.",
+    errDivision:      "Por favor selecione uma divisão.",
+    errType:          "Por favor selecione o tipo de recibo.",
+    errGallons:       "Por favor insira os galões abastecidos.",
+    errFuelType:      "Por favor selecione o tipo de combustível.",
+    errLocation:      "Por favor indique onde abasteceu.",
+    errCost:          "Por favor insira o custo total.",
+    errVendor:        "Por favor insira o fornecedor.",
+    errTotal:         "Por favor insira o valor total.",
+    wrongPass:        "Senha incorreta.",
+    fleet:            "Frota",
+    activeTrucks:     "Caminhões Ativos",
+    noTrucks:         "Nenhum caminhão ativo",
+    signedIn:         t => `Entrou às ${t}`,
+    noDivision:       "Sem divisão selecionada",
+    morningStatus:    "Saída da Manhã",
+    trailerStatus:    "Lista do Reboque",
+    receiptsToday:    "Recibos e Combustível Hoje",
+    noSubmissions:    "Nenhum envio hoje",
+    toolsOut:         "Ferramentas Retiradas",
+    noTools:          "Nenhuma ferramenta retirada",
+    loading:          "Carregando...",
+    totalTools:       "Total de Ferramentas",
+    currentlyOut:     "Atualmente Fora",
+    fullInventory:    "Inventário Completo",
+    backHR:           "Voltar ao Portal",
+  },
+};
+
+// ── LANGUAGE CONTEXT ──
+const LangContext = React.createContext("en");
+function useLang() { return React.useContext(LangContext); }
+function useT()    { const lang = useLang(); return T[lang]; }
+
+// ── FLAG SELECTOR ──
+function FlagSelector({ lang, setLang }) {
+  return (
+    <div style={{display:"flex",gap:6,justifyContent:"flex-end",width:"100%",marginBottom:8}}>
+      {Object.entries(FLAGS).map(([code, flag]) => (
+        <button key={code} onClick={()=>{ saveLang(code); setLang(code); }}
+          style={{
+            background: lang===code ? "var(--bark)" : "transparent",
+            border: lang===code ? "1.5px solid var(--lime)" : "1.5px solid transparent",
+            borderRadius:8, padding:"4px 8px", fontSize:18, cursor:"pointer",
+            transition:"all 0.15s", lineHeight:1,
+            opacity: lang===code ? 1 : 0.5,
+          }}>
+          {flag}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // Only Maintenance and Construction
 
 
@@ -528,6 +921,7 @@ function getTimeStr() {
 
 // ── TOOLS TAB ──
 function ToolsTab({ truck, division, checkouts, setCheckouts }) {
+  const t = useT();
   const [openCats, setOpenCats] = useState({ "Hand Tools": true });
   const [pending, setPending]   = useState({});
 
@@ -549,31 +943,31 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
     <div>
       {myCheckouts.length > 0 && (
         <>
-          <div className="section-hd">Checked Out</div>
+          <div className="section-hd">{t.checkedOut}</div>
           {myCheckouts.map(co => (
             <div key={co.id} className="checked-out-row">
               <Ic n="check" style={{width:13,height:13,color:"var(--lime)",flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div className="tool-name">{co.toolName}</div>
-                <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>Since {co.time}</div>
+                <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>{t.since(co.time)}</div>
               </div>
               <span className="co-qty-badge">×{co.qty}</span>
-              <button className="return-btn" onClick={()=>returnTool(co.id)}>Return</button>
+              <button className="return-btn" onClick={()=>returnTool(co.id)}>{t.return_}</button>
             </div>
           ))}
           <div style={{height:12}}/>
         </>
       )}
-      <div className="section-hd">Tool Inventory</div>
+      <div className="section-hd">{t.toolInventory}</div>
       {TOOL_INVENTORY.map(cat => {
-        const avail = cat.tools.reduce((s,t)=>s+available(t.id,t.total),0);
+        const avail = cat.tools.reduce((s,tool)=>s+available(tool.id,tool.total),0);
         const isOpen = openCats[cat.category];
         return (
           <div key={cat.category}>
             <div className="tool-cat-header" onClick={()=>setOpenCats(o=>({...o,[cat.category]:!o[cat.category]}))}>
               <Ic n="box" style={{width:15,height:15,color:"var(--leaf)",flexShrink:0}}/>
               <span className="tool-cat-label">{cat.category}</span>
-              <span className="tool-cat-count">{avail} avail</span>
+              <span className="tool-cat-count">{t.avail(avail)}</span>
               <Ic n="chev" className={`chevron ${isOpen?"open":""}`} style={{marginLeft:4}}/>
             </div>
             {isOpen && cat.tools.map(tool => {
@@ -584,7 +978,7 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
                   <div className="tool-info">
                     <div className="tool-name">{tool.name}</div>
                     <div className={`tool-avail ${avl===0?"none":avl<=2?"low":"ok"}`}>
-                      {avl===0?"None available":`${avl} of ${tool.total} available`}
+                      {avl===0 ? t.noneAvail : t.of(avl, tool.total)}
                     </div>
                   </div>
                   {avl > 0 && (
@@ -592,10 +986,10 @@ function ToolsTab({ truck, division, checkouts, setCheckouts }) {
                       <button className="qty-btn" disabled={qty<=0} onClick={()=>setPending(p=>({...p,[tool.id]:Math.max(0,(p[tool.id]??0)-1)}))}> − </button>
                       <span className="qty-num">{qty}</span>
                       <button className="qty-btn" disabled={qty>=avl} onClick={()=>setPending(p=>({...p,[tool.id]:Math.min(avl,(p[tool.id]??0)+1)}))}> + </button>
-                      <button className="checkout-btn" disabled={qty<1} onClick={()=>checkout(tool.id,tool.name,qty)}>Check Out</button>
+                      <button className="checkout-btn" disabled={qty<1} onClick={()=>checkout(tool.id,tool.name,qty)}>{t.checkOut}</button>
                     </div>
                   )}
-                  {avl===0 && <span style={{fontSize:11,color:"var(--danger)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>ALL OUT</span>}
+                  {avl===0 && <span style={{fontSize:11,color:"var(--danger)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.allOut}</span>}
                 </div>
               );
             })}
@@ -618,6 +1012,7 @@ const HR_LINKS = [
 
 // ── CONTACT DROPDOWN ──
 function ContactDropdown() {
+  const t = useT();
   const [open,     setOpen]     = useState(false);
   const [selected, setSelected] = useState(null);
   return (
@@ -627,7 +1022,7 @@ function ContactDropdown() {
           <Ic n="phone" style={{width:16,height:16,color:selected?"var(--lime)":"var(--stone)"}}/>
           {selected
             ? <span className="truck-dropdown-value">{selected.name} — {selected.role}</span>
-            : <span className="truck-dropdown-placeholder">Choose a manager...</span>
+            : <span className="truck-dropdown-placeholder">{t.chooseMgr}</span>
           }
           <Ic n="chevD" className={`truck-dropdown-chevron ${open?"open":""}`} style={{width:16,height:16}}/>
         </div>
@@ -662,15 +1057,15 @@ function ContactDropdown() {
 }
 
 function HomeTab({ truck, division }) {
+  const t = useT();
   const day = getTodayStr();
   const formLinks = [
-    { name: "Morning Rollout",   desc: "Start-of-day checklist",        url: "", icon: "sun" },
-    { name: "Trailer Checklist", desc: "Pre-departure equipment check",  url: "https://forms.gle/7GE4hZFKo9DUeuqf6", icon: "clip" },
+    { name: t.morningRollout, desc: t.morningDesc, url: "", icon: "sun" },
+    { name: t.trailerCheck,   desc: t.trailerDesc, url: "https://forms.gle/7GE4hZFKo9DUeuqf6", icon: "clip" },
   ];
 
   return (
     <div>
-      {/* Greeting */}
       <div className="greeting">
         <div className="greeting-icon"><Ic n="truck"/></div>
         <div>
@@ -679,8 +1074,7 @@ function HomeTab({ truck, division }) {
         </div>
       </div>
 
-      {/* Forms */}
-      <div className="section-hd">Daily Forms</div>
+      <div className="section-hd">{t.dailyForms}</div>
       {formLinks.map(f=>(
         <div key={f.name} className="action-card"
           onClick={()=>{ if(f.url) window.open(f.url,"_blank"); }}>
@@ -688,16 +1082,15 @@ function HomeTab({ truck, division }) {
           <div className="action-card-info">
             <div className="action-card-name">{f.name}</div>
             <div className="action-card-desc">{f.desc}</div>
-            <span className={`status-chip chip-pending`}>
-              {f.url?"Pending":"Coming Soon"}
+            <span className="status-chip chip-pending">
+              {f.url ? t.pending : t.comingSoon}
             </span>
           </div>
           <div className="action-card-arrow"><Ic n="chev"/></div>
         </div>
       ))}
 
-      {/* Contacts */}
-      <div className="section-hd" style={{marginTop:8}}>Contact a Manager</div>
+      <div className="section-hd" style={{marginTop:8}}>{t.contactMgr}</div>
       <ContactDropdown />
     </div>
   );
@@ -706,6 +1099,7 @@ function HomeTab({ truck, division }) {
 // ── SHARED NATIVE RECEIPT FORM ──
 // truckLabel = "Truck 3" or null (walk-in) | divisionLabel = pre-filled division or ""
 function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
+  const t = useT();
   const today = new Date().toLocaleDateString("en-US",{month:"2-digit",day:"2-digit",year:"numeric"});
 
   const [step,       setStep]      = useState("form");
@@ -718,36 +1112,33 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   const [fields, setFields] = useState({
     name:         "",
     division:     divisionLabel || "",
-    type:         "",           // Fuel | Materials | Tools/Supplies | Other
-    // fuel-specific
+    type:         "",
     gallons:      "",
-    fuelType:     "",           // Regular | Diesel | Premium
-    atShop:       null,         // true = shop (no cost), false = gas station (cost required)
-    // non-fuel
+    fuelType:     "",
+    atShop:       null,
     vendor:       "",
     total:        "",
-    // shared
     notes:        "",
   });
   const set = (k,v) => { setFields(f=>({...f,[k]:v})); setFormErr(""); };
 
-  const isFuel    = fields.type === "Fuel";
+  const isFuel    = fields.type === t.fuel;
   const isWalkIn  = !truckLabel;
   const displayTruck = truckLabel || "General Submission";
 
   // ── Validation ──
   const validate = () => {
-    if (!fields.name.trim())     return "Please enter your name.";
-    if (!fields.division)        return "Please select a division.";
-    if (!fields.type)            return "Please select a receipt type.";
+    if (!fields.name.trim())     return t.errName;
+    if (!fields.division)        return t.errDivision;
+    if (!fields.type)            return t.errType;
     if (isFuel) {
-      if (!fields.gallons.trim()) return "Please enter gallons pumped.";
-      if (!fields.fuelType)       return "Please select a fuel type.";
-      if (fields.atShop === null) return "Please select where you fueled up.";
-      if (fields.atShop === false && !fields.total.trim()) return "Please enter the total cost.";
+      if (!fields.gallons.trim()) return t.errGallons;
+      if (!fields.fuelType)       return t.errFuelType;
+      if (fields.atShop === null) return t.errLocation;
+      if (fields.atShop === false && !fields.total.trim()) return t.errCost;
     } else {
-      if (!fields.vendor.trim()) return "Please enter a vendor / merchant.";
-      if (!fields.total.trim())  return "Please enter the total amount.";
+      if (!fields.vendor.trim()) return t.errVendor;
+      if (!fields.total.trim())  return t.errTotal;
     }
     return null;
   };
@@ -809,33 +1200,20 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
 
   // ── Shared styles ──
   const inputStyle = { width:"100%", background:"var(--bark2)", border:"1px solid var(--moss)", borderRadius:8, padding:"12px 14px", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:15 };
-  const Label = ({children,optional}) => (
-    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-      {children}{optional&&<span style={{color:"var(--moss)",fontSize:11,letterSpacing:1,textTransform:"none",fontWeight:400}}>(optional)</span>}
-    </div>
-  );
-  const ToggleGroup = ({options, value, onChange, cols=2}) => (
-    <div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:7}}>
-      {options.map(o=>(
-        <button key={o} onClick={()=>onChange(o)}
-          style={{background:value===o?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${value===o?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:value===o?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
-          {o}
-        </button>
-      ))}
-    </div>
-  );
   const StepBar = ({done}) => (
     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>
-      {["Details","Photo"].map((label,i)=>{
+      {[t.part1.split("—")[0].trim(), t.tapCamera.split(" ")[2] || "Photo"].map((label,i)=>{
+        const stepLabels = [t.yourName.split(" ")[0], t.tapCamera.split(" ").slice(2).join(" ") || "Photo"];
+        const sl = ["Details","Photo"];
         const active = done > i; const current = done === i;
         return (
-          <React.Fragment key={label}>
+          <React.Fragment key={i}>
             {i>0 && <div style={{flex:1,height:2,background:active?"var(--lime)":"var(--moss)",borderRadius:1}}/>}
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <div style={{width:24,height:24,borderRadius:"50%",background:active?"var(--moss)":current?"var(--lime)":"transparent",border:`2px solid ${active||current?"var(--lime)":"var(--moss)"}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {active ? <Ic n="check" style={{width:12,height:12,color:"var(--earth)"}}/> : <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:current?"var(--earth)":"var(--stone)"}}>{i+1}</span>}
               </div>
-              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,color:active?"var(--stone)":current?"var(--lime)":"var(--stone)",textDecoration:active?"line-through":"none"}}>{label}</span>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,color:active?"var(--stone)":current?"var(--lime)":"var(--stone)",textDecoration:active?"line-through":"none"}}>{sl[i]}</span>
             </div>
           </React.Fragment>
         );
@@ -848,65 +1226,77 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <StepBar done={0}/>
 
-      {/* ── PART 1: General Info ── */}
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--stone)",marginBottom:10}}>Part 1 — General Information</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--stone)",marginBottom:10}}>{t.part1}</div>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:14}}>
 
-        {/* Name */}
         <div style={{marginBottom:14}}>
-          <Label>Your Name</Label>
-          <input style={inputStyle} type="text" placeholder="First & Last name" value={fields.name} onChange={e=>set("name",e.target.value)}/>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.yourName}</div>
+          <input style={inputStyle} type="text" placeholder={t.namePlaceholder} value={fields.name} onChange={e=>set("name",e.target.value)}/>
         </div>
 
-        {/* Truck — pre-filled & locked if logged in, hidden if walk-in */}
         {!isWalkIn && (
           <div style={{marginBottom:14}}>
-            <Label>Truck</Label>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.truck}</div>
             <div style={{...inputStyle,color:"var(--stone)",background:"var(--bark)",cursor:"default",display:"flex",alignItems:"center",gap:8}}>
               <Ic n="truck" style={{width:14,height:14,flexShrink:0}}/>{truckLabel}
             </div>
           </div>
         )}
 
-        {/* Division */}
         <div style={{marginBottom:14}}>
-          <Label>Division</Label>
-          <ToggleGroup options={["Maintenance","Construction"]} value={fields.division} onChange={v=>set("division",v)} cols={2}/>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.division}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+            {[t.maintenance, t.construction].map(o=>(
+              <button key={o} onClick={()=>set("division",o)}
+                style={{background:fields.division===o?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${fields.division===o?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:fields.division===o?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
+                {o}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Receipt Type */}
         <div>
-          <Label>Receipt Type</Label>
-          <ToggleGroup options={["Fuel","Materials","Tools / Supplies","Other"]} value={fields.type} onChange={v=>{ set("type",v); set("gallons",""); set("fuelType",""); set("atShop",null); set("vendor",""); set("total",""); }} cols={2}/>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.receiptType}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+            {[t.fuel, t.materials, t.toolsSupplies, t.other].map(o=>(
+              <button key={o} onClick={()=>{ set("type",o); set("gallons",""); set("fuelType",""); set("atShop",null); set("vendor",""); set("total",""); }}
+                style={{background:fields.type===o?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${fields.type===o?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:fields.type===o?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
+                {o}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── PART 2: Fuel Details (slides in) ── */}
       {isFuel && (
         <div style={{animation:"fadeUp 0.25s ease both"}}>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--warn)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
-            Part 2 — Fuel Details
+            {t.part2Fuel}
             <span style={{flex:1,height:1,background:"rgba(160,96,16,0.3)",display:"block"}}/>
           </div>
           <div style={{background:"var(--bark)",border:"1.5px solid rgba(160,96,16,0.3)",borderLeft:"4px solid var(--warn)",borderRadius:12,padding:16,marginBottom:14}}>
 
-            {/* Gallons */}
             <div style={{marginBottom:14}}>
-              <Label>Gallons Pumped</Label>
-              <input style={inputStyle} type="number" inputMode="decimal" placeholder="e.g. 14.3" value={fields.gallons} onChange={e=>set("gallons",e.target.value)}/>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.gallons}</div>
+              <input style={inputStyle} type="number" inputMode="decimal" placeholder={t.gallonsPlaceholder} value={fields.gallons} onChange={e=>set("gallons",e.target.value)}/>
             </div>
 
-            {/* Fuel Type */}
             <div style={{marginBottom:14}}>
-              <Label>Fuel Type</Label>
-              <ToggleGroup options={["Regular","Diesel","Premium"]} value={fields.fuelType} onChange={v=>set("fuelType",v)} cols={3}/>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.fuelType}</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7}}>
+                {[t.regular, t.diesel, t.premium].map(o=>(
+                  <button key={o} onClick={()=>set("fuelType",o)}
+                    style={{background:fields.fuelType===o?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${fields.fuelType===o?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:fields.fuelType===o?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
+                    {o}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Fueled where */}
             <div style={{marginBottom: fields.atShop===false ? 14 : 0}}>
-              <Label>Where did you fuel up?</Label>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.whereDidYouFuel}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-                {[{label:"At the Shop",val:true},{label:"Gas Station",val:false}].map(({label,val})=>(
+                {[{label:t.atShop,val:true},{label:t.gasStation,val:false}].map(({label,val})=>(
                   <button key={label} onClick={()=>{ set("atShop",val); if(val) set("total",""); }}
                     style={{background:fields.atShop===val?"rgba(74,109,32,0.15)":"var(--bark2)",border:`1.5px solid ${fields.atShop===val?"var(--lime)":"var(--moss)"}`,borderRadius:8,padding:"11px 6px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,fontWeight:600,color:fields.atShop===val?"var(--lime)":"var(--stone)",cursor:"pointer",transition:"all 0.15s"}}>
                     {label}
@@ -915,46 +1305,44 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
               </div>
             </div>
 
-            {/* Cost — only if gas station */}
             {fields.atShop === false && (
               <div style={{animation:"fadeUp 0.2s ease both"}}>
-                <Label>Total Cost ($)</Label>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.totalCost}</div>
                 <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.total} onChange={e=>set("total",e.target.value)}/>
               </div>
             )}
 
-            {/* Shop confirmation banner */}
             {fields.atShop === true && (
               <div style={{marginTop:12,background:"rgba(74,109,32,0.08)",border:"1px solid rgba(74,109,32,0.25)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"var(--leaf)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5}}>
-                ✓ No cost to record — shop fuel logged by gallons only.
+                {t.shopConfirm}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ── Non-fuel details ── */}
       {fields.type && !isFuel && (
         <div style={{animation:"fadeUp 0.25s ease both"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--stone)",marginBottom:10}}>Part 2 — Purchase Details</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:3,color:"var(--stone)",marginBottom:10}}>{t.part2Purchase}</div>
           <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:14}}>
             <div style={{marginBottom:14}}>
-              <Label>Vendor / Merchant</Label>
-              <input style={inputStyle} type="text" placeholder="e.g. Home Depot, Lowe's" value={fields.vendor} onChange={e=>set("vendor",e.target.value)}/>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.vendor}</div>
+              <input style={inputStyle} type="text" placeholder={t.vendorPlaceholder} value={fields.vendor} onChange={e=>set("vendor",e.target.value)}/>
             </div>
             <div>
-              <Label>Total Amount ($)</Label>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.totalAmount}</div>
               <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.total} onChange={e=>set("total",e.target.value)}/>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Notes (always last) ── */}
       {fields.type && (
         <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:14,animation:"fadeUp 0.2s ease both"}}>
-          <Label optional>Notes</Label>
-          <textarea style={{...inputStyle,resize:"none",height:76}} placeholder="Any additional details..." value={fields.notes} onChange={e=>set("notes",e.target.value)}/>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+            {t.notes}<span style={{color:"var(--moss)",fontSize:11,letterSpacing:1,textTransform:"none",fontWeight:400}}>(optional)</span>
+          </div>
+          <textarea style={{...inputStyle,resize:"none",height:76}} placeholder={t.notesPlaceholder} value={fields.notes} onChange={e=>set("notes",e.target.value)}/>
         </div>
       )}
 
@@ -962,11 +1350,11 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
 
       <button disabled={submitting} onClick={handleSubmit}
         style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
-        {submitting ? "Saving..." : "Next: Attach Photo →"}
+        {submitting ? t.saving : t.nextPhoto}
       </button>
       {onClose && (
         <button onClick={onClose} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
-          Cancel
+          {t.cancel}
         </button>
       )}
     </div>
@@ -976,12 +1364,9 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   if (step === "photo") return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <StepBar done={1}/>
-
       <div className="success-banner" style={{marginBottom:16}}>
-        <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> Receipt saved! Now attach a photo.
+        <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> {t.receiptSaved}
       </div>
-
-      {/* Summary card */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
           <div>
@@ -995,13 +1380,11 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
             <div style={{fontSize:11,color:"var(--stone)",marginTop:2}}>{fields.type}{isFuel?` · ${fields.fuelType}`:""}</div>
           </div>
         </div>
-        {isFuel && <div style={{fontSize:12,color:"var(--stone)"}}>{fields.atShop?"At the Shop":"Gas Station"}{fields.gallons?` · ${fields.gallons} gal`:""}</div>}
+        {isFuel && <div style={{fontSize:12,color:"var(--stone)"}}>{fields.atShop ? t.atShop : t.gasStation}{fields.gallons?` · ${fields.gallons} gal`:""}</div>}
         {!isFuel && <div style={{fontSize:12,color:"var(--stone)"}}>{fields.vendor}</div>}
       </div>
 
-      <div style={{fontSize:13,color:"var(--stone)",marginBottom:10}}>
-        Take a photo of the physical receipt — it will be saved directly to Drive.
-      </div>
+      <div style={{fontSize:13,color:"var(--stone)",marginBottom:10}}>{t.photoDesc}</div>
 
       <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
       <div className="receipt-upload"
@@ -1009,9 +1392,9 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
         style={{opacity:uploading?0.6:1,marginBottom:12,borderColor:uploading?"var(--moss)":"var(--leaf)",padding:"28px 16px"}}>
         <Ic n="camera" style={{width:32,height:32,color:uploading?"var(--stone)":"var(--lime)"}}/>
         <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:15,letterSpacing:1,color:uploading?"var(--stone)":"var(--cream)"}}>
-          {uploading ? "Uploading photo..." : "Tap to Open Camera"}
+          {uploading ? t.uploading : t.tapCamera}
         </span>
-        <span style={{fontSize:11,color:"var(--stone)"}}>REQUIRED</span>
+        <span style={{fontSize:11,color:"var(--stone)"}}>{t.required}</span>
       </div>
     </div>
   );
@@ -1022,7 +1405,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
       <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
         <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
       </div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:4}}>All Done!</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:4}}>{t.allDone}</div>
       <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:4}}>
         {isFuel ? `${fields.gallons} gal ${fields.fuelType}` : `${fields.vendor} · $${fields.total}`}
       </div>
@@ -1030,10 +1413,10 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
       {photoUrl && <img src={photoUrl} alt="receipt" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",marginBottom:16}}/>}
       <div style={{display:"flex",gap:8,width:"100%"}}>
         <button onClick={reset} style={{flex:1,padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>
-          Submit Another
+          {t.submitAnother}
         </button>
         <button onClick={onGoHome||onClose} style={{flex:1,padding:"14px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
-          {onGoHome ? "Go to Home" : "Done"}
+          {onGoHome ? t.goHome : t.done}
         </button>
       </div>
     </div>
@@ -1042,6 +1425,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
 
 // ── HR TAB ──
 function HRTab() {
+  const t = useT();
   const [openHR, setOpenHR] = useState(null);
   return (
     <div>
@@ -1061,7 +1445,7 @@ function HRTab() {
               </div>
               {f.url
                 ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
-                : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
+                : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.comingSoon}</span>
               }
             </div>
           ))}
@@ -1069,7 +1453,7 @@ function HRTab() {
       ) : (
         <div style={{animation:"fadeUp 0.3s ease both"}}>
           <button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}>
-            <Ic n="back"/> Back to HR Portal
+            <Ic n="back"/> {t.backHR}
           </button>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div>
           <iframe
@@ -1099,6 +1483,7 @@ function ReceiptTab({ truck, division, onGoHome }) {
 
 // ── TRUCK HOME ── (no Jobs tab)
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
+  const t = useT();
   const [tab,      setTab]    = useState("home");
   const [division]            = useState(initialDivision || "");
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
@@ -1110,7 +1495,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
           <div className="topbar-title">J&amp;J &amp; Son</div>
           <div className="truck-pill"><Ic n="truck"/>{truck.label}</div>
         </div>
-        <button className="logout-btn" onClick={onLogout}>Sign Out</button>
+        <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
       </div>
       <div className="content" style={{padding: tab==="receipt" ? "0" : undefined}}>
         {tab==="home"    && <HomeTab truck={truck} division={division}/>}
@@ -1119,13 +1504,13 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         {tab==="hr"      && <HRTab/>}
       </div>
       <nav className="bottom-nav">
-        <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>setTab("home")}><Ic n="home"/>Home</button>
-        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>Receipts</button>
+        <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>setTab("home")}><Ic n="home"/>{t.home}</button>
+        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
-          <Ic n="wrench"/>Tools
+          <Ic n="wrench"/>{t.tools}
           {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
         </button>
-        <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>HR</button>
+        <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
       </nav>
     </div>
   );
@@ -1398,9 +1783,10 @@ function clearMemory() {
   try { localStorage.removeItem(MEMORY_KEY); } catch(e) {}
 }
 
-function LoginScreen({ onTruckLogin, onMgrLogin }) {
+function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
+  const t = useT();
   const memory = loadMemory();
-  const rememberedTruck = memory ? TRUCKS.find(t=>t.id===memory.truckId) || null : null;
+  const rememberedTruck = memory ? TRUCKS.find(tr=>tr.id===memory.truckId) || null : null;
 
   const [mode,         setMode]        = useState("truck");
   const [dropOpen,     setDropOpen]    = useState(false);
@@ -1424,43 +1810,45 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
 
   const tryMgr = () => {
     if (mgrPass === "ground25") onMgrLogin();
-    else { setError("Incorrect password."); setMgrPass(""); }
+    else { setError(t.wrongPass); setMgrPass(""); }
   };
 
   return (
     <div className="splash">
+      {/* Flag selector */}
+      <FlagSelector lang={lang} setLang={setLang}/>
+
       {/* Logo */}
       <div className="logo-wrap">
         <img className="logo-img"
           src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjAwMCAyMDAwIiB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHhtbG5zOnNlcmlmPSJodHRwOi8vd3d3LnNlcmlmLmNvbS8iIHN0eWxlPSJmaWxsOiMzZDZiMTA7ZmlsbC1ydWxlOmV2ZW5vZGQ7Y2xpcC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjI7Ij48cmVjdCB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiBmaWxsPSJub25lIi8+PC9zdmc+"
           alt="J&J & Son"/>
         <div className="app-title">J&amp;J &amp; Son</div>
-        <div className="app-sub">Operations Center</div>
+        <div className="app-sub">{t.appSub}</div>
       </div>
 
       {mode==="truck" && (
         <>
-          {/* ── Truck selection or remembered truck ── */}
           {!rememberedTruck ? (
             <>
-              <div className="select-label">Select Your Truck</div>
+              <div className="select-label">{t.selectTruck}</div>
               <div className="truck-dropdown-wrap">
                 <div className={`truck-dropdown-btn ${dropOpen?"open":""}`} onClick={()=>setDropOpen(o=>!o)}>
                   <Ic n="truck" style={{width:16,height:16,color:selected?"var(--lime)":"var(--stone)"}}/>
                   {selected
                     ? <span className="truck-dropdown-value">{selected.label}</span>
-                    : <span className="truck-dropdown-placeholder">Choose a truck...</span>
+                    : <span className="truck-dropdown-placeholder">{t.chooseTruck}</span>
                   }
                   <Ic n="chevD" className={`truck-dropdown-chevron ${dropOpen?"open":""}`} style={{width:16,height:16}}/>
                 </div>
                 {dropOpen && (
                   <div className="truck-dropdown-list">
-                    {TRUCKS.map(t=>(
-                      <div key={t.id} className={`truck-dropdown-item ${selected?.id===t.id?"selected":""}`}
-                        onClick={()=>{ setSel(t); setDropOpen(false); setError(""); }}>
+                    {TRUCKS.map(tr=>(
+                      <div key={tr.id} className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`}
+                        onClick={()=>{ setSel(tr); setDropOpen(false); setError(""); }}>
                         <Ic n="truck" style={{width:14,height:14}}/>
-                        {t.label}
-                        {selected?.id===t.id && <Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
+                        {tr.label}
+                        {selected?.id===tr.id && <Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
                       </div>
                     ))}
                   </div>
@@ -1468,12 +1856,11 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
               </div>
               {selected && (
                 <button className="btn-select-truck" onClick={()=>handleSelectTruck(selected)}>
-                  Make This My Truck
+                  {t.makeMyTruck}
                 </button>
               )}
             </>
           ) : (
-            /* Remembered truck — one tap to get in */
             <div style={{width:"100%",marginBottom:20,animation:"fadeUp 0.3s ease both"}}>
               <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"16px",marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
                 <div style={{width:44,height:44,borderRadius:10,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -1481,27 +1868,27 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{rememberedTruck.label}</div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>Your truck from today</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.truckToday}</div>
                 </div>
               </div>
               <button className="btn-select-truck" style={{marginBottom:8}} onClick={()=>handleSelectTruck(rememberedTruck)}>
-                Sign In as {rememberedTruck.label}
+                {t.signInAs(rememberedTruck.label)}
               </button>
               <div style={{textAlign:"center"}}>
                 <span onClick={handleChangeTruck}
                   style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:3}}>
-                  Not your truck? Change it
+                  {t.notYourTruck}
                 </span>
               </div>
             </div>
           )}
 
-          <div className="mgr-toggle" onClick={()=>{ setMode("manager"); setError(""); }}>Manager Zone →</div>
+          <div className="mgr-toggle" onClick={()=>{ setMode("manager"); setError(""); }}>{t.mgrZone} →</div>
 
-          {/* ── WALK-IN RECEIPT SUBMISSION ── */}
+          {/* ── WALK-IN RECEIPT ── */}
           <div style={{width:"100%",marginTop:28}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--stone)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
-              Submit a Receipt
+              {t.submitReceipt}
               <span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/>
             </div>
             {!receiptOpen ? (
@@ -1512,8 +1899,8 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                   <Ic n="camera" style={{width:15,height:15,color:"var(--lime)"}}/>
                 </div>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>Receipt Submission</div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Submit without logging into a truck</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{t.receiptCard}</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.receiptSub}</div>
                 </div>
                 <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
               </div>
@@ -1536,8 +1923,8 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                   <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
                 </div>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>Employee Resources</div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Request time away &amp; view company policies</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{t.empResources}</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.empResourcesSub}</div>
                 </div>
                 <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
               </div>
@@ -1546,9 +1933,9 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                 {!openHR ? (
                   <>
                     <button className="back-btn" style={{marginBottom:14}} onClick={()=>setHrOpen(false)}>
-                      <Ic n="back"/> Back
+                      <Ic n="back"/> {t.back}
                     </button>
-                    <div className="section-hd">Employee Resources</div>
+                    <div className="section-hd">{t.empResources}</div>
                     {HR_LINKS.map(f=>(
                       <div key={f.name}
                         style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}}
@@ -1562,7 +1949,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                         </div>
                         {f.url
                           ? <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
-                          : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>Soon</span>
+                          : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.comingSoon}</span>
                         }
                       </div>
                     ))}
@@ -1570,7 +1957,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
                 ) : (
                   <>
                     <button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}>
-                      <Ic n="back"/> Back to Employee Resources
+                      <Ic n="back"/> {t.backToResources}
                     </button>
                     <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div>
                     <iframe
@@ -1592,13 +1979,13 @@ function LoginScreen({ onTruckLogin, onMgrLogin }) {
             <Ic n="shield" style={{width:18,height:18,color:"var(--mgr-lt)"}}/>
             <span>Manager Zone</span>
           </div>
-          <div className="fuel-label" style={{marginBottom:8}}>Password</div>
+          <div className="fuel-label" style={{marginBottom:8}}>{t.mgrPassword}</div>
           <input className="mgr-input" type="password" placeholder="••••••••"
             value={mgrPass} onChange={e=>{setMgrPass(e.target.value);setError("");}}
             onKeyDown={e=>e.key==="Enter"&&tryMgr()}/>
-          <button className="btn-mgr" onClick={tryMgr}>Enter Manager Zone</button>
+          <button className="btn-mgr" onClick={tryMgr}>{t.enterMgrZone}</button>
           {error && <div className="error-msg">{error}</div>}
-          <div className="mgr-toggle" style={{color:"var(--stone)"}} onClick={()=>{setMode("truck");setError("");}}>← Back</div>
+          <div className="mgr-toggle" style={{color:"var(--stone)"}} onClick={()=>{setMode("truck");setError("");}}>{t.backToLogin}</div>
         </div>
       )}
 
@@ -1618,6 +2005,7 @@ export default function App() {
   const [truckDiv,  setTruckDiv]  = useState("");
   const [checkouts, setCheckouts] = useState({});
   const [signIns,   setSignIns]   = useState({});
+  const [lang,      setLang]      = useState(detectLang);
 
   const handleTruckLogin = (t) => {
     const time = getTimeStr();
@@ -1628,20 +2016,21 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    // Don't clear memory on logout — remember the truck for next login
     setTruck(null);
     setTruckDiv("");
     setScreen("login");
   };
 
   return (
-    <>
+    <LangContext.Provider value={lang}>
       <style>{css}</style>
       <div className="app">
         {screen==="login" && (
           <LoginScreen
             onTruckLogin={handleTruckLogin}
             onMgrLogin={()=>setScreen("manager")}
+            lang={lang}
+            setLang={setLang}
           />
         )}
         {screen==="truck" && truck && (
@@ -1661,6 +2050,6 @@ export default function App() {
           />
         )}
       </div>
-    </>
+    </LangContext.Provider>
   );
 }
