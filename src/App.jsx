@@ -355,6 +355,23 @@ const T = {
     uItems_care:["Wash and maintain your uniforms","Keep uniforms in good condition","Bring appropriate clothing for weather conditions","Company replaces uniforms for normal wear and tear at its discretion"],
     uItems_replacement:["Report damaged or worn uniforms to management","Replacements are approved based on condition and management approval","Excessive replacement requests due to poor care may be denied or charged"],
     uItems_noncompliance:["Sent home to change","Removed from the job site until compliant","Disciplinary action for repeated violations"],
+    // Vehicle Guidelines
+    vehicleTitle:"Vehicle Guidelines", vehicleSubtitle:"J & J & Son Lawncare — Driver Policy",
+    vehicleFooter:"Safe driving protects you, your coworkers, and the public. Thank you for representing J&J & Son Lawncare responsibly on the road.",
+    vehicleAckLabel:"I have read and understand the J&J & Son Lawncare Vehicle Policy and agree to follow all guidelines.",
+    vSec_shop:"At the Shop", vSec_road:"On the Road", vSec_property:"At a Property",
+    vItems_shop:["Ensure truck and trailer are locked before leaving for the day","Report any repairs or maintenance needed to your supervisor","Keep the vehicle clean — wash and vacuum as necessary","Only authorized J&J employees may operate or ride in a company vehicle","Return keys to the key box in the shop"],
+    vItems_road:["You must have a valid Massachusetts driver's license and DOT Medical card in your possession at all times","Obey all traffic, parking, and vehicle safety laws at all times","Hands-free only — use of handheld cell phones (including texting) while driving is strictly prohibited","Pull over safely before using your phone if you do not have a hands-free system","Do not operate a company vehicle under the influence of alcohol, drugs, or any medication that may impair your ability to drive","Unauthorized passengers are not permitted in company vehicles"],
+    vItems_property:["Park safely and respectfully at all job sites","Secure the vehicle and its contents whenever you leave it unattended","Report any accidents, parking tickets, moving violations, theft, or damage to your manager within 24 hours","Cooperate fully with authorities in the event of an accident"],
+    // End of Day
+    eodTitle:"End of Day Checklist", eodSubtitle:"Complete before leaving for the day",
+    eodNameLabel:"Your Name",
+    eodAckLabel:"I have completed all end of day tasks and am ready to sign off.",
+    eodSubmit:"Submit & Sign Off", eodSubmitting:"Submitting...",
+    eodSec1:"Equipment", eodSec2:"Clocking Out",
+    eodItems1:["Put away all additional tools used today in their proper place","Clean trailers of debris and organize for the next day","Wash and clean mowers and other equipment","Refuel and store all equipment properly","Record any maintenance issues for your supervisor"],
+    eodItems2:["Clock out using the company system","Check out with your supervisor for feedback or updates","Leave the reporting location clean and organized","Drop off keys for any vehicles in the key box"],
+    endOfDay:"End of Day", endOfDayDesc:"End of shift sign-off checklist",
   },
 
   es: {
@@ -485,6 +502,21 @@ const T = {
     uItems_care:["Lave y mantenga sus uniformes","Mantenga los uniformes en buenas condiciones","Traiga ropa apropiada para las condiciones climáticas","La empresa reemplaza uniformes por desgaste normal a su discreción"],
     uItems_replacement:["Reporte uniformes dañados a la gerencia","Los reemplazos se aprueban según la condición","Las solicitudes excesivas pueden negarse o cobrarse"],
     uItems_noncompliance:["Enviado a casa a cambiarse","Retirado del sitio hasta cumplir","Acción disciplinaria por violaciones repetidas"],
+    vehicleTitle:"Pautas de Vehículos", vehicleSubtitle:"J & J & Son Lawncare — Política de Conductores",
+    vehicleFooter:"Conducir de forma segura te protege a ti, a tus compañeros y al público. Gracias por representar a J&J & Son Lawncare de manera responsable.",
+    vehicleAckLabel:"He leído y entiendo la Política de Vehículos de J&J & Son Lawncare y acepto seguir todas las pautas.",
+    vSec_shop:"En el Taller", vSec_road:"En la Carretera", vSec_property:"En la Propiedad",
+    vItems_shop:["Asegúrate de que el camión y el remolque estén cerrados antes de irte","Reporta cualquier reparación o mantenimiento necesario a tu supervisor","Mantén el vehículo limpio — lávalo y aspíralo según sea necesario","Solo empleados autorizados de J&J pueden operar o viajar en un vehículo de la empresa","Devuelve las llaves a la caja de llaves en el taller"],
+    vItems_road:["Debes tener una licencia de conducir de Massachusetts válida y tarjeta médica DOT en todo momento","Obedece todas las leyes de tránsito, estacionamiento y seguridad vial","Solo manos libres — el uso de teléfonos celulares (incluidos mensajes) mientras conduces está estrictamente prohibido","Detente de forma segura antes de usar tu teléfono si no tienes un sistema manos libres","No operes un vehículo de la empresa bajo la influencia de alcohol, drogas o medicamentos que afecten tu capacidad de conducir","Los pasajeros no autorizados no están permitidos en los vehículos de la empresa"],
+    vItems_property:["Estaciona de forma segura y respetuosa en todos los sitios de trabajo","Asegura el vehículo y su contenido cuando lo dejes desatendido","Reporta accidentes, multas, violaciones de tránsito, robos o daños a tu gerente en 24 horas","Coopera plenamente con las autoridades en caso de accidente"],
+    eodTitle:"Lista de Fin de Día", eodSubtitle:"Completa antes de irte por el día",
+    eodNameLabel:"Tu Nombre",
+    eodAckLabel:"He completado todas las tareas del fin del día y estoy listo para cerrar.",
+    eodSubmit:"Enviar y Cerrar", eodSubmitting:"Enviando...",
+    eodSec1:"Equipos", eodSec2:"Salida",
+    eodItems1:["Guarda todas las herramientas adicionales usadas hoy en su lugar","Limpia los remolques de residuos y organízalos para el día siguiente","Lava y limpia cortadoras y otros equipos","Recarga y almacena correctamente todos los equipos","Registra cualquier problema de mantenimiento para tu supervisor"],
+    eodItems2:["Registra la salida usando el sistema de la empresa","Consulta con tu supervisor para comentarios o actualizaciones","Deja el lugar de presentación limpio y organizado","Devuelve las llaves de cualquier vehículo en la caja de llaves"],
+    endOfDay:"Fin del Día", endOfDayDesc:"Lista de cierre de turno",
   },
 
   pt: {
@@ -615,6 +647,21 @@ const T = {
     uItems_care:["Lave e mantenha seus uniformes","Mantenha os uniformes em boas condições","Traga roupas apropriadas para as condições climáticas","A empresa substitui uniformes por desgaste normal a seu critério"],
     uItems_replacement:["Relate uniformes danificados à gerência","As substituições são aprovadas com base na condição","Solicitações excessivas podem ser negadas ou cobradas"],
     uItems_noncompliance:["Enviado para casa para se trocar","Removido do local de trabalho até estar em conformidade","Ação disciplinar por violações repetidas"],
+    vehicleTitle:"Diretrizes de Veículos", vehicleSubtitle:"J & J & Son Lawncare — Política de Motoristas",
+    vehicleFooter:"Dirigir com segurança protege você, seus colegas e o público. Obrigado por representar a J&J & Son Lawncare com responsabilidade.",
+    vehicleAckLabel:"Li e compreendo a Política de Veículos da J&J & Son Lawncare e concordo em seguir todas as diretrizes.",
+    vSec_shop:"No Depósito", vSec_road:"Na Estrada", vSec_property:"Na Propriedade",
+    vItems_shop:["Certifique-se de que o caminhão e o reboque estejam trancados antes de sair","Reporte qualquer reparo ou manutenção necessária ao seu supervisor","Mantenha o veículo limpo — lave e aspire conforme necessário","Somente funcionários autorizados da J&J podem operar ou viajar em um veículo da empresa","Devolva as chaves para a caixa de chaves no depósito"],
+    vItems_road:["Você deve ter uma carteira de motorista de Massachusetts válida e cartão médico DOT em todos os momentos","Obedeça todas as leis de trânsito, estacionamento e segurança viária","Somente viva-voz — o uso de celulares (incluindo mensagens) ao dirigir é estritamente proibido","Pare com segurança antes de usar o telefone se não tiver um sistema viva-voz","Não opere um veículo da empresa sob influência de álcool, drogas ou medicamentos que afetem sua capacidade de dirigir","Passageiros não autorizados não são permitidos nos veículos da empresa"],
+    vItems_property:["Estacione com segurança e respeito em todos os locais de trabalho","Proteja o veículo e seu conteúdo sempre que o deixar sem vigilância","Reporte acidentes, multas, infrações de trânsito, roubos ou danos ao seu gerente em 24 horas","Coopere plenamente com as autoridades em caso de acidente"],
+    eodTitle:"Lista de Fim do Dia", eodSubtitle:"Complete antes de sair por hoje",
+    eodNameLabel:"Seu Nome",
+    eodAckLabel:"Completei todas as tarefas de fim de dia e estou pronto para encerrar.",
+    eodSubmit:"Enviar e Encerrar", eodSubmitting:"Enviando...",
+    eodSec1:"Equipamentos", eodSec2:"Saída",
+    eodItems1:["Guarde todas as ferramentas adicionais usadas hoje em seu lugar","Limpe os reboques de detritos e organize-os para o dia seguinte","Lave e limpe cortadores e outros equipamentos","Abasteça e armazene todos os equipamentos adequadamente","Registre quaisquer problemas de manutenção para seu supervisor"],
+    eodItems2:["Registre a saída usando o sistema da empresa","Converse com seu supervisor para feedback ou atualizações","Deixe o local de apresentação limpo e organizado","Devolva as chaves de quaisquer veículos na caixa de chaves"],
+    endOfDay:"Fim do Dia", endOfDayDesc:"Lista de encerramento do turno",
   },
 };
 
@@ -652,20 +699,20 @@ const TOOL_INVENTORY = [
 ];
 
 const DOT_CATEGORIES = [
-  {key:"exterior",items:[{key:"tires_exterior",priority:"high"},{key:"lug_nuts",priority:"high"},{key:"lights_exterior",priority:"high"},{key:"mirrors",priority:"medium"},{key:"windshield",priority:"medium"},{key:"wipers",priority:"medium"},{key:"body_frame",priority:"medium"}]},
-  {key:"trailer", items:[{key:"tires_trailer",priority:"high"},{key:"lights_trailer",priority:"high"},{key:"hitch",priority:"high"},{key:"safety_chains",priority:"high"},{key:"trailer_brakes",priority:"high"},{key:"load_secured",priority:"high"},{key:"ramp_latch",priority:"medium"}]},
-  {key:"fluid",   items:[{key:"engine_oil",priority:"medium"},{key:"coolant",priority:"medium"},{key:"brake_fluid",priority:"high"},{key:"transmission_fluid",priority:"medium"},{key:"fuel_level",priority:"low"},{key:"hydraulic_fluids",priority:"medium"}]},
-  {key:"interior",items:[{key:"seatbelts",priority:"high"},{key:"horn",priority:"medium"},{key:"gauges",priority:"medium"},{key:"fire_extinguisher",priority:"high"},{key:"first_aid",priority:"high"},{key:"loose_items_interior",priority:"medium"}]},
-  {key:"safety",  items:[{key:"ppe",priority:"high"},{key:"warning_triangles",priority:"high"},{key:"no_leaks",priority:"high"},{key:"keys_removed",priority:"low"}]},
+  { key:"exterior", label_en:"Exterior Truck Check",      label_es:"Revisión Exterior del Camión",    label_pt:"Verificação Exterior do Caminhão" },
+  { key:"trailer",  label_en:"Trailer Check",             label_es:"Revisión del Remolque",           label_pt:"Verificação do Reboque" },
+  { key:"fluid",    label_en:"Fluid & Mechanical Check",  label_es:"Revisión de Fluidos y Mecánica",  label_pt:"Verificação de Fluidos e Mecânica" },
+  { key:"interior", label_en:"Interior Truck Check",      label_es:"Revisión Interior del Camión",    label_pt:"Verificação Interior do Caminhão" },
+  { key:"safety",   label_en:"Safety & Miscellaneous",    label_es:"Seguridad y Misceláneos",         label_pt:"Segurança e Miscelâneos" },
 ];
 
-const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires_trailer","lights_trailer","hitch","safety_chains","trailer_brakes","load_secured","brake_fluid","seatbelts","fire_extinguisher","first_aid","ppe","warning_triangles","no_leaks"];
+
 
 const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
-const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
-const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
-const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbyipvTV8tUxXeO8tAFCPffysp0LHVcGGGP_ApOSvoAGXaIWLCc1Lxq6FtWoDIHN5ih1rQ/exec";
+const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
+const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
+const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
+const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
 const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
 const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection, History
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
@@ -676,7 +723,7 @@ const HR_LINKS = [
   {name:"Contact a Manager", desc:"Send a message to management", url:"https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true"},
   {name:"Employee Handbook", desc:"Company policies & procedures",url:"https://drive.google.com/file/d/1UPIOc2q7rs7h-VQcT6Cvv4eaG_-vePGs/preview"},
   {name:"Uniform Guidelines",desc:"Dress code & uniform standards",url:"inline"},
-  {name:"Vehicle Guidelines",desc:"Fleet use & driving policies", url:""},
+  {name:"Vehicle Guidelines",desc:"Fleet use & driving policies", url:"inline-vehicle"},
 ];
 
 function getTodayStr()  { return new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}); }
@@ -886,31 +933,17 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
 
 // ── DOT WALKAROUND FORM ───────────────────────────────────────────────────────
 function DOTWalkaroundForm({ truck, onBack, onDone }) {
-  const t = useT();
+  const lang = useLang();
+  const t    = useT();
   const [name,       setName]       = useState("");
   const [checks,     setChecks]     = useState({});
   const [notes,      setNotes]      = useState("");
-  const [openCats,   setOpenCats]   = useState({exterior:true,trailer:true,fluid:true,interior:true,safety:true});
   const [submitting, setSubmitting] = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
   const [nameErr,    setNameErr]    = useState(false);
 
   const toggleCheck = key => setChecks(p=>({...p,[key]:!p[key]}));
-
-  // Toggle all items in a category — if all checked, uncheck all; otherwise check all
-  const toggleCategory = cat => {
-    const keys = cat.items.map(i=>i.key);
-    const allChecked = keys.every(k=>checks[k]);
-    const update = {};
-    keys.forEach(k=>{ update[k] = !allChecked; });
-    setChecks(p=>({...p,...update}));
-  };
-
-  const toggleCatOpen = key => setOpenCats(p=>({...p,[key]:!p[key]}));
-
-  const allItems      = DOT_CATEGORIES.flatMap(c=>c.items);
-  const uncheckedHigh = HIGH_PRIORITY_KEYS.filter(k=>!checks[k]).length;
-  const totalChecked  = allItems.filter(i=>checks[i.key]).length;
+  const totalChecked = DOT_CATEGORIES.filter(c=>checks[c.key]).length;
 
   const handleSubmit = async () => {
     if(!name.trim()){setNameErr(true);return;}
@@ -929,11 +962,10 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
 
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
-      <div style={{width:72,height:72,borderRadius:"50%",background:uncheckedHigh===0?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)",border:`2px solid ${uncheckedHigh===0?"var(--leaf)":"var(--danger)"}`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
-        <Ic n={uncheckedHigh===0?"check":"alert"} style={{width:36,height:36,color:uncheckedHigh===0?"var(--lime)":"var(--danger)"}}/>
+      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
+        <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
       </div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:uncheckedHigh===0?"var(--lime)":"var(--danger)",letterSpacing:3,marginBottom:6}}>{uncheckedHigh===0?"PASS":"FLAGGED"}</div>
-      {uncheckedHigh>0&&<div style={{fontSize:13,color:"var(--danger)",textAlign:"center",marginBottom:6}}>{uncheckedHigh} {t.dotFlagNote}</div>}
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>PASS</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
       <button onClick={onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
     </div>
@@ -941,75 +973,46 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
+      {/* Header */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <Ic n="dot" style={{width:17,height:17,color:"var(--lime)"}}/>
         </div>
         <div style={{flex:1}}>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.dotTitle}</div>
-          <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{truck.label} · {totalChecked}/{allItems.length} items</div>
+          <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{truck.label} · {totalChecked}/{DOT_CATEGORIES.length} sections</div>
         </div>
-        {uncheckedHigh>0&&<div style={{background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:6,padding:"3px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--danger)",letterSpacing:1}}>{uncheckedHigh} HIGH</div>}
       </div>
 
-      {/* Hint */}
-      <div style={{background:"rgba(74,109,32,0.07)",border:"1px solid rgba(74,109,32,0.2)",borderRadius:8,padding:"8px 12px",marginBottom:12,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--leaf)",letterSpacing:0.3}}>
-        {t.dotSelectAll}
-      </div>
-
+      {/* Name */}
       <div style={{background:"var(--bark)",border:`1px solid ${nameErr?"var(--danger)":"var(--moss)"}`,borderRadius:10,padding:14,marginBottom:14}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.dotNameLabel}</div>
         <input style={{...inputStyle,borderColor:nameErr?"var(--danger)":"var(--moss)"}} type="text" placeholder={t.namePlaceholder} value={name} onChange={e=>{setName(e.target.value);setNameErr(false);}}/>
       </div>
 
+      {/* One checkbox per section */}
       {DOT_CATEGORIES.map(cat=>{
-        const isOpen = openCats[cat.key];
-        const checkedCount = cat.items.filter(i=>checks[i.key]).length;
-        const allChecked = checkedCount===cat.items.length;
-        const headerState = allChecked?"all-checked":checkedCount>0?"partial":"none-checked";
+        const isChecked = !!checks[cat.key];
+        const label = lang==="es"?cat.label_es:lang==="pt"?cat.label_pt:cat.label_en;
         return (
-          <div key={cat.key} style={{marginBottom:8}}>
-            {/* Section header — tap to toggle all items, long tap / second element toggles open */}
-            <div className={`dot-cat-header ${headerState}`} onClick={()=>toggleCategory(cat)}>
-              <div style={{width:28,height:28,borderRadius:7,background:allChecked?"rgba(74,109,32,0.2)":"rgba(196,191,176,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background 0.15s"}}>
-                {allChecked
-                  ? <Ic n="check" style={{width:13,height:13,color:"var(--lime)"}}/>
-                  : <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:12,color:"var(--stone)"}}>{checkedCount}/{cat.items.length}</span>
-                }
-              </div>
-              <span className="dot-cat-label">{t[`dotCat_${cat.key}`]}</span>
-              <div onClick={e=>{e.stopPropagation();toggleCatOpen(cat.key);}} style={{padding:"4px 6px",marginRight:-4,cursor:"pointer"}}>
-                <Ic n="chev" className={`chevron ${isOpen?"open":""}`}/>
-              </div>
+          <div key={cat.key}
+            onClick={()=>toggleCheck(cat.key)}
+            style={{display:"flex",alignItems:"center",gap:14,background:isChecked?"rgba(74,109,32,0.06)":"var(--bark)",border:`1px solid ${isChecked?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderRadius:10,padding:"16px 14px",marginBottom:8,cursor:"pointer",transition:"all 0.15s",-webkitTapHighlightColor:"transparent"}}>
+            <div style={{width:26,height:26,borderRadius:7,border:`2px solid ${isChecked?"var(--lime)":"var(--moss)"}`,background:isChecked?"var(--lime)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+              {isChecked&&<Ic n="check" style={{width:13,height:13,color:"var(--earth)"}}/>}
             </div>
-            {isOpen&&cat.items.map(item=>{
-              const isChecked=!!checks[item.key];
-              const isFlagged=!isChecked&&item.priority==="high";
-              return (
-                <div key={item.key} className={`dot-item ${isChecked?"checked":""} ${isFlagged?"flagged":""}`} onClick={()=>toggleCheck(item.key)}>
-                  <div className={`dot-checkbox ${isChecked?"checked":""}`}>{isChecked&&<Ic n="check"/>}</div>
-                  <span className="dot-item-label">{t[`dot_${item.key}`]}</span>
-                  <span className={`dot-priority ${item.priority}`}>{item.priority}</span>
-                </div>
-              );
-            })}
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:isChecked?"var(--lime)":"var(--cream)",flex:1,lineHeight:1.3}}>{label}</span>
           </div>
         );
       })}
 
+      {/* Notes */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:14,marginTop:4}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
           {t.dotNotes}<span style={{color:"var(--moss)",fontSize:11,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span>
         </div>
         <textarea style={{...inputStyle,resize:"none",height:72}} placeholder={t.dotNotesPlaceholder} value={notes} onChange={e=>setNotes(e.target.value)}/>
       </div>
-
-      {uncheckedHigh>0&&(
-        <div style={{background:"rgba(192,68,42,0.08)",border:"1px solid rgba(192,68,42,0.3)",borderRadius:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
-          <Ic n="alert" style={{width:14,height:14,color:"var(--danger)",flexShrink:0}}/>
-          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--danger)",letterSpacing:0.3}}>{t.dotUncheckedWarning(uncheckedHigh)}</span>
-        </div>
-      )}
 
       <button disabled={submitting} onClick={handleSubmit}
         style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
@@ -1088,6 +1091,118 @@ function DailyBriefingForm({ truck, onBack, onDone }) {
       <button disabled={submitting||!acked||!name.trim()} onClick={handleSubmit}
         style={{width:"100%",padding:"16px",marginTop:14,background:(!acked||!name.trim()||submitting)?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:(!acked||!name.trim()||submitting)?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
         {submitting?t.dbSubmitting:t.dbSubmit}
+      </button>
+      <button onClick={onBack} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.cancel}</button>
+    </div>
+  );
+}
+
+// ── VEHICLE GUIDELINES ────────────────────────────────────────────────────────
+function VehicleGuideInline() {
+  const t = useT();
+  const [open,setOpen] = useState({});
+  const tog = k => setOpen(p=>({...p,[k]:!p[k]}));
+  const S = ({k,icon,bg,titleKey,children}) => (
+    <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,marginBottom:8,overflow:"hidden"}}>
+      <div onClick={()=>tog(k)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer",background:open[k]?"var(--bark2)":"var(--bark)",transition:"background 0.15s"}}>
+        <div style={{width:32,height:32,borderRadius:8,background:bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n={icon} style={{width:14,height:14,color:"var(--leaf)"}}/></div>
+        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",flex:1}}>{t[titleKey]}</span>
+        <Ic n="chev" style={{width:14,height:14,color:"var(--stone)",transition:"transform 0.2s",transform:open[k]?"rotate(90deg)":"none"}}/>
+      </div>
+      {open[k]&&<div style={{padding:"4px 14px 14px",borderTop:"1px solid var(--moss)",animation:"fadeUp 0.2s ease both"}}>{children}</div>}
+    </div>
+  );
+  const Items = ({items}) => (
+    <ul style={{listStyle:"none",margin:"10px 0 0",display:"flex",flexDirection:"column",gap:7}}>
+      {items.map((item,i)=>(
+        <li key={i} style={{display:"flex",gap:8,alignItems:"flex-start",fontSize:13,color:"var(--stone)",lineHeight:1.5}}>
+          <span style={{width:5,height:5,borderRadius:"50%",background:"var(--stone)",flexShrink:0,marginTop:5}}/>{item}
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:40,height:40,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="truck" style={{width:18,height:18,color:"var(--lime)"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.vehicleTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.vehicleSubtitle}</div></div>
+      </div>
+      <S k="shop"     icon="box"    bg="rgba(74,109,32,0.12)"  titleKey="vSec_shop">    <Items items={t.vItems_shop}/></S>
+      <S k="road"     icon="truck"  bg="rgba(160,96,16,0.1)"   titleKey="vSec_road">    <Items items={t.vItems_road}/></S>
+      <S k="property" icon="map"    bg="rgba(42,90,149,0.1)"   titleKey="vSec_property"><Items items={t.vItems_property}/></S>
+      <div style={{background:"rgba(74,109,32,0.07)",border:"1px solid rgba(74,109,32,0.2)",borderRadius:9,padding:"12px 14px",marginTop:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--leaf)",lineHeight:1.5,letterSpacing:0.3}}>{t.vehicleFooter}</div>
+    </div>
+  );
+}
+
+// ── END OF DAY FORM ───────────────────────────────────────────────────────────
+function EndOfDayForm({ truck, onBack, onDone }) {
+  const t = useT();
+  const [name,       setName]       = useState("");
+  const [acked,      setAcked]      = useState(false);
+  const [nameErr,    setNameErr]    = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted,  setSubmitted]  = useState(false);
+  const [openSecs,   setOpenSecs]   = useState({s1:true,s2:false});
+  const tog = k => setOpenSecs(p=>({...p,[k]:!p[k]}));
+  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
+
+  const handleSubmit = async () => {
+    if(!name.trim()){setNameErr(true);return;}
+    if(!acked)return;
+    setSubmitting(true);
+    try {
+      await fetch(DB_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
+        body:JSON.stringify({sheet:"End of Day",date:getTodayKey(),time:getTimeStr(),truck:truck.label,name:name.trim()})});
+      setSubmitted(true);
+    } catch(e){console.warn(e);setSubmitted(true);}
+    setSubmitting(false);
+  };
+
+  const Section = ({sk,titleKey,items}) => {
+    const isOpen=openSecs[sk];
+    return (
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,marginBottom:8,overflow:"hidden"}}>
+        <div onClick={()=>tog(sk)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer",background:isOpen?"var(--bark2)":"var(--bark)",transition:"background 0.15s"}}>
+          <div style={{width:28,height:28,borderRadius:7,background:"rgba(74,109,32,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="clip" style={{width:13,height:13,color:"var(--leaf)"}}/></div>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",flex:1}}>{t[titleKey]}</span>
+          <Ic n="chev" style={{width:14,height:14,color:"var(--stone)",transition:"transform 0.2s",transform:isOpen?"rotate(90deg)":"none"}}/>
+        </div>
+        {isOpen&&<div style={{padding:"4px 14px 14px",borderTop:"1px solid var(--moss)"}}>
+          {items.map((item,i)=><div key={i} className="briefing-item">{item}</div>)}
+        </div>}
+      </div>
+    );
+  };
+
+  if(submitted) return (
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
+      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/></div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>{t.allDone}</div>
+      <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
+      <button onClick={onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
+    </div>
+  );
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="sun" style={{width:17,height:17,color:"var(--lime)"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.eodTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.eodSubtitle}</div></div>
+      </div>
+      <div style={{background:"var(--bark)",border:`1px solid ${nameErr?"var(--danger)":"var(--moss)"}`,borderRadius:10,padding:14,marginBottom:14}}>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.eodNameLabel}</div>
+        <input style={{...inputStyle,borderColor:nameErr?"var(--danger)":"var(--moss)"}} type="text" placeholder={t.namePlaceholder} value={name} onChange={e=>{setName(e.target.value);setNameErr(false);}}/>
+      </div>
+      <Section sk="s1" titleKey="eodSec1" items={t.eodItems1}/>
+      <Section sk="s2" titleKey="eodSec2" items={t.eodItems2}/>
+      <div className={`briefing-ack ${acked?"checked":""}`} onClick={()=>setAcked(a=>!a)} style={{marginTop:6}}>
+        <div className={`briefing-ack-box ${acked?"checked":""}`}>{acked&&<Ic n="check"/>}</div>
+        <span className="briefing-ack-label">{t.eodAckLabel}</span>
+      </div>
+      <button disabled={submitting||!acked||!name.trim()} onClick={handleSubmit}
+        style={{width:"100%",padding:"16px",marginTop:14,background:(!acked||!name.trim()||submitting)?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:(!acked||!name.trim()||submitting)?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
+        {submitting?t.eodSubmitting:t.eodSubmit}
       </button>
       <button onClick={onBack} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.cancel}</button>
     </div>
@@ -1178,7 +1293,7 @@ function ContactDropdown() {
 }
 
 // ── HOME TAB ──────────────────────────────────────────────────────────────────
-function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, dotComplete, briefingComplete, propInspectCount }) {
+function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
   const t   = useT();
   const day = getTodayStr();
   return (
@@ -1215,7 +1330,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
         {!dotComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
       </div>
 
-      {/* Property Inspection — always tappable, shows count */}
+      {/* Property Inspection */}
       <div className="action-card" onClick={onOpenPropInspect}>
         <div className="action-card-icon" style={{background:propInspectCount>0?"rgba(74,109,32,0.2)":"var(--moss)"}}>
           <Ic n="map" style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1224,10 +1339,23 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           <div className="action-card-name">{t.propInspect}</div>
           <div className="action-card-desc">{t.propInspectDesc}</div>
           <span className={`status-chip ${propInspectCount>0?"chip-done":"chip-pending"}`}>
-            {propInspectCount>0?`${propInspectCount} ${propInspectCount===1?"done":"done"}`:t.pending}
+            {propInspectCount>0?`${propInspectCount} done`:t.pending}
           </span>
         </div>
         <div className="action-card-arrow"><Ic n="chev"/></div>
+      </div>
+
+      {/* End of Day */}
+      <div className="action-card" onClick={eodComplete?undefined:onOpenEOD} style={{opacity:eodComplete?0.75:1,cursor:eodComplete?"default":"pointer"}}>
+        <div className="action-card-icon" style={{background:eodComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
+          <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"var(--lime)"}}/>
+        </div>
+        <div className="action-card-info">
+          <div className="action-card-name">{t.endOfDay}</div>
+          <div className="action-card-desc">{t.endOfDayDesc}</div>
+          <span className={`status-chip ${eodComplete?"chip-done":"chip-pending"}`}>{eodComplete?t.done:t.pending}</span>
+        </div>
+        {!eodComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
       </div>
 
       <div className="section-hd" style={{marginTop:8}}>{t.contactMgr}</div>
@@ -1304,7 +1432,11 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   );
 }
 
-function HRContent({link}){if(link.name==="Uniform Guidelines")return<UniformGuideInline/>;return<iframe src={link.url} style={{width:"100%",height:"calc(100dvh - 180px)",border:"none",display:"block",borderRadius:8}} title={link.name}/>;}
+function HRContent({link}){
+  if(link.name==="Uniform Guidelines") return <UniformGuideInline/>;
+  if(link.name==="Vehicle Guidelines") return <VehicleGuideInline/>;
+  return<iframe src={link.url} style={{width:"100%",height:"calc(100dvh - 180px)",border:"none",display:"block",borderRadius:8}} title={link.name}/>;
+}}
 function HRTab(){const t=useT();const[openHR,setOpenHR]=useState(null);return(<div>{!openHR?(<><div className="section-hd">HR &amp; Employee Portal</div>{HR_LINKS.map(f=>(<div key={f.name} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}} onClick={()=>{if(f.url)setOpenHR(f);}}><div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/></div><div style={{flex:1}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div></div>{f.url?<Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>:<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.comingSoon}</span>}</div>))}</>):(<div style={{animation:"fadeUp 0.3s ease both"}}><button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}><Ic n="back"/> {t.backHR}</button><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div><HRContent link={openHR}/></div>)}</div>);}
 function ReceiptTab({truck,division,onGoHome}){return(<div style={{padding:"16px 16px 100px"}}><div className="section-hd">Submit a Receipt</div><NativeReceiptFlow truckLabel={truck.label} divisionLabel={division} onGoHome={onGoHome}/></div>);}
 
@@ -1327,13 +1459,14 @@ function loadFormState(truckId) {
   } catch(e) { return null; }
 }
 
-function saveFormState(truckId, dot, briefing, propCount) {
+function saveFormState(truckId, dot, briefing, propCount, eod) {
   try {
     localStorage.setItem(getFormStateKey(truckId), JSON.stringify({
       date: getTodayDateStr(),
       dotComplete: dot,
       briefingComplete: briefing,
       propInspectCount: propCount,
+      eodComplete: eod,
     }));
   } catch(e) {}
 }
@@ -1343,17 +1476,17 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   const t = useT();
   const saved = loadFormState(truck.id);
   const [tab,              setTab]             = useState("home");
-  const [activeForm,       setActiveForm]      = useState(null); // "dot"|"briefing"|"propinspect"
+  const [activeForm,       setActiveForm]      = useState(null);
   const [dotComplete,      setDotComplete]     = useState(saved?.dotComplete      || false);
   const [briefingComplete, setBriefingComplete]= useState(saved?.briefingComplete || false);
   const [propInspectCount, setPropInspectCount]= useState(saved?.propInspectCount || 0);
+  const [eodComplete,      setEodComplete]     = useState(saved?.eodComplete      || false);
   const [division]                             = useState(initialDivision||"");
   const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
 
-  // Persist whenever any completion state changes
   useEffect(() => {
-    saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount);
-  }, [dotComplete, briefingComplete, propInspectCount, truck.id]);
+    saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
+  }, [dotComplete, briefingComplete, propInspectCount, eodComplete, truck.id]);
 
   return (
     <div className="screen">
@@ -1367,9 +1500,11 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
             onOpenDOT={()=>setActiveForm("dot")}
             onOpenBriefing={()=>setActiveForm("briefing")}
             onOpenPropInspect={()=>setActiveForm("propinspect")}
+            onOpenEOD={()=>setActiveForm("eod")}
             dotComplete={dotComplete}
             briefingComplete={briefingComplete}
             propInspectCount={propInspectCount}
+            eodComplete={eodComplete}
           />
         }
         {tab==="home"&&activeForm==="dot"&&(
@@ -1383,6 +1518,10 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         {tab==="home"&&activeForm==="propinspect"&&(
           <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
           <PropertyInspectionForm truck={truck} onBack={()=>setActiveForm(null)} onDone={()=>{setActiveForm(null);setPropInspectCount(c=>c+1);setTab("home");}}/></div>
+        )}
+        {tab==="home"&&activeForm==="eod"&&(
+          <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
+          <EndOfDayForm truck={truck} onBack={()=>setActiveForm(null)} onDone={()=>{setActiveForm(null);setEodComplete(true);setTab("home");}}/></div>
         )}
         {tab==="receipt"&&<ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
         {tab==="tools"  &&<ToolsTab truck={truck} checkouts={checkouts} setCheckouts={setCheckouts}/>}
@@ -1466,6 +1605,7 @@ function ManagerZone({ onLogout }) {
       "Daily Briefing":     {lbl:"Briefing", bg:"rgba(42,90,149,0.12)",  col:"var(--mgr-lt)"},
       "DOT Walk-Around":    {lbl:"DOT",      bg:"rgba(160,96,16,0.12)",  col:"var(--warn)"},
       "Property Inspection":{lbl:"Property", bg:"rgba(74,109,32,0.12)",  col:"var(--leaf)"},
+      "End of Day":         {lbl:"End of Day",bg:"rgba(122,104,69,0.12)",col:"var(--dirt)"},
     };
     const c = map[type]||{lbl:type, bg:"var(--bark2)", col:"var(--stone)"};
     return (
