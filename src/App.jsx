@@ -1742,27 +1742,49 @@ function ManagerZone({ onLogout }) {
           </button>
         </div>
 
-        {/* Forms tab */}
-        {tab==="forms"&&(
-          <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>Recent Activity ({history.length})</div>
-            {history.length===0
-              ?<EmptyState msg="No submissions yet"/>
-              :history.map((r,i)=>(
-                <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,flexWrap:"wrap"}}>
-                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.date} · {r.time}</span>
-                    <TypePill type={r.type}/>
-                    <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
-                  </div>
-                  {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginBottom:r.detail?3:0}}>{r.name}</div>}
-                  {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600}}>{r.detail}</div>}
-                </div>
-              ))
-            }
-          </>
-        )}
+        {/* Forms tab — grouped by truck */}
+        {tab==="forms"&&(()=>{
+          // Group history by truck, preserving truck order of first appearance
+          const grouped = {};
+          const truckOrder = [];
+          history.forEach(r=>{
+            if(!grouped[r.truck]){ grouped[r.truck]=[]; truckOrder.push(r.truck); }
+            grouped[r.truck].push(r);
+          });
+          return (
+            <>
+              <div className="section-hd" style={{color:"var(--mgr)"}}>Activity by Truck ({truckOrder.length} trucks)</div>
+              {truckOrder.length===0
+                ?<EmptyState msg="No submissions yet"/>
+                :truckOrder.map(truck=>{
+                  const entries = grouped[truck];
+                  return (
+                    <div key={truck} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,marginBottom:10,overflow:"hidden"}}>
+                      {/* Truck header */}
+                      <div style={{background:"rgba(74,109,32,0.08)",borderBottom:"1px solid var(--moss)",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+                        <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
+                        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck}</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginLeft:"auto",textTransform:"uppercase"}}>{entries.length} {entries.length===1?"submission":"submissions"}</span>
+                      </div>
+                      {/* Entries */}
+                      {entries.map((r,i)=>(
+                        <div key={i} style={{padding:"10px 14px",borderBottom:i<entries.length-1?"1px solid rgba(196,191,176,0.4)":"none"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
+                            <TypePill type={r.type}/>
+                            <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
+                          </div>
+                          {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{r.name}</div>}
+                          {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600,marginTop:2}}>{r.detail}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })
+              }
+            </>
+          );
+        })()}
 
         {/* Receipts tab */}
         {tab==="receipts"&&(
