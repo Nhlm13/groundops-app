@@ -699,11 +699,16 @@ const TOOL_INVENTORY = [
 ];
 
 const DOT_CATEGORIES = [
-  { key:"exterior", label_en:"Exterior Truck Check",      label_es:"Revisión Exterior del Camión",    label_pt:"Verificação Exterior do Caminhão" },
-  { key:"trailer",  label_en:"Trailer Check",             label_es:"Revisión del Remolque",           label_pt:"Verificação do Reboque" },
-  { key:"fluid",    label_en:"Fluid & Mechanical Check",  label_es:"Revisión de Fluidos y Mecánica",  label_pt:"Verificação de Fluidos e Mecânica" },
-  { key:"interior", label_en:"Interior Truck Check",      label_es:"Revisión Interior del Camión",    label_pt:"Verificação Interior do Caminhão" },
-  { key:"safety",   label_en:"Safety & Miscellaneous",    label_es:"Seguridad y Misceláneos",         label_pt:"Segurança e Miscelâneos" },
+  { key:"exterior", label_en:"Exterior Truck Check",     label_es:"Revisión Exterior del Camión",   label_pt:"Verificação Exterior do Caminhão",
+    items_en:["Tires – proper inflation, no visible damage","Wheels & lug nuts secure","Lights – headlights, tail lights, brake lights, turn signals","Mirrors clean and properly adjusted","Windshield & windows clean, no cracks","Wipers working, washer fluid full","Body & frame – no loose parts or damage"] },
+  { key:"trailer",  label_en:"Trailer Check",            label_es:"Revisión del Remolque",          label_pt:"Verificação do Reboque",
+    items_en:["Tires – proper inflation, no damage","Lights & reflectors working","Hitch connection secure","Safety chains attached correctly","Trailer brakes functioning (if equipped)","Load secured – tarps, equipment, or materials tied down","Ramp/latch operational and safe"] },
+  { key:"fluid",    label_en:"Fluid & Mechanical Check", label_es:"Revisión de Fluidos y Mecánica", label_pt:"Verificação de Fluidos e Mecânica",
+    items_en:["Engine oil level","Coolant level","Brake fluid","Transmission fluid","Fuel level","Hydraulic fluids (if applicable)"] },
+  { key:"interior", label_en:"Interior Truck Check",     label_es:"Revisión Interior del Camión",   label_pt:"Verificação Interior do Caminhão",
+    items_en:["Seatbelts functioning","Horn working","Gauges – fuel, temp, oil, air pressure normal","Fire extinguisher present & charged","First aid kit present & stocked","Loose items secured"] },
+  { key:"safety",   label_en:"Safety & Miscellaneous",   label_es:"Seguridad y Misceláneos",        label_pt:"Segurança e Miscelâneos",
+    items_en:["PPE stored & accessible","Warning triangles or cones present","No leaks under vehicle","Keys removed when not in use"] },
 ];
 
 
@@ -937,12 +942,14 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
   const t    = useT();
   const [name,       setName]       = useState("");
   const [checks,     setChecks]     = useState({});
+  const [openCats,   setOpenCats]   = useState({exterior:false,trailer:false,fluid:false,interior:false,safety:false});
   const [notes,      setNotes]      = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
   const [nameErr,    setNameErr]    = useState(false);
 
   const toggleCheck = key => setChecks(p=>({...p,[key]:!p[key]}));
+  const toggleOpen  = key => setOpenCats(p=>({...p,[key]:!p[key]}));
   const totalChecked = DOT_CATEGORIES.filter(c=>checks[c.key]).length;
 
   const handleSubmit = async () => {
@@ -990,18 +997,42 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
         <input style={{...inputStyle,borderColor:nameErr?"var(--danger)":"var(--moss)"}} type="text" placeholder={t.namePlaceholder} value={name} onChange={e=>{setName(e.target.value);setNameErr(false);}}/>
       </div>
 
-      {/* One checkbox per section */}
+      {/* Sections — checkbox + label + chevron to expand item list */}
       {DOT_CATEGORIES.map(cat=>{
         const isChecked = !!checks[cat.key];
-        const label = lang==="es"?cat.label_es:lang==="pt"?cat.label_pt:cat.label_en;
+        const isOpen    = openCats[cat.key];
+        const label     = lang==="es"?cat.label_es:lang==="pt"?cat.label_pt:cat.label_en;
+        const items     = cat.items_en; // items always in EN for now
         return (
-          <div key={cat.key}
-            onClick={()=>toggleCheck(cat.key)}
-            style={{display:"flex",alignItems:"center",gap:14,background:isChecked?"rgba(74,109,32,0.06)":"var(--bark)",border:`1px solid ${isChecked?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderRadius:10,padding:"16px 14px",marginBottom:8,cursor:"pointer",transition:"all 0.15s"}}>
-            <div style={{width:26,height:26,borderRadius:7,border:`2px solid ${isChecked?"var(--lime)":"var(--moss)"}`,background:isChecked?"var(--lime)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
-              {isChecked&&<Ic n="check" style={{width:13,height:13,color:"var(--earth)"}}/>}
+          <div key={cat.key} style={{background:isChecked?"rgba(74,109,32,0.06)":"var(--bark)",border:`1px solid ${isChecked?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderRadius:10,marginBottom:8,overflow:"hidden",transition:"all 0.15s"}}>
+            {/* Header row */}
+            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 14px"}}>
+              {/* Checkbox — tap to mark section done */}
+              <div onClick={()=>toggleCheck(cat.key)}
+                style={{width:26,height:26,borderRadius:7,border:`2px solid ${isChecked?"var(--lime)":"var(--moss)"}`,background:isChecked?"var(--lime)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s",cursor:"pointer"}}>
+                {isChecked&&<Ic n="check" style={{width:13,height:13,color:"var(--earth)"}}/>}
+              </div>
+              {/* Label — tap to expand */}
+              <span onClick={()=>toggleOpen(cat.key)}
+                style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:isChecked?"var(--lime)":"var(--cream)",flex:1,lineHeight:1.3,cursor:"pointer"}}>
+                {label}
+              </span>
+              {/* Chevron — tap to expand */}
+              <div onClick={()=>toggleOpen(cat.key)} style={{padding:"4px",cursor:"pointer",flexShrink:0}}>
+                <Ic n="chev" style={{width:16,height:16,color:"var(--stone)",transition:"transform 0.2s",transform:isOpen?"rotate(90deg)":"none"}}/>
+              </div>
             </div>
-            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:isChecked?"var(--lime)":"var(--cream)",flex:1,lineHeight:1.3}}>{label}</span>
+            {/* Expandable item list */}
+            {isOpen&&(
+              <div style={{borderTop:`1px solid ${isChecked?"rgba(74,109,32,0.2)":"var(--moss)"}`,padding:"8px 14px 12px"}}>
+                {items.map((item,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"5px 0",fontSize:13,color:"var(--stone)",lineHeight:1.5}}>
+                    <span style={{width:5,height:5,borderRadius:"50%",background:"var(--moss)",flexShrink:0,marginTop:5}}/>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -1741,31 +1772,6 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
   const[receiptOpen,setReceiptOpen]=useState(false);
   const[hrOpen,setHrOpen]=useState(false);
   const[openHR,setOpenHR]=useState(null);
-  const[activeTrucks,setActiveTrucks]=useState([]); // truck labels currently ACTIVE in sheet
-
-  // Fetch which trucks are currently signed in so we can gray them out
-  useEffect(()=>{
-    const fetchActive = async () => {
-      try {
-        const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/Sign%20Ins?key=${SHEETS_KEY}`);
-        const data = await res.json();
-        const d = new Date();
-        const formats = [
-          `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`,
-          `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`,
-        ];
-        const rows = (data.values||[]).slice(1);
-        const active = rows
-          .filter(r => formats.includes((r[0]||"").trim()) && r[4]==="ACTIVE")
-          .map(r => r[1]); // col B = truck label
-        setActiveTrucks(active);
-      } catch(e) { /* silently fail — don't block login */ }
-    };
-    fetchActive();
-  },[]);
-
-  const isTruckInUse = tr => activeTrucks.includes(tr.label) && (!rememberedTruck || rememberedTruck.id !== tr.id);
-
   const handleSelectTruck = truck => { saveMemory(truck); onTruckLogin(truck,""); };
   const handleChangeTruck = () => { clearMemory(); setSel(null); setError(""); };
   const tryMgr = () => { if(mgrPass==="ground25")onMgrLogin(); else{setError(t.wrongPass);setMgrPass("");} };
@@ -1791,20 +1797,15 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
                 </div>
                 {dropOpen&&(
                   <div className="truck-dropdown-list">
-                    {TRUCKS.map(tr=>{
-                      const inUse = isTruckInUse(tr);
-                      return (
-                        <div key={tr.id}
-                          className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`}
-                          onClick={()=>{ if(inUse)return; setSel(tr); setDropOpen(false); setError(""); }}
-                          style={{opacity:inUse?0.45:1,cursor:inUse?"default":"pointer",background:inUse?"var(--bark2)":""}}>
-                          <Ic n="truck" style={{width:14,height:14,color:inUse?"var(--stone)":"currentColor"}}/>
-                          <span style={{flex:1}}>{tr.label}</span>
-                          {inUse && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>In Use</span>}
-                          {selected?.id===tr.id&&!inUse&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
-                        </div>
-                      );
-                    })}
+                    {TRUCKS.map(tr=>(
+                      <div key={tr.id}
+                        className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`}
+                        onClick={()=>{ setSel(tr); setDropOpen(false); setError(""); }}>
+                        <Ic n="truck" style={{width:14,height:14}}/>
+                        <span style={{flex:1}}>{tr.label}</span>
+                        {selected?.id===tr.id&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
