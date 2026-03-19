@@ -710,10 +710,10 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 
 
 const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
-const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
-const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
-const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
+const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
+const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
+const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
+const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
 const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
 const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection, History
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
@@ -1588,6 +1588,25 @@ function ManagerZone({ onLogout }) {
   const [tab,         setTab]        = useState("forms");
   const [loading,     setLoading]    = useState(false);
   const [lastRefresh, setLastRefresh]= useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting,        setResetting]        = useState(false);
+  const [resetDone,        setResetDone]        = useState(false);
+
+  const handleReset = async () => {
+    setResetting(true);
+    try {
+      await fetch(SIGNIN_SCRIPT_URL, {
+        method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"},
+        body: JSON.stringify({ action:"reset" }),
+      });
+      setHistory([]);
+      setReceipts([]);
+      setResetDone(true);
+      setShowResetConfirm(false);
+      setTimeout(()=>setResetDone(false), 3000);
+    } catch(e){ console.warn(e); }
+    setResetting(false);
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -1682,7 +1701,34 @@ function ManagerZone({ onLogout }) {
         </div>
       </div>
 
+      {/* Confirmation modal */}
+      {showResetConfirm&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+          <div style={{background:"var(--bark)",borderRadius:14,padding:"24px",width:"100%",maxWidth:340,boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--danger)",letterSpacing:2,marginBottom:8}}>Reset All Data?</div>
+            <div style={{fontSize:13,color:"var(--stone)",lineHeight:1.6,marginBottom:20}}>This will permanently delete all entries from Daily Briefing, DOT, Property Inspection, End of Day, Sign Ins, and History. Column headers will remain. This cannot be undone.</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setShowResetConfirm(false)}
+                style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
+                Cancel
+              </button>
+              <button onClick={handleReset} disabled={resetting}
+                style={{flex:1,padding:"13px",background:"var(--danger)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",cursor:resetting?"not-allowed":"pointer",opacity:resetting?0.7:1}}>
+                {resetting?"Resetting...":"Yes, Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="content" style={{background:"#ddd9d0"}}>
+        {/* Reset success banner */}
+        {resetDone&&(
+          <div style={{background:"rgba(192,68,42,0.1)",border:"1px solid var(--danger)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--danger)",letterSpacing:0.5,display:"flex",alignItems:"center",gap:8}}>
+            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> All data has been reset successfully.
+          </div>
+        )}
+
         {/* Refresh bar */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           {lastRefresh
@@ -1757,6 +1803,11 @@ function ManagerZone({ onLogout }) {
           style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
           onClick={()=>setTab("receipts")}>
           <Ic n="camera"/>Receipts
+        </button>
+        <button className="bnav-btn"
+          style={{color:"var(--danger)"}}
+          onClick={()=>setShowResetConfirm(true)}>
+          <Ic n="del"/>Reset
         </button>
       </nav>
     </div>
