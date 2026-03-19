@@ -699,25 +699,21 @@ const TOOL_INVENTORY = [
 ];
 
 const DOT_CATEGORIES = [
-  { key:"exterior", label_en:"Exterior Truck Check",     label_es:"Revisión Exterior del Camión",   label_pt:"Verificação Exterior do Caminhão",
-    items_en:["Tires – proper inflation, no visible damage","Wheels & lug nuts secure","Lights – headlights, tail lights, brake lights, turn signals","Mirrors clean and properly adjusted","Windshield & windows clean, no cracks","Wipers working, washer fluid full","Body & frame – no loose parts or damage"] },
-  { key:"trailer",  label_en:"Trailer Check",            label_es:"Revisión del Remolque",          label_pt:"Verificação do Reboque",
-    items_en:["Tires – proper inflation, no damage","Lights & reflectors working","Hitch connection secure","Safety chains attached correctly","Trailer brakes functioning (if equipped)","Load secured – tarps, equipment, or materials tied down","Ramp/latch operational and safe"] },
-  { key:"fluid",    label_en:"Fluid & Mechanical Check", label_es:"Revisión de Fluidos y Mecánica", label_pt:"Verificação de Fluidos e Mecânica",
-    items_en:["Engine oil level","Coolant level","Brake fluid","Transmission fluid","Fuel level","Hydraulic fluids (if applicable)"] },
-  { key:"interior", label_en:"Interior Truck Check",     label_es:"Revisión Interior del Camión",   label_pt:"Verificação Interior do Caminhão",
-    items_en:["Seatbelts functioning","Horn working","Gauges – fuel, temp, oil, air pressure normal","Fire extinguisher present & charged","First aid kit present & stocked","Loose items secured"] },
-  { key:"safety",   label_en:"Safety & Miscellaneous",   label_es:"Seguridad y Misceláneos",        label_pt:"Segurança e Miscelâneos",
-    items_en:["PPE stored & accessible","Warning triangles or cones present","No leaks under vehicle","Keys removed when not in use"] },
+  {key:"exterior",items:[{key:"tires_exterior",priority:"high"},{key:"lug_nuts",priority:"high"},{key:"lights_exterior",priority:"high"},{key:"mirrors",priority:"medium"},{key:"windshield",priority:"medium"},{key:"wipers",priority:"medium"},{key:"body_frame",priority:"medium"}]},
+  {key:"trailer", items:[{key:"tires_trailer",priority:"high"},{key:"lights_trailer",priority:"high"},{key:"hitch",priority:"high"},{key:"safety_chains",priority:"high"},{key:"trailer_brakes",priority:"high"},{key:"load_secured",priority:"high"},{key:"ramp_latch",priority:"medium"}]},
+  {key:"fluid",   items:[{key:"engine_oil",priority:"medium"},{key:"coolant",priority:"medium"},{key:"brake_fluid",priority:"high"},{key:"transmission_fluid",priority:"medium"},{key:"fuel_level",priority:"low"},{key:"hydraulic_fluids",priority:"medium"}]},
+  {key:"interior",items:[{key:"seatbelts",priority:"high"},{key:"horn",priority:"medium"},{key:"gauges",priority:"medium"},{key:"fire_extinguisher",priority:"high"},{key:"first_aid",priority:"high"},{key:"loose_items_interior",priority:"medium"}]},
+  {key:"safety",  items:[{key:"ppe",priority:"high"},{key:"warning_triangles",priority:"high"},{key:"no_leaks",priority:"high"},{key:"keys_removed",priority:"low"}]},
 ];
+const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires_trailer","lights_trailer","hitch","safety_chains","trailer_brakes","load_secured","brake_fluid","seatbelts","fire_extinguisher","first_aid","ppe","warning_triangles","no_leaks"];
 
 
 
 const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
-const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
-const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
-const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
+const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
+const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
+const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
+const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbylcFo3mXVauhdxkVbCSmZju0jVPxZ6Rg_075nnJKZCfXvQ3g-inmzUJ07B5PTzWVYPzA/exec";
 const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
 const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection, History
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
@@ -938,19 +934,29 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
 
 // ── DOT WALKAROUND FORM ───────────────────────────────────────────────────────
 function DOTWalkaroundForm({ truck, onBack, onDone }) {
-  const lang = useLang();
-  const t    = useT();
+  const t = useT();
   const [name,       setName]       = useState("");
   const [checks,     setChecks]     = useState({});
-  const [openCats,   setOpenCats]   = useState({exterior:false,trailer:false,fluid:false,interior:false,safety:false});
   const [notes,      setNotes]      = useState("");
+  const [openCats,   setOpenCats]   = useState({exterior:true,trailer:true,fluid:true,interior:true,safety:true});
   const [submitting, setSubmitting] = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
   const [nameErr,    setNameErr]    = useState(false);
 
   const toggleCheck = key => setChecks(p=>({...p,[key]:!p[key]}));
-  const toggleOpen  = key => setOpenCats(p=>({...p,[key]:!p[key]}));
-  const totalChecked = DOT_CATEGORIES.filter(c=>checks[c.key]).length;
+  const toggleCatOpen = key => setOpenCats(p=>({...p,[key]:!p[key]}));
+
+  const toggleCategory = cat => {
+    const keys = cat.items.map(i=>i.key);
+    const allChecked = keys.every(k=>checks[k]);
+    const update = {};
+    keys.forEach(k=>{ update[k] = !allChecked; });
+    setChecks(p=>({...p,...update}));
+  };
+
+  const allItems      = DOT_CATEGORIES.flatMap(c=>c.items);
+  const uncheckedHigh = HIGH_PRIORITY_KEYS.filter(k=>!checks[k]).length;
+  const totalChecked  = allItems.filter(i=>checks[i.key]).length;
 
   const handleSubmit = async () => {
     if(!name.trim()){setNameErr(true);return;}
@@ -969,10 +975,11 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
 
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
-      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
-        <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
+      <div style={{width:72,height:72,borderRadius:"50%",background:uncheckedHigh===0?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)",border:`2px solid ${uncheckedHigh===0?"var(--leaf)":"var(--danger)"}`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
+        <Ic n={uncheckedHigh===0?"check":"alert"} style={{width:36,height:36,color:uncheckedHigh===0?"var(--lime)":"var(--danger)"}}/>
       </div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>PASS</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:uncheckedHigh===0?"var(--lime)":"var(--danger)",letterSpacing:3,marginBottom:6}}>{uncheckedHigh===0?"PASS":"FLAGGED"}</div>
+      {uncheckedHigh>0&&<div style={{fontSize:13,color:"var(--danger)",textAlign:"center",marginBottom:6}}>{uncheckedHigh} {t.dotFlagNote}</div>}
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
       <button onClick={onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
     </div>
@@ -980,70 +987,73 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
-      {/* Header */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <Ic n="dot" style={{width:17,height:17,color:"var(--lime)"}}/>
         </div>
         <div style={{flex:1}}>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.dotTitle}</div>
-          <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{truck.label} · {totalChecked}/{DOT_CATEGORIES.length} sections</div>
+          <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{truck.label} · {totalChecked}/{allItems.length} items</div>
         </div>
+        {uncheckedHigh>0&&<div style={{background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:6,padding:"3px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--danger)",letterSpacing:1}}>{uncheckedHigh} HIGH</div>}
       </div>
 
-      {/* Name */}
+      <div style={{background:"rgba(74,109,32,0.07)",border:"1px solid rgba(74,109,32,0.2)",borderRadius:8,padding:"8px 12px",marginBottom:12,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--leaf)",letterSpacing:0.3}}>
+        {t.dotSelectAll}
+      </div>
+
       <div style={{background:"var(--bark)",border:`1px solid ${nameErr?"var(--danger)":"var(--moss)"}`,borderRadius:10,padding:14,marginBottom:14}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.dotNameLabel}</div>
         <input style={{...inputStyle,borderColor:nameErr?"var(--danger)":"var(--moss)"}} type="text" placeholder={t.namePlaceholder} value={name} onChange={e=>{setName(e.target.value);setNameErr(false);}}/>
       </div>
 
-      {/* Sections — checkbox + label + chevron to expand item list */}
       {DOT_CATEGORIES.map(cat=>{
-        const isChecked = !!checks[cat.key];
-        const isOpen    = openCats[cat.key];
-        const label     = lang==="es"?cat.label_es:lang==="pt"?cat.label_pt:cat.label_en;
-        const items     = cat.items_en; // items always in EN for now
+        const isOpen = openCats[cat.key];
+        const checkedCount = cat.items.filter(i=>checks[i.key]).length;
+        const allChecked = checkedCount===cat.items.length;
+        const headerState = allChecked?"all-checked":checkedCount>0?"partial":"none-checked";
         return (
-          <div key={cat.key} style={{background:isChecked?"rgba(74,109,32,0.06)":"var(--bark)",border:`1px solid ${isChecked?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderRadius:10,marginBottom:8,overflow:"hidden",transition:"all 0.15s"}}>
-            {/* Header row */}
-            <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 14px"}}>
-              {/* Checkbox — tap to mark section done */}
-              <div onClick={()=>toggleCheck(cat.key)}
-                style={{width:26,height:26,borderRadius:7,border:`2px solid ${isChecked?"var(--lime)":"var(--moss)"}`,background:isChecked?"var(--lime)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s",cursor:"pointer"}}>
-                {isChecked&&<Ic n="check" style={{width:13,height:13,color:"var(--earth)"}}/>}
+          <div key={cat.key} style={{marginBottom:8}}>
+            <div className={`dot-cat-header ${headerState}`} onClick={()=>toggleCategory(cat)}>
+              <div style={{width:28,height:28,borderRadius:7,background:allChecked?"rgba(74,109,32,0.2)":"rgba(196,191,176,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background 0.15s"}}>
+                {allChecked
+                  ?<Ic n="check" style={{width:13,height:13,color:"var(--lime)"}}/>
+                  :<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:12,color:"var(--stone)"}}>{checkedCount}/{cat.items.length}</span>
+                }
               </div>
-              {/* Label — tap to expand */}
-              <span onClick={()=>toggleOpen(cat.key)}
-                style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:isChecked?"var(--lime)":"var(--cream)",flex:1,lineHeight:1.3,cursor:"pointer"}}>
-                {label}
-              </span>
-              {/* Chevron — tap to expand */}
-              <div onClick={()=>toggleOpen(cat.key)} style={{padding:"4px",cursor:"pointer",flexShrink:0}}>
-                <Ic n="chev" style={{width:16,height:16,color:"var(--stone)",transition:"transform 0.2s",transform:isOpen?"rotate(90deg)":"none"}}/>
+              <span className="dot-cat-label">{t[`dotCat_${cat.key}`]}</span>
+              <div onClick={e=>{e.stopPropagation();toggleCatOpen(cat.key);}} style={{padding:"4px 6px",marginRight:-4,cursor:"pointer"}}>
+                <Ic n="chev" className={`chevron ${isOpen?"open":""}`}/>
               </div>
             </div>
-            {/* Expandable item list */}
-            {isOpen&&(
-              <div style={{borderTop:`1px solid ${isChecked?"rgba(74,109,32,0.2)":"var(--moss)"}`,padding:"8px 14px 12px"}}>
-                {items.map((item,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"5px 0",fontSize:13,color:"var(--stone)",lineHeight:1.5}}>
-                    <span style={{width:5,height:5,borderRadius:"50%",background:"var(--moss)",flexShrink:0,marginTop:5}}/>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            )}
+            {isOpen&&cat.items.map(item=>{
+              const isChecked=!!checks[item.key];
+              const isFlagged=!isChecked&&item.priority==="high";
+              return (
+                <div key={item.key} className={`dot-item ${isChecked?"checked":""} ${isFlagged?"flagged":""}`} onClick={()=>toggleCheck(item.key)}>
+                  <div className={`dot-checkbox ${isChecked?"checked":""}`}>{isChecked&&<Ic n="check"/>}</div>
+                  <span className="dot-item-label">{t[`dot_${item.key}`]}</span>
+                  <span className={`dot-priority ${item.priority}`}>{item.priority}</span>
+                </div>
+              );
+            })}
           </div>
         );
       })}
 
-      {/* Notes */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:14,marginTop:4}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
           {t.dotNotes}<span style={{color:"var(--moss)",fontSize:11,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span>
         </div>
         <textarea style={{...inputStyle,resize:"none",height:72}} placeholder={t.dotNotesPlaceholder} value={notes} onChange={e=>setNotes(e.target.value)}/>
       </div>
+
+      {uncheckedHigh>0&&(
+        <div style={{background:"rgba(192,68,42,0.08)",border:"1px solid rgba(192,68,42,0.3)",borderRadius:8,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:8}}>
+          <Ic n="alert" style={{width:14,height:14,color:"var(--danger)",flexShrink:0}}/>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--danger)",letterSpacing:0.3}}>{t.dotUncheckedWarning(uncheckedHigh)}</span>
+        </div>
+      )}
 
       <button disabled={submitting} onClick={handleSubmit}
         style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
