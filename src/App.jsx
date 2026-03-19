@@ -714,10 +714,10 @@ const DOT_CATEGORIES = [
 
 
 const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
-const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
-const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
-const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbx8yYJxNighLi69TprjUuAhOkFOQHIpKn0AtPzXh4uYSpXGJd-XrHWCsqA5ZPy-Zl9HUQ/exec";
+const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
+const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
+const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
+const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbxtgpNumOzw7F-NLTSy3465YiMOaWGFxRxDuFhxegKOPBMzrmByT_0SAgrJhCr3MqanYA/exec";
 const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
 const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection, History
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
