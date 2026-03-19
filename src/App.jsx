@@ -997,7 +997,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
         return (
           <div key={cat.key}
             onClick={()=>toggleCheck(cat.key)}
-            style={{display:"flex",alignItems:"center",gap:14,background:isChecked?"rgba(74,109,32,0.06)":"var(--bark)",border:`1px solid ${isChecked?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderRadius:10,padding:"16px 14px",marginBottom:8,cursor:"pointer",transition:"all 0.15s",-webkitTapHighlightColor:"transparent"}}>
+            style={{display:"flex",alignItems:"center",gap:14,background:isChecked?"rgba(74,109,32,0.06)":"var(--bark)",border:`1px solid ${isChecked?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderRadius:10,padding:"16px 14px",marginBottom:8,cursor:"pointer",transition:"all 0.15s"}}>
             <div style={{width:26,height:26,borderRadius:7,border:`2px solid ${isChecked?"var(--lime)":"var(--moss)"}`,background:isChecked?"var(--lime)":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
               {isChecked&&<Ic n="check" style={{width:13,height:13,color:"var(--earth)"}}/>}
             </div>
