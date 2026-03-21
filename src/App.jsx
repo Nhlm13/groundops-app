@@ -841,6 +841,7 @@ const T = {
     eodItems2:["Registre a saída usando o sistema da empresa","Converse com seu supervisor para feedback ou atualizações","Deixe o local de apresentação limpo e organizado","Devolva as chaves de quaisquer veículos na caixa de chaves"],
     endOfDay:"Fim do Dia", endOfDayDesc:"Lista de encerramento do turno",
 
+  },
 };
 
 const LangContext = React.createContext("en");
