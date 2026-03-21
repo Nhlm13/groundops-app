@@ -920,8 +920,9 @@ function IPadTopBar({ truck, onLogout, currentTab }) {
     <div style={{
       position:"fixed", top:0, left:96, right:0,
       background:"var(--bark)", borderBottom:"3px solid var(--leaf)",
-      padding:"12px 24px 10px",
-      paddingTop:"calc(12px + env(safe-area-inset-top))",
+      paddingLeft:24, paddingRight:24,
+      paddingTop:"calc(20px + env(safe-area-inset-top))",
+      paddingBottom:14,
       display:"flex", alignItems:"center", justifyContent:"space-between",
       zIndex:49,
     }}>
@@ -1740,7 +1741,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   }, [dotComplete, briefingComplete, propInspectCount, eodComplete, truck.id]);
 
   // On iPad, content needs top padding for the fixed top bar
-  const contentPaddingTop = isIPad ? "calc(60px + env(safe-area-inset-top))" : undefined;
+
 
   return (
     <div className="screen">
@@ -1753,7 +1754,8 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
       {/* iPad top bar */}
       {isIPad && <IPadTopBar truck={truck} onLogout={onLogout} currentTab={tab}/>}
 
-      <div className="content" style={{paddingTop: isIPad ? contentPaddingTop : undefined}}>
+      <div className="content" style={isIPad ? {paddingTop:"calc(82px + env(safe-area-inset-top))", maxWidth:760, marginLeft:"auto", marginRight:"auto", width:"100%"} : {}}>
+
         {tab==="home"&&!activeForm&&
           <HomeTab truck={truck} division={division}
             onOpenDOT={()=>setActiveForm("dot")}
