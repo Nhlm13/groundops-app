@@ -925,11 +925,11 @@ function IPadTopBar({ truck, onLogout, currentTab }) {
       display:"flex", alignItems:"center", justifyContent:"space-between",
       zIndex:49,
     }}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0,overflow:"hidden"}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,flexShrink:0}}>
           {tabLabels[currentTab] || t.home}
         </div>
-        <div className="truck-pill"><Ic n="truck"/>{truck.label}</div>
+        <div className="truck-pill" style={{flexShrink:0,whiteSpace:"nowrap"}}><Ic n="truck" style={{width:12,height:12,flexShrink:0}}/>{truck.label}</div>
       </div>
       <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
     </div>
@@ -1128,7 +1128,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
 }
 
 // ── DOT WALKAROUND FORM ───────────────────────────────────────────────────────
-function DOTWalkaroundForm({ truck, onBack, onDone }) {
+function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   const t = useT();
   const [name,       setName]       = useState("");
   const [checks,     setChecks]     = useState({});
@@ -1173,10 +1173,18 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
       <div style={{width:72,height:72,borderRadius:"50%",background:uncheckedHigh===0?"rgba(74,109,32,0.15)":"rgba(192,68,42,0.12)",border:`2px solid ${uncheckedHigh===0?"var(--leaf)":"var(--danger)"}`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
         <Ic n={uncheckedHigh===0?"check":"alert"} style={{width:36,height:36,color:uncheckedHigh===0?"var(--lime)":"var(--danger)"}}/>
       </div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:uncheckedHigh===0?"var(--lime)":"var(--danger)",letterSpacing:3,marginBottom:6}}>{uncheckedHigh===0?"PASS":"FLAGGED"}</div>
+      {uncheckedHigh===0
+        ? <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center"}}>Safe Travels 👋</div>
+        : <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--danger)",letterSpacing:3,marginBottom:2}}>FLAGGED</div>
+      }
       {uncheckedHigh>0&&<div style={{fontSize:13,color:"var(--danger)",textAlign:"center",marginBottom:6}}>{uncheckedHigh} {t.dotFlagNote}</div>}
-      <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
-      <button onClick={onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
+      <div style={{fontSize:12,color:"var(--stone)",marginBottom:24,marginTop:6}}>{truck.label} · {name}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+        {uncheckedHigh===0&&onOpenPropInspect&&(
+          <button onClick={onOpenPropInspect} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>Complete Property Inspection</button>
+        )}
+        <button onClick={onDone} style={{width:"100%",padding:"12px",background:uncheckedHigh===0&&onOpenPropInspect?"none":"var(--lime)",border:uncheckedHigh===0&&onOpenPropInspect?"1px solid var(--moss)":"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:uncheckedHigh===0&&onOpenPropInspect?"var(--stone)":"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
+      </div>
     </div>
   );
 
@@ -1264,7 +1272,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
 }
 
 // ── DAILY BRIEFING FORM ───────────────────────────────────────────────────────
-function DailyBriefingForm({ truck, onBack, onDone }) {
+function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   const t = useT();
   const [name,       setName]       = useState("");
   const [acked,      setAcked]      = useState(false);
@@ -1304,9 +1312,13 @@ function DailyBriefingForm({ truck, onBack, onDone }) {
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
       <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/></div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>{t.allDone}</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center",lineHeight:1.1}}>Daily Briefing Complete.</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:8,textAlign:"center"}}>Get Ready to Roll!</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
-      <button onClick={onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
+      <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
+        <button onClick={onOpenDOT||onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>Perform DOT Walk-Around</button>
+        <button onClick={onDone} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.goHome}</button>
+      </div>
     </div>
   );
 
@@ -1756,11 +1768,17 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         }
         {tab==="home"&&activeForm==="dot"&&(
           <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
-          <DOTWalkaroundForm truck={truck} onBack={()=>setActiveForm(null)} onDone={()=>{setActiveForm(null);setDotComplete(true);setTab("home");}}/></div>
+          <DOTWalkaroundForm truck={truck} onBack={()=>setActiveForm(null)}
+            onDone={()=>{setDotComplete(true);setActiveForm(null);}}
+            onOpenPropInspect={()=>{setDotComplete(true);setActiveForm("propinspect");}}
+          /></div>
         )}
         {tab==="home"&&activeForm==="briefing"&&(
           <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
-          <DailyBriefingForm truck={truck} onBack={()=>setActiveForm(null)} onDone={()=>{setActiveForm(null);setBriefingComplete(true);setTab("home");}}/></div>
+          <DailyBriefingForm truck={truck} onBack={()=>setActiveForm(null)}
+            onDone={()=>{setBriefingComplete(true);setActiveForm(null);}}
+            onOpenDOT={()=>{setBriefingComplete(true);setActiveForm("dot");}}
+          /></div>
         )}
         {tab==="home"&&activeForm==="propinspect"&&(
           <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
