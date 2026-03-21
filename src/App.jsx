@@ -840,10 +840,18 @@ const T = {
     eodItems1:["Guarde todas as ferramentas adicionais usadas hoje em seu lugar","Limpe os reboques de detritos e organize-os para o dia seguinte","Lave e limpe cortadores e outros equipamentos","Abasteça e armazene todos os equipamentos adequadamente","Registre quaisquer problemas de manutenção para seu supervisor"],
     eodItems2:["Registre a saída usando o sistema da empresa","Converse com seu supervisor para feedback ou atualizações","Deixe o local de apresentação limpo e organizado","Devolva as chaves de quaisquer veículos na caixa de chaves"],
     endOfDay:"Fim do Dia", endOfDayDesc:"Lista de encerramento do turno",
+
   },
 };
 
+const LangContext = React.createContext("en");
+function useLang() { return React.useContext(LangContext); }
 function useT()    { const lang = useLang(); return T[lang]; }
+
+const LANGS = { en:"en", es:"es", pt:"pt" };
+const FLAGS = { en:"🇺🇸", es:"🇪🇸", pt:"🇧🇷" };
+function detectLang() { try { const s=localStorage.getItem("jj_lang"); if(s&&LANGS[s])return s; } catch(e){} const nav=(navigator.language||"en").toLowerCase(); if(nav.startsWith("pt"))return"pt"; if(nav.startsWith("es"))return"es"; return"en"; }
+function saveLang(l) { try{localStorage.setItem("jj_lang",l);}catch(e){} }
 
 function FlagSelector({ lang, setLang }) {
   return (
