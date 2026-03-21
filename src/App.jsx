@@ -138,12 +138,19 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .nc-avail { background:rgba(74,109,32,0.2); color:var(--leaf); }
 .truck-tag { background:var(--moss); border-radius:4px; padding:2px 6px; font-family:'Barlow Condensed',sans-serif; font-size:12px; color:var(--sand); }
 
-.bottom-nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:var(--bark); border-top:2px solid var(--moss); display:flex; z-index:100; padding-bottom:env(safe-area-inset-bottom); }
+/* ── BOTTOM NAV (phone) ── */
+.bottom-nav {
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:430px;
+  background:var(--bark); border-top:2px solid var(--moss);
+  display:flex; z-index:100;
+  padding-bottom:env(safe-area-inset-bottom);
+}
 .bnav-btn { flex:1; padding:10px 4px 8px; background:none; border:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; font-family:'Barlow Condensed',sans-serif; font-size:11px; color:var(--stone); letter-spacing:1px; text-transform:uppercase; border-bottom:3px solid transparent; transition:color 0.2s; }
 .bnav-btn.active { color:var(--lime); border-bottom-color:var(--lime); }
 .bnav-btn svg { width:22px; height:22px; }
 
-/* DOT checklist */
+/* ── DOT checklist ── */
 .dot-cat-header { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
 .dot-cat-header.all-checked { background:rgba(74,109,32,0.1); border:1px solid rgba(74,109,32,0.3); }
 .dot-cat-header.partial { background:var(--bark2); border:1px solid var(--moss); }
@@ -162,7 +169,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .dot-priority.medium { background:rgba(160,96,16,0.12); color:var(--warn); }
 .dot-priority.low { background:rgba(74,109,32,0.12); color:var(--leaf); }
 
-/* Daily Briefing */
+/* ── Daily Briefing ── */
 .briefing-section { background:var(--bark); border:1px solid var(--moss); border-radius:9px; margin-bottom:8px; overflow:hidden; }
 .briefing-section-header { display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; transition:background 0.15s; }
 .briefing-section-header:hover { background:var(--bark2); }
@@ -177,7 +184,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .briefing-ack-label { font-family:'Barlow Condensed',sans-serif; font-size:14px; color:var(--stone); line-height:1.4; }
 .briefing-ack.checked .briefing-ack-label { color:var(--lime); }
 
-/* Property Inspection */
+/* ── Property Inspection ── */
 .pi-check-row { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--bark); border:1px solid var(--moss); border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background 0.12s; -webkit-tap-highlight-color:transparent; }
 .pi-check-row.checked { background:rgba(74,109,32,0.06); border-color:rgba(74,109,32,0.3); }
 .pi-check-row.flagged { background:rgba(192,68,42,0.06); border-color:rgba(192,68,42,0.3); }
@@ -185,6 +192,174 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .pi-checkbox.checked { background:var(--lime); border-color:var(--lime); }
 .pi-checkbox svg { width:12px; height:12px; color:var(--earth); }
 .pi-check-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; color:var(--cream); flex:1; line-height:1.3; }
+
+/* ════════════════════════════════════════════
+   iPad RESPONSIVE OVERRIDES  (≥ 768px)
+   ════════════════════════════════════════════ */
+@media (min-width: 768px) {
+
+  /* App container fills full width on iPad */
+  .app { max-width: 100%; }
+
+  /* Login / splash gets a centered max-width column */
+  .splash {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 52px 48px 80px;
+    padding-top: calc(52px + env(safe-area-inset-top));
+  }
+  .logo-img { width: 90px; height: 90px; }
+  .app-title { font-size: 56px; letter-spacing: 7px; }
+  .app-sub { font-size: 15px; letter-spacing: 5px; }
+
+  /* Screen: row layout — sidebar nav + scrollable content */
+  .screen {
+    flex-direction: row;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* Hide the top bar — sidebar replaces it */
+  .topbar { display: none; }
+
+  /* Side nav */
+  .bottom-nav {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    right: auto !important;
+    transform: none !important;
+    width: 96px !important;
+    max-width: 96px !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    border-top: none !important;
+    border-right: 2px solid var(--moss) !important;
+    background: var(--bark) !important;
+    padding-top: calc(20px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    z-index: 100 !important;
+    overflow: hidden !important;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.06) !important;
+  }
+
+  /* Nav buttons in sidebar */
+  .bnav-btn {
+    flex: unset !important;
+    width: 100% !important;
+    padding: 16px 8px !important;
+    font-size: 11px !important;
+    border-bottom: none !important;
+    border-left: 3px solid transparent !important;
+    border-right: none !important;
+  }
+  .bnav-btn.active {
+    border-left-color: var(--lime) !important;
+    border-bottom-color: transparent !important;
+  }
+  .bnav-btn svg { width: 26px !important; height: 26px !important; }
+
+  /* App title in sidebar top */
+  .bottom-nav::before {
+    content: 'J&J';
+    display: block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--lime);
+    text-align: center;
+    padding: 0 8px 20px;
+    border-bottom: 1px solid var(--moss);
+    margin-bottom: 8px;
+    width: 100%;
+  }
+
+  /* Content area shifted right to clear sidebar */
+  .content {
+    padding: 28px 36px 48px 112px !important;
+    overflow-y: auto !important;
+    flex: 1 !important;
+    height: 100dvh !important;
+  }
+
+  /* Larger text throughout */
+  .section-hd { font-size: 18px; }
+  .greet-name { font-size: 30px; }
+  .greet-sub { font-size: 14px; }
+  .action-card-name { font-size: 17px; }
+  .action-card-desc { font-size: 13px; }
+  .tool-name { font-size: 15px; }
+  .dot-item-label { font-size: 14px; }
+  .briefing-item { font-size: 14px; }
+
+  /* Action cards in 2-column grid on home tab */
+  .action-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .action-cards-grid .action-card {
+    margin-bottom: 0;
+  }
+
+  /* Greeting card wider */
+  .greeting { padding: 18px 20px; margin-bottom: 22px; }
+  .greeting-icon { width: 52px; height: 52px; }
+
+  /* Larger tap targets */
+  .action-card { padding: 18px 20px; }
+  .action-card-icon { width: 46px; height: 46px; }
+  .qty-btn { width: 38px; height: 38px; }
+  .dot-checkbox { width: 28px; height: 28px; }
+  .pi-checkbox { width: 28px; height: 28px; }
+
+  /* Tool rows in 2-col on iPad */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .tools-grid .tool-row { margin-bottom: 0; }
+
+  /* DOT items in 2-col */
+  .dot-items-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .dot-items-grid .dot-item { margin-bottom: 0; }
+
+  /* Manager zone: side-by-side panels */
+  .mgr-topbar {
+    padding-left: 112px;
+  }
+
+  /* Input sizing */
+  .mgr-input { font-size: 18px; padding: 16px; }
+  .btn-mgr { font-size: 22px; padding: 16px; }
+  .btn-select-truck { font-size: 20px; padding: 16px; }
+  .truck-dropdown-btn { font-size: 17px; padding: 16px; }
+  .truck-dropdown-item { font-size: 17px; padding: 14px 18px; }
+
+  /* Back btn larger */
+  .back-btn { font-size: 15px; }
+
+  /* Logout btn */
+  .logout-btn { font-size: 13px; padding: 7px 14px; }
+}
+
+/* ── Large iPad / iPad Pro (≥ 1024px) ── */
+@media (min-width: 1024px) {
+  .bottom-nav { width: 110px !important; max-width: 110px !important; }
+  .content { padding: 32px 48px 48px 130px !important; }
+  .mgr-topbar { padding-left: 130px; }
+  .bnav-btn { font-size: 12px !important; padding: 18px 8px !important; }
+  .bottom-nav::before { font-size: 24px; }
+}
 `;
 
 const Ic = ({ n, ...p }) => {
@@ -269,7 +444,6 @@ const T = {
     toolsOut:"Tools Checked Out", noTools:"No tools checked out", loading:"Loading...",
     totalTools:"Total Tools", currentlyOut:"Currently Out", fullInventory:"Full Inventory",
     backHR:"Back to HR Portal",
-    // DOT
     dotTitle:"DOT Walk-Around Inspection", dotSubmit:"Submit Inspection",
     dotSubmitting:"Submitting...", dotFlagNote:"flagged High priority items",
     dotNameLabel:"Inspector Name", dotNotes:"Notes", dotNotesPlaceholder:"Any issues or observations...",
@@ -304,7 +478,6 @@ const T = {
     dot_warning_triangles:"Warning triangles or cones present",
     dot_no_leaks:"No leaks under vehicle",
     dot_keys_removed:"Keys removed when not in use",
-    // Daily Briefing
     dbTitle:"Daily Briefing", dbSubtitle:"Review before starting your day",
     dbNameLabel:"Your Name", dbAckLabel:"I have read and acknowledge the above — I am ready to start my shift safely.",
     dbSubmit:"Submit & Start Day", dbSubmitting:"Submitting...",
@@ -314,7 +487,6 @@ const T = {
     dbItems2:["Inspect mowers, spreaders, blowers, trimmers, and other tools","Verify fuel, oil, and maintenance status","Load necessary fertilizer products and materials","Ensure calibration logs and service sheets are available"],
     dbItems3:["Discuss weather and turf conditions","Review any special site instructions","Identify any hazards or obstacles"],
     dbItems4:["Follow the planned route unless directed otherwise","Drive safely and adhere to traffic laws","Check that all equipment and materials are secure in the truck"],
-    // Property Inspection
     piTitle:"Property Inspection", piSubtitle:"Complete at each property before starting work",
     piNameLabel:"Your Name", piPropertyLabel:"Property Name / Address",
     piPropertyPlaceholder:"e.g. 123 Main St or Smith Residence",
@@ -334,7 +506,6 @@ const T = {
     piSubmit:"Submit Inspection", piSubmitting:"Submitting...",
     piAnotherProperty:"Inspect Another Property",
     piIncompleteWarning:"Please check all required items before submitting.",
-    // Uniform policy
     uniformTitle:"Uniform & Appearance", uniformSubtitle:"J & J & Son Lawncare — Employee Policy",
     uniformFooter:"At J & J & Son Lawncare, we take pride in our appearance. A clean, uniformed crew reflects the quality, professionalism, and standards of our work.",
     uSec_purpose:"Purpose", uSec_issuance:"Uniform Issuance", uSec_required:"Required Uniform",
@@ -355,7 +526,6 @@ const T = {
     uItems_care:["Wash and maintain your uniforms","Keep uniforms in good condition","Bring appropriate clothing for weather conditions","Company replaces uniforms for normal wear and tear at its discretion"],
     uItems_replacement:["Report damaged or worn uniforms to management","Replacements are approved based on condition and management approval","Excessive replacement requests due to poor care may be denied or charged"],
     uItems_noncompliance:["Sent home to change","Removed from the job site until compliant","Disciplinary action for repeated violations"],
-    // Vehicle Guidelines
     vehicleTitle:"Vehicle Guidelines", vehicleSubtitle:"J & J & Son Lawncare — Driver Policy",
     vehicleFooter:"Safe driving protects you, your coworkers, and the public. Thank you for representing J&J & Son Lawncare responsibly on the road.",
     vehicleAckLabel:"I have read and understand the J&J & Son Lawncare Vehicle Policy and agree to follow all guidelines.",
@@ -363,7 +533,6 @@ const T = {
     vItems_shop:["Ensure truck and trailer are locked before leaving for the day","Report any repairs or maintenance needed to your supervisor","Keep the vehicle clean — wash and vacuum as necessary","Only authorized J&J employees may operate or ride in a company vehicle","Return keys to the key box in the shop"],
     vItems_road:["You must have a valid Massachusetts driver's license and DOT Medical card in your possession at all times","Obey all traffic, parking, and vehicle safety laws at all times","Hands-free only — use of handheld cell phones (including texting) while driving is strictly prohibited","Pull over safely before using your phone if you do not have a hands-free system","Do not operate a company vehicle under the influence of alcohol, drugs, or any medication that may impair your ability to drive","Unauthorized passengers are not permitted in company vehicles"],
     vItems_property:["Park safely and respectfully at all job sites","Secure the vehicle and its contents whenever you leave it unattended","Report any accidents, parking tickets, moving violations, theft, or damage to your manager within 24 hours","Cooperate fully with authorities in the event of an accident"],
-    // End of Day
     eodTitle:"End of Day Checklist", eodSubtitle:"Complete before leaving for the day",
     eodNameLabel:"Your Name",
     eodAckLabel:"I have completed all end of day tasks and am ready to sign off.",
@@ -707,15 +876,13 @@ const DOT_CATEGORIES = [
 ];
 const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires_trailer","lights_trailer","hitch","safety_chains","trailer_brakes","load_secured","brake_fluid","seatbelts","fire_extinguisher","first_aid","ppe","warning_triangles","no_leaks"];
 
-
-
 const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
 const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
 const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
 const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
 const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
-const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q"; // Receipts spreadsheet
-const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8"; // DOT, Briefing, Property Inspection, History
+const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
+const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8";
 const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
 
 const HR_LINKS = [
@@ -729,13 +896,47 @@ const HR_LINKS = [
 
 function getTodayStr()  { return new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}); }
 function getTimeStr()   { return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); }
-// ── KEY FIX: Use M/D/YYYY format to match sheet storage ──
 function getTodayKey()  {
   const d = new Date();
   return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
 }
 
-// ── PROPERTY INSPECTION SUB-COMPONENTS (defined outside form to prevent focus loss) ──
+// ── useIsIPad hook ────────────────────────────────────────────────────────────
+function useIsIPad() {
+  const [isIPad, setIsIPad] = useState(window.innerWidth >= 768);
+  useEffect(() => {
+    const handler = () => setIsIPad(window.innerWidth >= 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return isIPad;
+}
+
+// ── iPad top bar (replaces hidden .topbar on iPad) ────────────────────────────
+function IPadTopBar({ truck, onLogout, currentTab }) {
+  const t = useT();
+  const tabLabels = { home: t.home, receipt: t.receipts, tools: t.tools, hr: t.hr };
+  return (
+    <div style={{
+      position:"fixed", top:0, left:96, right:0,
+      background:"var(--bark)", borderBottom:"3px solid var(--leaf)",
+      padding:"12px 24px 10px",
+      paddingTop:"calc(12px + env(safe-area-inset-top))",
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+      zIndex:49,
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2}}>
+          {tabLabels[currentTab] || t.home}
+        </div>
+        <div className="truck-pill"><Ic n="truck"/>{truck.label}</div>
+      </div>
+      <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
+    </div>
+  );
+}
+
+// ── PROPERTY INSPECTION SUB-COMPONENTS ───────────────────────────────────────
 function PICheckRow({ck, label, required, checks, onToggle}) {
   const isChecked = !!checks[ck];
   const isFlagged = required && !isChecked;
@@ -846,7 +1047,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
-      {/* Header */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
           <Ic n="map" style={{width:17,height:17,color:"var(--lime)"}}/>
@@ -857,7 +1057,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         </div>
       </div>
 
-      {/* Name + Property */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:14}}>
         <div style={{marginBottom:12}}>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.piNameLabel}</div>
@@ -869,7 +1068,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         </div>
       </div>
 
-      {/* Arrival */}
       <PISection sk="s1" titleKey="piSec1" isOpen={openSecs.s1} onToggle={togSec}>
         <div style={{marginTop:8}}>
           <PICheckRow ck="parked"            label={t.piArrival_parked}   required checks={checks} onToggle={toggleCheck}/>
@@ -878,7 +1076,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         </div>
       </PISection>
 
-      {/* Safety */}
       <PISection sk="s2" titleKey="piSec2" isOpen={openSecs.s2} onToggle={togSec}>
         <div style={{marginTop:8}}>
           <PICheckRow ck="wet_surfaces" label={t.piSafety_wet}       required checks={checks} onToggle={toggleCheck}/>
@@ -887,7 +1084,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         </div>
       </PISection>
 
-      {/* Damage */}
       <PISection sk="s3" titleKey="piSec3" isOpen={openSecs.s3} onToggle={togSec}>
         <div style={{marginTop:8}}>
           <PICheckRow ck="damage_noted" label={t.piDamage_noted} checks={checks} onToggle={toggleCheck}/>
@@ -913,7 +1109,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         </div>
       </PISection>
 
-      {/* Notes */}
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:14}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
           {t.piNotes}<span style={{color:"var(--moss)",fontSize:11,fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span>
@@ -1026,17 +1221,21 @@ function DOTWalkaroundForm({ truck, onBack, onDone }) {
                 <Ic n="chev" className={`chevron ${isOpen?"open":""}`}/>
               </div>
             </div>
-            {isOpen&&cat.items.map(item=>{
-              const isChecked=!!checks[item.key];
-              const isFlagged=!isChecked&&item.priority==="high";
-              return (
-                <div key={item.key} className={`dot-item ${isChecked?"checked":""} ${isFlagged?"flagged":""}`} onClick={()=>toggleCheck(item.key)}>
-                  <div className={`dot-checkbox ${isChecked?"checked":""}`}>{isChecked&&<Ic n="check"/>}</div>
-                  <span className="dot-item-label">{t[`dot_${item.key}`]}</span>
-                  <span className={`dot-priority ${item.priority}`}>{item.priority}</span>
-                </div>
-              );
-            })}
+            {isOpen&&(
+              <div className="dot-items-grid">
+                {cat.items.map(item=>{
+                  const isChecked=!!checks[item.key];
+                  const isFlagged=!isChecked&&item.priority==="high";
+                  return (
+                    <div key={item.key} className={`dot-item ${isChecked?"checked":""} ${isFlagged?"flagged":""}`} onClick={()=>toggleCheck(item.key)}>
+                      <div className={`dot-checkbox ${isChecked?"checked":""}`}>{isChecked&&<Ic n="check"/>}</div>
+                      <span className="dot-item-label">{t[`dot_${item.key}`]}</span>
+                      <span className={`dot-priority ${item.priority}`}>{item.priority}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}
@@ -1307,7 +1506,11 @@ function ToolsTab({ truck, checkouts, setCheckouts }) {
         return (<div key={cat.category}><div className="tool-cat-header" onClick={()=>setOpenCats(o=>({...o,[cat.category]:!o[cat.category]}))}>
           <Ic n="box" style={{width:15,height:15,color:"var(--leaf)",flexShrink:0}}/><span className="tool-cat-label">{cat.category}</span><span className="tool-cat-count">{t.avail(avail)}</span><Ic n="chev" className={`chevron ${isOpen?"open":""}`} style={{marginLeft:4}}/>
         </div>
-        {isOpen&&cat.tools.map(tool=>{const avl=available(tool.id,tool.total);const qty=pending[tool.id]??0;return(<div key={tool.id} className="tool-row"><div className="tool-info"><div className="tool-name">{tool.name}</div><div className={`tool-avail ${avl===0?"none":avl<=2?"low":"ok"}`}>{avl===0?t.noneAvail:t.of(avl,tool.total)}</div></div>{avl>0&&(<div className="qty-row"><button className="qty-btn" disabled={qty<=0} onClick={()=>setPending(p=>({...p,[tool.id]:Math.max(0,(p[tool.id]??0)-1)}))}> − </button><span className="qty-num">{qty}</span><button className="qty-btn" disabled={qty>=avl} onClick={()=>setPending(p=>({...p,[tool.id]:Math.min(avl,(p[tool.id]??0)+1)}))}> + </button><button className="checkout-btn" disabled={qty<1} onClick={()=>checkout(tool.id,tool.name,qty)}>{t.checkOut}</button></div>)}{avl===0&&<span style={{fontSize:11,color:"var(--danger)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.allOut}</span>}</div>);})}
+        {isOpen&&(
+          <div className="tools-grid">
+            {cat.tools.map(tool=>{const avl=available(tool.id,tool.total);const qty=pending[tool.id]??0;return(<div key={tool.id} className="tool-row"><div className="tool-info"><div className="tool-name">{tool.name}</div><div className={`tool-avail ${avl===0?"none":avl<=2?"low":"ok"}`}>{avl===0?t.noneAvail:t.of(avl,tool.total)}</div></div>{avl>0&&(<div className="qty-row"><button className="qty-btn" disabled={qty<=0} onClick={()=>setPending(p=>({...p,[tool.id]:Math.max(0,(p[tool.id]??0)-1)}))}> − </button><span className="qty-num">{qty}</span><button className="qty-btn" disabled={qty>=avl} onClick={()=>setPending(p=>({...p,[tool.id]:Math.min(avl,(p[tool.id]??0)+1)}))}> + </button><button className="checkout-btn" disabled={qty<1} onClick={()=>checkout(tool.id,tool.name,qty)}>{t.checkOut}</button></div>)}{avl===0&&<span style={{fontSize:11,color:"var(--danger)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.allOut}</span>}</div>);})}
+          </div>
+        )}
         </div>);
       })}
     </div>
@@ -1345,58 +1548,60 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
       </div>
       <div className="section-hd">{t.dailyForms}</div>
 
-      {/* Daily Briefing */}
-      <div className="action-card" onClick={briefingComplete?undefined:onOpenBriefing} style={{opacity:briefingComplete?0.75:1,cursor:briefingComplete?"default":"pointer"}}>
-        <div className="action-card-icon" style={{background:briefingComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-          <Ic n={briefingComplete?"check":"book"} style={{width:18,height:18,color:"var(--lime)"}}/>
+      <div className="action-cards-grid">
+        {/* Daily Briefing */}
+        <div className="action-card" onClick={briefingComplete?undefined:onOpenBriefing} style={{opacity:briefingComplete?0.75:1,cursor:briefingComplete?"default":"pointer"}}>
+          <div className="action-card-icon" style={{background:briefingComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
+            <Ic n={briefingComplete?"check":"book"} style={{width:18,height:18,color:"var(--lime)"}}/>
+          </div>
+          <div className="action-card-info">
+            <div className="action-card-name">{t.dailyBriefing}</div>
+            <div className="action-card-desc">{t.dailyBriefingDesc}</div>
+            <span className={`status-chip ${briefingComplete?"chip-done":"chip-pending"}`}>{briefingComplete?t.done:t.pending}</span>
+          </div>
+          {!briefingComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
-        <div className="action-card-info">
-          <div className="action-card-name">{t.dailyBriefing}</div>
-          <div className="action-card-desc">{t.dailyBriefingDesc}</div>
-          <span className={`status-chip ${briefingComplete?"chip-done":"chip-pending"}`}>{briefingComplete?t.done:t.pending}</span>
-        </div>
-        {!briefingComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
-      </div>
 
-      {/* DOT Walk-Around */}
-      <div className="action-card" onClick={dotComplete?undefined:onOpenDOT} style={{opacity:dotComplete?0.75:1,cursor:dotComplete?"default":"pointer"}}>
-        <div className="action-card-icon" style={{background:dotComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-          <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"var(--lime)"}}/>
+        {/* DOT Walk-Around */}
+        <div className="action-card" onClick={dotComplete?undefined:onOpenDOT} style={{opacity:dotComplete?0.75:1,cursor:dotComplete?"default":"pointer"}}>
+          <div className="action-card-icon" style={{background:dotComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
+            <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"var(--lime)"}}/>
+          </div>
+          <div className="action-card-info">
+            <div className="action-card-name">{t.dotCheck}</div>
+            <div className="action-card-desc">{t.dotDesc}</div>
+            <span className={`status-chip ${dotComplete?"chip-done":"chip-pending"}`}>{dotComplete?t.done:t.pending}</span>
+          </div>
+          {!dotComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
-        <div className="action-card-info">
-          <div className="action-card-name">{t.dotCheck}</div>
-          <div className="action-card-desc">{t.dotDesc}</div>
-          <span className={`status-chip ${dotComplete?"chip-done":"chip-pending"}`}>{dotComplete?t.done:t.pending}</span>
-        </div>
-        {!dotComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
-      </div>
 
-      {/* Property Inspection */}
-      <div className="action-card" onClick={onOpenPropInspect}>
-        <div className="action-card-icon" style={{background:propInspectCount>0?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-          <Ic n="map" style={{width:18,height:18,color:"var(--lime)"}}/>
+        {/* Property Inspection */}
+        <div className="action-card" onClick={onOpenPropInspect}>
+          <div className="action-card-icon" style={{background:propInspectCount>0?"rgba(74,109,32,0.2)":"var(--moss)"}}>
+            <Ic n="map" style={{width:18,height:18,color:"var(--lime)"}}/>
+          </div>
+          <div className="action-card-info">
+            <div className="action-card-name">{t.propInspect}</div>
+            <div className="action-card-desc">{t.propInspectDesc}</div>
+            <span className={`status-chip ${propInspectCount>0?"chip-done":"chip-pending"}`}>
+              {propInspectCount>0?`${propInspectCount} done`:t.pending}
+            </span>
+          </div>
+          <div className="action-card-arrow"><Ic n="chev"/></div>
         </div>
-        <div className="action-card-info">
-          <div className="action-card-name">{t.propInspect}</div>
-          <div className="action-card-desc">{t.propInspectDesc}</div>
-          <span className={`status-chip ${propInspectCount>0?"chip-done":"chip-pending"}`}>
-            {propInspectCount>0?`${propInspectCount} done`:t.pending}
-          </span>
-        </div>
-        <div className="action-card-arrow"><Ic n="chev"/></div>
-      </div>
 
-      {/* End of Day */}
-      <div className="action-card" onClick={eodComplete?undefined:onOpenEOD} style={{opacity:eodComplete?0.75:1,cursor:eodComplete?"default":"pointer"}}>
-        <div className="action-card-icon" style={{background:eodComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-          <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"var(--lime)"}}/>
+        {/* End of Day */}
+        <div className="action-card" onClick={eodComplete?undefined:onOpenEOD} style={{opacity:eodComplete?0.75:1,cursor:eodComplete?"default":"pointer"}}>
+          <div className="action-card-icon" style={{background:eodComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
+            <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"var(--lime)"}}/>
+          </div>
+          <div className="action-card-info">
+            <div className="action-card-name">{t.endOfDay}</div>
+            <div className="action-card-desc">{t.endOfDayDesc}</div>
+            <span className={`status-chip ${eodComplete?"chip-done":"chip-pending"}`}>{eodComplete?t.done:t.pending}</span>
+          </div>
+          {!eodComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
-        <div className="action-card-info">
-          <div className="action-card-name">{t.endOfDay}</div>
-          <div className="action-card-desc">{t.endOfDayDesc}</div>
-          <span className={`status-chip ${eodComplete?"chip-done":"chip-pending"}`}>{eodComplete?t.done:t.pending}</span>
-        </div>
-        {!eodComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
       </div>
 
       <div className="section-hd" style={{marginTop:8}}>{t.contactMgr}</div>
@@ -1479,27 +1684,19 @@ function HRContent({link}){
   return<iframe src={link.url} style={{width:"100%",height:"calc(100dvh - 180px)",border:"none",display:"block",borderRadius:8}} title={link.name}/>;
 }
 function HRTab(){const t=useT();const[openHR,setOpenHR]=useState(null);return(<div>{!openHR?(<><div className="section-hd">HR &amp; Employee Portal</div>{HR_LINKS.map(f=>(<div key={f.name} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}} onClick={()=>{if(f.url)setOpenHR(f);}}><div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/></div><div style={{flex:1}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div></div>{f.url?<Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>:<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.comingSoon}</span>}</div>))}</>):(<div style={{animation:"fadeUp 0.3s ease both"}}><button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}><Ic n="back"/> {t.backHR}</button><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div><HRContent link={openHR}/></div>)}</div>);}
-function ReceiptTab({truck,division,onGoHome}){return(<div style={{padding:"16px 16px 100px"}}><div className="section-hd">Submit a Receipt</div><NativeReceiptFlow truckLabel={truck.label} divisionLabel={division} onGoHome={onGoHome}/></div>);}
+function ReceiptTab({truck,division,onGoHome}){return(<div style={{padding:"16px 16px 40px"}}><div className="section-hd">Submit a Receipt</div><NativeReceiptFlow truckLabel={truck.label} divisionLabel={division} onGoHome={onGoHome}/></div>);}
 
 // ── FORM STATE PERSISTENCE ────────────────────────────────────────────────────
-// Saves DOT/Briefing/PropInspect completion per truck, expires at 11pm same day
 function getFormStateKey(truckId) { return `jj_forms_${truckId}`; }
-
 function loadFormState(truckId) {
   try {
     const raw = localStorage.getItem(getFormStateKey(truckId));
     if (!raw) return null;
     const state = JSON.parse(raw);
-    const now = new Date();
-    const expiry = new Date();
-    expiry.setHours(23, 0, 0, 0); // 11pm today
-    // Expire if saved on a different day or after 11pm
     if (state.date !== getTodayDateStr()) { localStorage.removeItem(getFormStateKey(truckId)); return null; }
-    if (now > expiry) { localStorage.removeItem(getFormStateKey(truckId)); return null; }
     return state;
   } catch(e) { return null; }
 }
-
 function saveFormState(truckId, dot, briefing, propCount, eod) {
   try {
     localStorage.setItem(getFormStateKey(truckId), JSON.stringify({
@@ -1515,6 +1712,7 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
 // ── TRUCK HOME ────────────────────────────────────────────────────────────────
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
   const t = useT();
+  const isIPad = useIsIPad();
   const saved = loadFormState(truck.id);
   const [tab,              setTab]             = useState("home");
   const [activeForm,       setActiveForm]      = useState(null);
@@ -1529,13 +1727,21 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
     saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
   }, [dotComplete, briefingComplete, propInspectCount, eodComplete, truck.id]);
 
+  // On iPad, content needs top padding for the fixed top bar
+  const contentPaddingTop = isIPad ? "calc(60px + env(safe-area-inset-top))" : undefined;
+
   return (
     <div className="screen">
+      {/* Phone topbar (hidden on iPad via CSS) */}
       <div className="topbar">
         <div className="topbar-left"><div className="topbar-title">J&amp;J &amp; Son</div><div className="truck-pill"><Ic n="truck"/>{truck.label}</div></div>
         <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
       </div>
-      <div className="content" style={{padding:tab==="receipt"?"0":undefined}}>
+
+      {/* iPad top bar */}
+      {isIPad && <IPadTopBar truck={truck} onLogout={onLogout} currentTab={tab}/>}
+
+      <div className="content" style={{paddingTop: isIPad ? contentPaddingTop : undefined}}>
         {tab==="home"&&!activeForm&&
           <HomeTab truck={truck} division={division}
             onOpenDOT={()=>setActiveForm("dot")}
@@ -1568,7 +1774,9 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         {tab==="tools"  &&<ToolsTab truck={truck} checkouts={checkouts} setCheckouts={setCheckouts}/>}
         {tab==="hr"     &&<HRTab/>}
       </div>
+
       <nav className="bottom-nav">
+        {/* J&J label only shows on iPad via ::before pseudo-element */}
         <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
@@ -1615,23 +1823,10 @@ function ManagerZone({ onLogout }) {
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/History?key=${SHEETS_KEY}`).then(r=>r.json()),
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
       ]);
-
-      // History: skip header, take last 50, reverse so newest first
-      // Cols: Date=0, Time=1, Type=2, Truck=3, Employee=4, Detail=5, Status=6
       const hRows = (r1.values||[]).slice(1).slice(-50).reverse();
-      setHistory(hRows.map(r=>({
-        date:r[0]||"", time:r[1]||"", type:r[2]||"",
-        truck:r[3]||"", name:r[4]||"", detail:r[5]||"", status:r[6]||"",
-      })));
-
-      // Receipts: skip header, take last 50, reverse so newest first
-      // Cols: Date=0, Time=1, Truck=2, Division=3, Type=4, Total=5, Vendor=6, Photo=7
+      setHistory(hRows.map(r=>({date:r[0]||"",time:r[1]||"",type:r[2]||"",truck:r[3]||"",name:r[4]||"",detail:r[5]||"",status:r[6]||""})));
       const rRows = (r2.values||[]).slice(1).slice(-50).reverse();
-      setReceipts(rRows.map(r=>({
-        date:r[0]||"", time:r[1]||"", truck:r[2]||"",
-        type:r[4]||"", total:r[5]||"", merchant:r[6]||"", photo:!!r[7],
-      })));
-
+      setReceipts(rRows.map(r=>({date:r[0]||"",time:r[1]||"",truck:r[2]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photo:!!r[7]})));
       setLastRefresh(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
     } catch(e){ console.warn("Fetch failed",e); }
     setLoading(false);
@@ -1651,38 +1846,16 @@ function ManagerZone({ onLogout }) {
     const col = pass?"var(--lime)":fail?"var(--danger)":"var(--stone)";
     const bdr = pass?"var(--leaf)":fail?"var(--danger)":"var(--moss)";
     const lbl = status==="ACKNOWLEDGED"?"✓ Done":pass?"✓ "+status:fail?"✗ "+status:status||"—";
-    return (
-      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,
-        background:bg,border:`1px solid ${bdr}`,borderRadius:4,padding:"2px 8px",
-        color:col,textTransform:"uppercase",flexShrink:0,whiteSpace:"nowrap"}}>
-        {lbl}
-      </span>
-    );
+    return (<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,background:bg,border:`1px solid ${bdr}`,borderRadius:4,padding:"2px 8px",color:col,textTransform:"uppercase",flexShrink:0,whiteSpace:"nowrap"}}>{lbl}</span>);
   };
 
   const TypePill = ({type}) => {
-    const map = {
-      "Daily Briefing":     {lbl:"Briefing", bg:"rgba(42,90,149,0.12)",  col:"var(--mgr-lt)"},
-      "DOT Walk-Around":    {lbl:"DOT",      bg:"rgba(160,96,16,0.12)",  col:"var(--warn)"},
-      "Property Inspection":{lbl:"Property", bg:"rgba(74,109,32,0.12)",  col:"var(--leaf)"},
-      "End of Day":         {lbl:"End of Day",bg:"rgba(122,104,69,0.12)",col:"var(--dirt)"},
-    };
-    const c = map[type]||{lbl:type, bg:"var(--bark2)", col:"var(--stone)"};
-    return (
-      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,
-        background:c.bg,borderRadius:4,padding:"2px 7px",color:c.col,textTransform:"uppercase",flexShrink:0}}>
-        {c.lbl}
-      </span>
-    );
+    const map = {"Daily Briefing":{lbl:"Briefing",bg:"rgba(42,90,149,0.12)",col:"var(--mgr-lt)"},"DOT Walk-Around":{lbl:"DOT",bg:"rgba(160,96,16,0.12)",col:"var(--warn)"},"Property Inspection":{lbl:"Property",bg:"rgba(74,109,32,0.12)",col:"var(--leaf)"},"End of Day":{lbl:"End of Day",bg:"rgba(122,104,69,0.12)",col:"var(--dirt)"}};
+    const c = map[type]||{lbl:type,bg:"var(--bark2)",col:"var(--stone)"};
+    return (<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,background:c.bg,borderRadius:4,padding:"2px 7px",color:c.col,textTransform:"uppercase",flexShrink:0}}>{c.lbl}</span>);
   };
 
-  const EmptyState = ({msg}) => (
-    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",
-      fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
-      {loading?"Loading...":msg}
-    </div>
-  );
-
+  const EmptyState = ({msg}) => (<div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>{loading?"Loading...":msg}</div>);
   const todayLabel = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
 
   return (
@@ -1701,136 +1874,89 @@ function ManagerZone({ onLogout }) {
         </div>
       </div>
 
-      {/* Confirmation modal */}
       {showResetConfirm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
           <div style={{background:"var(--bark)",borderRadius:14,padding:"24px",width:"100%",maxWidth:340,boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--danger)",letterSpacing:2,marginBottom:8}}>Reset All Data?</div>
             <div style={{fontSize:13,color:"var(--stone)",lineHeight:1.6,marginBottom:20}}>This will permanently delete all entries from Daily Briefing, DOT, Property Inspection, End of Day, Sign Ins, and History. Column headers will remain. This cannot be undone.</div>
             <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setShowResetConfirm(false)}
-                style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
-                Cancel
-              </button>
-              <button onClick={handleReset} disabled={resetting}
-                style={{flex:1,padding:"13px",background:"var(--danger)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",cursor:resetting?"not-allowed":"pointer",opacity:resetting?0.7:1}}>
-                {resetting?"Resetting...":"Yes, Reset"}
-              </button>
+              <button onClick={()=>setShowResetConfirm(false)} style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>Cancel</button>
+              <button onClick={handleReset} disabled={resetting} style={{flex:1,padding:"13px",background:"var(--danger)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",cursor:resetting?"not-allowed":"pointer",opacity:resetting?0.7:1}}>{resetting?"Resetting...":"Yes, Reset"}</button>
             </div>
           </div>
         </div>
       )}
 
       <div className="content" style={{background:"#ddd9d0"}}>
-        {/* Reset success banner */}
-        {resetDone&&(
-          <div style={{background:"rgba(192,68,42,0.1)",border:"1px solid var(--danger)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--danger)",letterSpacing:0.5,display:"flex",alignItems:"center",gap:8}}>
-            <Ic n="check" style={{width:14,height:14,flexShrink:0}}/> All data has been reset successfully.
-          </div>
-        )}
-
-        {/* Refresh bar */}
+        {resetDone&&(<div style={{background:"rgba(192,68,42,0.1)",border:"1px solid var(--danger)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--danger)",letterSpacing:0.5,display:"flex",alignItems:"center",gap:8}}><Ic n="check" style={{width:14,height:14,flexShrink:0}}/> All data has been reset successfully.</div>)}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          {lastRefresh
-            ?<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>
-            :<span/>}
-          <button onClick={fetchAll} disabled={loading}
-            style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",
-              fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",
-              cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>
-            {loading?"…":"Refresh"}
-          </button>
+          {lastRefresh?<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>:<span/>}
+          <button onClick={fetchAll} disabled={loading} style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>{loading?"…":"Refresh"}</button>
         </div>
 
-        {/* Forms tab — grouped by truck */}
         {tab==="forms"&&(()=>{
-          // Group history by truck, preserving truck order of first appearance
           const grouped = {};
           const truckOrder = [];
-          history.forEach(r=>{
-            if(!grouped[r.truck]){ grouped[r.truck]=[]; truckOrder.push(r.truck); }
-            grouped[r.truck].push(r);
-          });
+          history.forEach(r=>{ if(!grouped[r.truck]){ grouped[r.truck]=[]; truckOrder.push(r.truck); } grouped[r.truck].push(r); });
           return (
             <>
               <div className="section-hd" style={{color:"var(--mgr)"}}>Activity by Truck ({truckOrder.length} trucks)</div>
-              {truckOrder.length===0
-                ?<EmptyState msg="No submissions yet"/>
-                :truckOrder.map(truck=>{
-                  const entries = grouped[truck];
-                  return (
-                    <div key={truck} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,marginBottom:10,overflow:"hidden"}}>
-                      {/* Truck header */}
-                      <div style={{background:"rgba(74,109,32,0.08)",borderBottom:"1px solid var(--moss)",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-                        <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
-                        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck}</span>
-                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginLeft:"auto",textTransform:"uppercase"}}>{entries.length} {entries.length===1?"submission":"submissions"}</span>
-                      </div>
-                      {/* Entries */}
-                      {entries.map((r,i)=>(
-                        <div key={i} style={{padding:"10px 14px",borderBottom:i<entries.length-1?"1px solid rgba(196,191,176,0.4)":"none"}}>
-                          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
-                            <TypePill type={r.type}/>
-                            <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
-                          </div>
-                          {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{r.name}</div>}
-                          {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600,marginTop:2}}>{r.detail}</div>}
-                        </div>
-                      ))}
+              {truckOrder.length===0?<EmptyState msg="No submissions yet"/>:truckOrder.map(truck=>{
+                const entries = grouped[truck];
+                return (
+                  <div key={truck} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,marginBottom:10,overflow:"hidden"}}>
+                    <div style={{background:"rgba(74,109,32,0.08)",borderBottom:"1px solid var(--moss)",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+                      <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
+                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck}</span>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginLeft:"auto",textTransform:"uppercase"}}>{entries.length} {entries.length===1?"submission":"submissions"}</span>
                     </div>
-                  );
-                })
-              }
+                    {entries.map((r,i)=>(
+                      <div key={i} style={{padding:"10px 14px",borderBottom:i<entries.length-1?"1px solid rgba(196,191,176,0.4)":"none"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
+                          <TypePill type={r.type}/>
+                          <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
+                        </div>
+                        {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{r.name}</div>}
+                        {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600,marginTop:2}}>{r.detail}</div>}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </>
           );
         })()}
 
-        {/* Receipts tab */}
         {tab==="receipts"&&(
           <>
             <div className="section-hd" style={{color:"var(--mgr)"}}>Recent Receipts ({receipts.length})</div>
-            {receipts.length===0
-              ?<EmptyState msg="No receipts yet"/>
-              :receipts.map((r,i)=>(
-                <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.date} · {r.time}</span>
-                    </div>
-                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.total?`$${r.total}`:""}</span>
+            {receipts.length===0?<EmptyState msg="No receipts yet"/>:receipts.map((r,i)=>(
+              <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.date} · {r.time}</span>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <div>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.merchant||"—"}</div>
-                      <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{r.type}</div>
-                    </div>
-                    {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
-                  </div>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.total?`$${r.total}`:""}</span>
                 </div>
-              ))
-            }
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.merchant||"—"}</div>
+                    <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{r.type}</div>
+                  </div>
+                  {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
+                </div>
+              </div>
+            ))}
           </>
         )}
       </div>
 
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-        <button className={`bnav-btn ${tab==="forms"?"active":""}`}
-          style={tab==="forms"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
-          onClick={()=>setTab("forms")}>
-          <Ic n="clip"/>Activity
-        </button>
-        <button className={`bnav-btn ${tab==="receipts"?"active":""}`}
-          style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}}
-          onClick={()=>setTab("receipts")}>
-          <Ic n="camera"/>Receipts
-        </button>
-        <button className="bnav-btn"
-          style={{color:"var(--danger)"}}
-          onClick={()=>setShowResetConfirm(true)}>
-          <Ic n="del"/>Reset
-        </button>
+        <button className={`bnav-btn ${tab==="forms"?"active":""}`} style={tab==="forms"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("forms")}><Ic n="clip"/>Activity</button>
+        <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
+        <button className="bnav-btn" style={{color:"var(--danger)"}} onClick={()=>setShowResetConfirm(true)}><Ic n="del"/>Reset</button>
       </nav>
     </div>
   );
@@ -1881,9 +2007,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
                 {dropOpen&&(
                   <div className="truck-dropdown-list">
                     {TRUCKS.map(tr=>(
-                      <div key={tr.id}
-                        className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`}
-                        onClick={()=>{ setSel(tr); setDropOpen(false); setError(""); }}>
+                      <div key={tr.id} className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`} onClick={()=>{ setSel(tr); setDropOpen(false); setError(""); }}>
                         <Ic n="truck" style={{width:14,height:14}}/>
                         <span style={{flex:1}}>{tr.label}</span>
                         {selected?.id===tr.id&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
@@ -1971,39 +2095,18 @@ export default function App() {
 
   const postSignIn = async (tr) => {
     try {
-      await fetch(SIGNIN_SCRIPT_URL,{
-        method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({
-          sheet:"Sign Ins", action:"signin",
-          date:getTodayKey(), truck:tr.label,
-          signInTime:getTimeStr(),
-        }),
-      });
+      await fetch(SIGNIN_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sheet:"Sign Ins",action:"signin",date:getTodayKey(),truck:tr.label,signInTime:getTimeStr()})});
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
 
   const postSignOut = async (tr) => {
     try {
-      await fetch(SIGNIN_SCRIPT_URL,{
-        method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({
-          sheet:"Sign Ins", action:"signout",
-          date:getTodayKey(), truck:tr.label,
-          signOutTime:getTimeStr(),
-        }),
-      });
+      await fetch(SIGNIN_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sheet:"Sign Ins",action:"signout",date:getTodayKey(),truck:tr.label,signOutTime:getTimeStr()})});
     } catch(e){ console.warn("Sign-out post failed",e); }
   };
 
-  const handleTruckLogin = tr => {
-    setTruck(tr); setTruckDiv(""); setScreen("truck");
-    postSignIn(tr);
-  };
-
-  const handleLogout = () => {
-    if(truck) postSignOut(truck);
-    setTruck(null); setTruckDiv(""); setScreen("login");
-  };
+  const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
+  const handleLogout = () => { if(truck) postSignOut(truck); setTruck(null); setTruckDiv(""); setScreen("login"); };
 
   return (
     <LangContext.Provider value={lang}>
