@@ -278,9 +278,12 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
     width: 100%;
   }
 
-  /* Content area shifted right to clear sidebar */
+  /* Content area shifted right to clear sidebar + top bar */
   .content {
-    padding: 28px 36px 48px 112px !important;
+    padding-top: calc(88px + env(safe-area-inset-top)) !important;
+    padding-right: 36px !important;
+    padding-bottom: 48px !important;
+    padding-left: 128px !important;
     overflow-y: auto !important;
     flex: 1 !important;
     height: 100dvh !important;
@@ -355,7 +358,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 /* ── Large iPad / iPad Pro (≥ 1024px) ── */
 @media (min-width: 1024px) {
   .bottom-nav { width: 110px !important; max-width: 110px !important; }
-  .content { padding: 32px 48px 48px 130px !important; }
+  .content { padding-top: calc(88px + env(safe-area-inset-top)) !important; padding-right: 48px !important; padding-bottom: 48px !important; padding-left: 144px !important; }
   .mgr-topbar { padding-left: 130px; }
   .bnav-btn { font-size: 12px !important; padding: 18px 8px !important; }
   .bottom-nav::before { font-size: 24px; }
@@ -1754,7 +1757,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
       {/* iPad top bar */}
       {isIPad && <IPadTopBar truck={truck} onLogout={onLogout} currentTab={tab}/>}
 
-      <div className="content" style={isIPad ? {paddingTop:"calc(82px + env(safe-area-inset-top))", maxWidth:760, marginLeft:"auto", marginRight:"auto", width:"100%"} : {}}>
+      <div className="content" style={isIPad ? {maxWidth:760, marginLeft:"auto", marginRight:"auto", width:"100%"} : {}}>
 
         {tab==="home"&&!activeForm&&
           <HomeTab truck={truck} division={division}
