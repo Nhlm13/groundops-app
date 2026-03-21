@@ -450,6 +450,8 @@ const T = {
     dotTitle:"DOT Walk-Around Inspection", dotSubmit:"Submit Inspection",
     dotSubmitting:"Submitting...", dotFlagNote:"flagged High priority items",
     dotNameLabel:"Inspector Name", dotNotes:"Notes", dotNotesPlaceholder:"Any issues or observations...",
+    briefingCompleteTitle:"Daily Briefing Complete.", briefingCompleteSubtitle:"Get Ready to Roll!",
+    performDOT:"Perform DOT Walk-Around", safeTravels:"Safe Travels 👋", completePropInspect:"Complete Property Inspection",
     dotUncheckedWarning:n=>`${n} High priority ${n===1?"item":"items"} unchecked — will be flagged on submit`,
     dotSelectAll:"Tap section header to check all",
     dotCat_exterior:"Exterior Truck Check", dotCat_trailer:"Trailer Check",
@@ -595,6 +597,8 @@ const T = {
     dotTitle:"Inspección DOT Pre-Viaje", dotSubmit:"Enviar Inspección",
     dotSubmitting:"Enviando...", dotFlagNote:"elementos de alta prioridad sin marcar",
     dotNameLabel:"Nombre del Inspector", dotNotes:"Notas", dotNotesPlaceholder:"Problemas u observaciones...",
+    briefingCompleteTitle:"Briefing Diario Completo.", briefingCompleteSubtitle:"¡Listo para Salir!",
+    performDOT:"Realizar Inspección DOT", safeTravels:"Buen Viaje 👋", completePropInspect:"Completar Inspección de Propiedad",
     dotUncheckedWarning:n=>`${n} ${n===1?"elemento":"elementos"} de alta prioridad sin marcar — se marcará al enviar`,
     dotSelectAll:"Toca el encabezado para marcar todos",
     dotCat_exterior:"Revisión Exterior del Camión", dotCat_trailer:"Revisión del Remolque",
@@ -740,6 +744,8 @@ const T = {
     dotTitle:"Inspeção DOT Pré-Viagem", dotSubmit:"Enviar Inspeção",
     dotSubmitting:"Enviando...", dotFlagNote:"itens de alta prioridade sem marcar",
     dotNameLabel:"Nome do Inspetor", dotNotes:"Observações", dotNotesPlaceholder:"Problemas ou observações...",
+    briefingCompleteTitle:"Briefing Diário Completo.", briefingCompleteSubtitle:"Pronto para Sair!",
+    performDOT:"Realizar Inspeção DOT", safeTravels:"Boa Viagem 👋", completePropInspect:"Completar Inspeção de Propriedade",
     dotUncheckedWarning:n=>`${n} ${n===1?"item":"itens"} de alta prioridade sem marcar — será sinalizado ao enviar`,
     dotSelectAll:"Toque no cabeçalho para marcar todos",
     dotCat_exterior:"Verificação Exterior do Caminhão", dotCat_trailer:"Verificação do Reboque",
@@ -837,8 +843,6 @@ const T = {
   },
 };
 
-const LangContext = React.createContext("en");
-function useLang() { return React.useContext(LangContext); }
 function useT()    { const lang = useLang(); return T[lang]; }
 
 function FlagSelector({ lang, setLang }) {
@@ -1178,14 +1182,14 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
         <Ic n={uncheckedHigh===0?"check":"alert"} style={{width:36,height:36,color:uncheckedHigh===0?"var(--lime)":"var(--danger)"}}/>
       </div>
       {uncheckedHigh===0
-        ? <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center"}}>Safe Travels 👋</div>
+        ? <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center"}}>{t.safeTravels}</div>
         : <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--danger)",letterSpacing:3,marginBottom:2}}>FLAGGED</div>
       }
       {uncheckedHigh>0&&<div style={{fontSize:13,color:"var(--danger)",textAlign:"center",marginBottom:6}}>{uncheckedHigh} {t.dotFlagNote}</div>}
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24,marginTop:6}}>{truck.label} · {name}</div>
       <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
         {uncheckedHigh===0&&onOpenPropInspect&&(
-          <button onClick={onOpenPropInspect} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>Complete Property Inspection</button>
+          <button onClick={onOpenPropInspect} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.completePropInspect}</button>
         )}
         <button onClick={onDone} style={{width:"100%",padding:"12px",background:uncheckedHigh===0&&onOpenPropInspect?"none":"var(--lime)",border:uncheckedHigh===0&&onOpenPropInspect?"1px solid var(--moss)":"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:uncheckedHigh===0&&onOpenPropInspect?"var(--stone)":"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
       </div>
@@ -1316,11 +1320,11 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
       <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/></div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center",lineHeight:1.1}}>Daily Briefing Complete.</div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:8,textAlign:"center"}}>Get Ready to Roll!</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center",lineHeight:1.1}}>{t.briefingCompleteTitle}</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:8,textAlign:"center"}}>{t.briefingCompleteSubtitle}</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
       <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
-        <button onClick={onOpenDOT||onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>Perform DOT Walk-Around</button>
+        <button onClick={onOpenDOT||onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.performDOT}</button>
         <button onClick={onDone} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.goHome}</button>
       </div>
     </div>
