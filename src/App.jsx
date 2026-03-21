@@ -1,4 +1,3 @@
-WEB APP WITH JOBS: 
 
 import { useState, useEffect, useRef } from "react";
 
