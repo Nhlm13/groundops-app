@@ -840,7 +840,6 @@ const T = {
     eodItems1:["Guarde todas as ferramentas adicionais usadas hoje em seu lugar","Limpe os reboques de detritos e organize-os para o dia seguinte","Lave e limpe cortadores e outros equipamentos","Abasteça e armazene todos os equipamentos adequadamente","Registre quaisquer problemas de manutenção para seu supervisor"],
     eodItems2:["Registre a saída usando o sistema da empresa","Converse com seu supervisor para feedback ou atualizações","Deixe o local de apresentação limpo e organizado","Devolva as chaves de quaisquer veículos na caixa de chaves"],
     endOfDay:"Fim do Dia", endOfDayDesc:"Lista de encerramento do turno",
-
   },
 };
 
@@ -886,14 +885,15 @@ const DOT_CATEGORIES = [
 ];
 const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires_trailer","lights_trailer","hitch","safety_chains","trailer_brakes","load_secured","brake_fluid","seatbelts","fire_extinguisher","first_aid","ppe","warning_triangles","no_leaks"];
 
-const APPS_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
-const DB_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
-const PI_SCRIPT_URL      = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
-const SIGNIN_SCRIPT_URL  = "https://script.google.com/macros/s/AKfycbyV8p9Vx6YoY7T0CDP6Wx6Q9P4YllGHOB1tDB1wJedkZHaKA9HCIFvz_oIQh2HAJ8xB/exec";
-const SHEETS_ID          = "1PMRNlpefHWFVRn59wfJH1za7tfIAmftAfG9kF4-dy4Q";
-const OPS_SHEETS_ID      = "1agyca6kl07KhP41b0hFvWHqVhhEOu87uworuU-E3Ub8";
-const SHEETS_KEY         = "AIzaSyBj9Hxi1MUSq4MBToFxqKG1QDwJBu9PyJw";
+// ── API ENDPOINTS ─────────────────────────────────────────────────────────────
+// SHEETS_ID, OPS_SHEETS_ID, and SHEETS_KEY have been removed.
+// Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
+// which is handled by the doGet function in the Apps Script backend.
+const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
+const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
+const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
+const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
+const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
 
 const HR_LINKS = [
   {name:"Time Off Request",  desc:"Submit Time Off Request",      url:"https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true"},
@@ -1572,7 +1572,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
       <div className="section-hd">{t.dailyForms}</div>
 
       <div className="action-cards-grid">
-        {/* Daily Briefing */}
         <div className="action-card" onClick={briefingComplete?undefined:onOpenBriefing} style={{opacity:briefingComplete?0.75:1,cursor:briefingComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:briefingComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n={briefingComplete?"check":"book"} style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1585,7 +1584,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           {!briefingComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
 
-        {/* DOT Walk-Around */}
         <div className="action-card" onClick={dotComplete?undefined:onOpenDOT} style={{opacity:dotComplete?0.75:1,cursor:dotComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:dotComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1598,7 +1596,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           {!dotComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
 
-        {/* Property Inspection */}
         <div className="action-card" onClick={onOpenPropInspect}>
           <div className="action-card-icon" style={{background:propInspectCount>0?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n="map" style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1613,7 +1610,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           <div className="action-card-arrow"><Ic n="chev"/></div>
         </div>
 
-        {/* End of Day */}
         <div className="action-card" onClick={eodComplete?undefined:onOpenEOD} style={{opacity:eodComplete?0.75:1,cursor:eodComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:eodComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1750,22 +1746,16 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
     saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
   }, [dotComplete, briefingComplete, propInspectCount, eodComplete, truck.id]);
 
-  // On iPad, content needs top padding for the fixed top bar
-
-
   return (
     <div className="screen">
-      {/* Phone topbar (hidden on iPad via CSS) */}
       <div className="topbar">
         <div className="topbar-left"><div className="topbar-title">J&amp;J &amp; Son</div><div className="truck-pill"><Ic n="truck"/>{truck.label}</div></div>
         <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
       </div>
 
-      {/* iPad top bar */}
       {isIPad && <IPadTopBar truck={truck} onLogout={onLogout} currentTab={tab}/>}
 
       <div className="content" style={isIPad ? {maxWidth:760, marginLeft:"auto", marginRight:"auto", width:"100%"} : {}}>
-
         {tab==="home"&&!activeForm&&
           <HomeTab truck={truck} division={division}
             onOpenDOT={()=>setActiveForm("dot")}
@@ -1806,7 +1796,6 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
       </div>
 
       <nav className="bottom-nav">
-        {/* J&J label only shows on iPad via ::before pseudo-element */}
         <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
         <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
@@ -1846,19 +1835,39 @@ function ManagerZone({ onLogout }) {
     setResetting(false);
   };
 
+  // ── fetchAll now calls the Apps Script doGet handler instead of the
+  //    Sheets REST API directly. This removes SHEETS_KEY, SHEETS_ID, and
+  //    OPS_SHEETS_ID from the client entirely.
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [r1, r2] = await Promise.all([
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${OPS_SHEETS_ID}/values/History?key=${SHEETS_KEY}`).then(r=>r.json()),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEETS_ID}/values/Receipts?key=${SHEETS_KEY}`).then(r=>r.json()),
-      ]);
-      const hRows = (r1.values||[]).slice(1).slice(-50).reverse();
-      setHistory(hRows.map(r=>({date:r[0]||"",time:r[1]||"",type:r[2]||"",truck:r[3]||"",name:r[4]||"",detail:r[5]||"",status:r[6]||""})));
-      const rRows = (r2.values||[]).slice(1).slice(-50).reverse();
-      setReceipts(rRows.map(r=>({date:r[0]||"",time:r[1]||"",truck:r[2]||"",type:r[4]||"",total:r[5]||"",merchant:r[6]||"",photo:!!r[7]})));
-      setLastRefresh(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
-    } catch(e){ console.warn("Fetch failed",e); }
+      const res  = await fetch(`${SIGNIN_SCRIPT_URL}?action=fetchManager`);
+      const data = await res.json();
+
+      const hRows = (data.history  || []).slice(1).slice(-50).reverse();
+      setHistory(hRows.map(r => ({
+        date:   r[0] || "",
+        time:   r[1] || "",
+        type:   r[2] || "",
+        truck:  r[3] || "",
+        name:   r[4] || "",
+        detail: r[5] || "",
+        status: r[6] || "",
+      })));
+
+      const rRows = (data.receipts || []).slice(1).slice(-50).reverse();
+      setReceipts(rRows.map(r => ({
+        date:     r[0] || "",
+        time:     r[1] || "",
+        truck:    r[2] || "",
+        type:     r[4] || "",
+        total:    r[5] || "",
+        merchant: r[6] || "",
+        photo:    !!r[7],
+      })));
+
+      setLastRefresh(new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }));
+    } catch(e) { console.warn("Fetch failed", e); }
     setLoading(false);
   };
 
