@@ -993,6 +993,17 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
   const [submitting,  setSubmitting]  = useState(false);
   const [submitted,   setSubmitted]   = useState(false);
   const [openSecs,    setOpenSecs]    = useState({s1:true,s2:true,s3:false});
+  const [gpsCoords,   setGpsCoords]   = useState(null);
+
+  // Request GPS permission as soon as the form opens
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      pos => setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      err => console.warn("GPS permission denied or unavailable", err),
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  }, []);
 
   const togSec      = k => setOpenSecs(p=>({...p,[k]:!p[k]}));
   const toggleCheck = key => { setChecks(p=>({...p,[key]:!p[key]})); setFormErr(""); };
@@ -1019,15 +1030,24 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
     setSubmitting(true);
 
-    // Grab GPS silently - won't block submission if unavailable
+    // Use GPS captured on form open, or try one more time at submit
     let lat = null, lng = null, mapsLink = null;
-    try {
-      const pos = await new Promise((res, rej) =>
-        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
-      lat = pos.coords.latitude;
-      lng = pos.coords.longitude;
+    if (gpsCoords) {
+      lat = gpsCoords.lat;
+      lng = gpsCoords.lng;
       mapsLink = "https://maps.google.com/?q=" + lat + "," + lng;
-    } catch(gpsErr) { console.warn("GPS unavailable", gpsErr); }
+    } else {
+      try {
+        const pos = await new Promise((res, rej) =>
+          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+        mapsLink = "https://maps.google.com/?q=" + lat + "," + lng;
+      } catch(gpsErr) { console.warn("GPS unavailable", gpsErr); }
+    }
+
+    const propName = property.trim();
+    const photoName = photoB64 ? ("damage_" + truck.label.replace(/\s/g,"_") + "_" + Date.now() + ".jpg") : null;
 
     try {
       await fetch(PI_SCRIPT_URL,{
@@ -1035,13 +1055,15 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         body:JSON.stringify({
           sheet:"Property Inspection",
           date:getTodayKey(), time:getTimeStr(),
-          truck:truck.label, name:name.trim(), property:property.trim(),
+          truck:truck.label, name:name.trim(), property:propName,
           checks, damageNotes, notes,
-          lat, lng, mapsLink,
-          damagePhoto:     photoB64  || null,
-          damagePhotoMime: photoMime || null,
-          damagePhotoName: photoB64 ? ("damage_" + truck.label.replace(/\s/g,"_") + "_" + Date.now() + ".jpg") : null,
-          propertyFolder:  property.trim(),
+          lat:      lat      || "",
+          lng:      lng      || "",
+          mapsLink: mapsLink || "",
+          damagePhoto:     photoB64  || "",
+          damagePhotoMime: photoMime || "image/jpeg",
+          damagePhotoName: photoName || "",
+          propertyFolder:  propName,
         }),
       });
       setSubmitted(true);
