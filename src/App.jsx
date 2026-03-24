@@ -905,7 +905,12 @@ const HR_LINKS = [
 ];
 
 function getTodayStr()  { return new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}); }
-function getTimeStr()   { return new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); }
+function getTimeStr() { 
+  return new Date().toLocaleTimeString("en-US", {
+    hour:"2-digit", minute:"2-digit",
+    timeZone:"America/New_York"
+  }); 
+}
 function getTodayKey()  {
   const d = new Date();
   return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
