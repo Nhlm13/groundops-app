@@ -890,10 +890,10 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
-const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
-const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
-const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-O5nxlfDe0KDbc7dTciaMMLNswOteEfoFOLS-oxCmI6AtqAk-PhmgOu-dgT6BPWhrsQ/exec";
+const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbygGlh3_1J9rkP04oTgqXtd0ogKDHBrzCvfAuUO9H5rgMRxxNQmvuo4iI5NnKVRO9TjsQ/exec";
+const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbygGlh3_1J9rkP04oTgqXtd0ogKDHBrzCvfAuUO9H5rgMRxxNQmvuo4iI5NnKVRO9TjsQ/exec";
+const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbygGlh3_1J9rkP04oTgqXtd0ogKDHBrzCvfAuUO9H5rgMRxxNQmvuo4iI5NnKVRO9TjsQ/exec";
+const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbygGlh3_1J9rkP04oTgqXtd0ogKDHBrzCvfAuUO9H5rgMRxxNQmvuo4iI5NnKVRO9TjsQ/exec";
 
 const HR_LINKS = [
   {name:"Time Off Request",  desc:"Submit Time Off Request",      url:"https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true"},
@@ -1018,6 +1018,17 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     const allCore = CORE_CHECKS.every(k=>checks[k]);
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
     setSubmitting(true);
+
+    // Grab GPS silently - won't block submission if unavailable
+    let lat = null, lng = null, mapsLink = null;
+    try {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+      mapsLink = "https://maps.google.com/?q=" + lat + "," + lng;
+    } catch(gpsErr) { console.warn("GPS unavailable", gpsErr); }
+
     try {
       await fetch(PI_SCRIPT_URL,{
         method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
@@ -1026,8 +1037,11 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
           date:getTodayKey(), time:getTimeStr(),
           truck:truck.label, name:name.trim(), property:property.trim(),
           checks, damageNotes, notes,
-          damagePhoto:    photoB64  || null,
-          damagePhotoMime:photoMime || null,
+          lat, lng, mapsLink,
+          damagePhoto:     photoB64  || null,
+          damagePhotoMime: photoMime || null,
+          damagePhotoName: photoB64 ? ("damage_" + truck.label.replace(/\s/g,"_") + "_" + Date.now() + ".jpg") : null,
+          propertyFolder:  property.trim(),
         }),
       });
       setSubmitted(true);
