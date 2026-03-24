@@ -890,10 +890,10 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbxJzsPxWCPUjP6-AC3xRzAxQvTHeACXASz1UagFrSC8Ar7K9Kvme5T0OUpdTtWhxb3vyw/exec";
-const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbxJzsPxWCPUjP6-AC3xRzAxQvTHeACXASz1UagFrSC8Ar7K9Kvme5T0OUpdTtWhxb3vyw/exec";
-const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbxJzsPxWCPUjP6-AC3xRzAxQvTHeACXASz1UagFrSC8Ar7K9Kvme5T0OUpdTtWhxb3vyw/exec";
-const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxJzsPxWCPUjP6-AC3xRzAxQvTHeACXASz1UagFrSC8Ar7K9Kvme5T0OUpdTtWhxb3vyw/exec";
+const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
+const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
+const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
+const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 
 const HR_LINKS = [
   {name:"Time Off Request",  desc:"Submit Time Off Request",      url:"https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true"},
