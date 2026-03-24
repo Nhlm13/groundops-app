@@ -908,7 +908,7 @@ const TOOL_INVENTORY = [
   ]},
 ];
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3YRHxuITtlwyEUzSj1lnGS9r7kmzaJyLab04HzrXW6wkAhypQGr-nMKMrmVtvpxfD9Q/exec";
 
 
 
@@ -1172,8 +1172,26 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
         }),
       });
       setStep("photo");
+      // Pre-fetch location while user is reading the photo step
+      getLocation();
     } catch(e){ console.warn(e); }
     setSubmitting(false);
+  };
+
+  const [gpsStatus, setGpsStatus] = useState("idle"); // idle | fetching | got | denied
+  const [gpsCoords, setGpsCoords] = useState(null);
+
+  const getLocation = () => {
+    if (!navigator.geolocation) { setGpsStatus("denied"); return; }
+    setGpsStatus("fetching");
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) });
+        setGpsStatus("got");
+      },
+      () => setGpsStatus("denied"),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const handlePhoto = async e => {
@@ -1182,10 +1200,22 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     setUploading(true);
     try {
       const b64 = await toBase64(file);
+      const mapsLink = gpsCoords
+        ? `https://maps.google.com/?q=${gpsCoords.lat},${gpsCoords.lng}`
+        : "";
       await fetch(APPS_SCRIPT_URL, {
         method:"POST", mode:"no-cors",
         headers:{"Content-Type":"text/plain"},
-        body: JSON.stringify({ sheet:"Receipts", photo:b64, photoMime:file.type||"image/jpeg", photoName:`receipt_${displayTruck.replace(/\s/g,"_")}_${Date.now()}.jpg`, photoOnly:true }),
+        body: JSON.stringify({
+          sheet:     "Receipts",
+          photo:     b64,
+          photoMime: file.type||"image/jpeg",
+          photoName: `receipt_${displayTruck.replace(/\s/g,"_")}_${Date.now()}.jpg`,
+          photoOnly: true,
+          lat:       gpsCoords ? String(gpsCoords.lat) : "",
+          lng:       gpsCoords ? String(gpsCoords.lng) : "",
+          mapsLink,
+        }),
       });
       setPhotoUrl(URL.createObjectURL(file));
       setStep("success");
@@ -1195,6 +1225,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
 
   const reset = () => {
     setStep("form"); setPhotoUrl(""); setFormErr("");
+    setGpsStatus("idle"); setGpsCoords(null);
     setFields({ name:"", division:divisionLabel||"", type:"", gallons:"", fuelType:"", atShop:null, vendor:"", total:"", notes:"" });
   };
 
@@ -1383,6 +1414,31 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
       </div>
 
       <div style={{fontSize:13,color:"var(--stone)",marginBottom:10}}>{t.photoDesc}</div>
+
+      {/* GPS status */}
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+        <Ic n="sun" style={{width:14,height:14,flexShrink:0,color:
+          gpsStatus==="got"     ? "var(--lime)"  :
+          gpsStatus==="fetching"? "var(--warn)"  :
+          gpsStatus==="denied"  ? "var(--stone)" : "var(--stone)"
+        }}/>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,textTransform:"uppercase",color:
+            gpsStatus==="got"     ? "var(--lime)"  :
+            gpsStatus==="fetching"? "var(--warn)"  : "var(--stone)"
+          }}>
+            {gpsStatus==="got"      ? `📍 Location captured (±${gpsCoords.acc}m)` :
+             gpsStatus==="fetching" ? "Getting your location..." :
+             gpsStatus==="denied"   ? "Location not available — photo will still save" :
+             "Location pending..."}
+          </div>
+          {gpsStatus==="got" && gpsCoords && (
+            <div style={{fontSize:11,color:"var(--stone)",marginTop:2}}>
+              {gpsCoords.lat.toFixed(5)}, {gpsCoords.lng.toFixed(5)}
+            </div>
+          )}
+        </div>
+      </div>
 
       <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
       <div className="receipt-upload"
