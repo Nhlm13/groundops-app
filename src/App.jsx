@@ -138,7 +138,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .nc-avail { background:rgba(74,109,32,0.2); color:var(--leaf); }
 .truck-tag { background:var(--moss); border-radius:4px; padding:2px 6px; font-family:'Barlow Condensed',sans-serif; font-size:12px; color:var(--sand); }
 
-/* ── BOTTOM NAV (phone) ── */
+/* -- BOTTOM NAV (phone) -- */
 .bottom-nav {
   position:fixed; bottom:0; left:50%; transform:translateX(-50%);
   width:100%; max-width:430px;
@@ -150,7 +150,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .bnav-btn.active { color:var(--lime); border-bottom-color:var(--lime); }
 .bnav-btn svg { width:22px; height:22px; }
 
-/* ── DOT checklist ── */
+/* -- DOT checklist -- */
 .dot-cat-header { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
 .dot-cat-header.all-checked { background:rgba(74,109,32,0.1); border:1px solid rgba(74,109,32,0.3); }
 .dot-cat-header.partial { background:var(--bark2); border:1px solid var(--moss); }
@@ -169,7 +169,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .dot-priority.medium { background:rgba(160,96,16,0.12); color:var(--warn); }
 .dot-priority.low { background:rgba(74,109,32,0.12); color:var(--leaf); }
 
-/* ── Daily Briefing ── */
+/* -- Daily Briefing -- */
 .briefing-section { background:var(--bark); border:1px solid var(--moss); border-radius:9px; margin-bottom:8px; overflow:hidden; }
 .briefing-section-header { display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; transition:background 0.15s; }
 .briefing-section-header:hover { background:var(--bark2); }
@@ -184,7 +184,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .briefing-ack-label { font-family:'Barlow Condensed',sans-serif; font-size:14px; color:var(--stone); line-height:1.4; }
 .briefing-ack.checked .briefing-ack-label { color:var(--lime); }
 
-/* ── Property Inspection ── */
+/* -- Property Inspection -- */
 .pi-check-row { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--bark); border:1px solid var(--moss); border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background 0.12s; -webkit-tap-highlight-color:transparent; }
 .pi-check-row.checked { background:rgba(74,109,32,0.06); border-color:rgba(74,109,32,0.3); }
 .pi-check-row.flagged { background:rgba(192,68,42,0.06); border-color:rgba(192,68,42,0.3); }
@@ -193,9 +193,9 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .pi-checkbox svg { width:12px; height:12px; color:var(--earth); }
 .pi-check-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; color:var(--cream); flex:1; line-height:1.3; }
 
-/* ════════════════════════════════════════════
+/* ============================================
    iPad RESPONSIVE OVERRIDES  (≥ 768px)
-   ════════════════════════════════════════════ */
+   ============================================ */
 @media (min-width: 768px) {
 
   /* App container fills full width on iPad */
@@ -355,7 +355,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
   .logout-btn { font-size: 13px; padding: 7px 14px; }
 }
 
-/* ── Large iPad / iPad Pro (≥ 1024px) ── */
+/* -- Large iPad / iPad Pro (≥ 1024px) -- */
 @media (min-width: 1024px) {
   .bottom-nav { width: 110px !important; max-width: 110px !important; }
   .content { padding-top: calc(88px + env(safe-area-inset-top)) !important; padding-right: 48px !important; padding-bottom: 48px !important; padding-left: 144px !important; }
@@ -399,7 +399,7 @@ const FLAGS = { en:"🇺🇸", es:"🇪🇸", pt:"🇧🇷" };
 function detectLang() { try { const s=localStorage.getItem(LANG_KEY); if(s&&LANGS[s])return s; } catch(e){} const nav=(navigator.language||"en").toLowerCase(); if(nav.startsWith("pt"))return"pt"; if(nav.startsWith("es"))return"es"; return"en"; }
 function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 
-// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
+// -- TRANSLATIONS --------------------------------------------------------------
 const T = {
   en: {
     appSub:"Operations Center", selectTruck:"Select Your Truck", chooseTruck:"Choose a truck...",
@@ -885,7 +885,7 @@ const DOT_CATEGORIES = [
 ];
 const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires_trailer","lights_trailer","hitch","safety_chains","trailer_brakes","load_secured","brake_fluid","seatbelts","fire_extinguisher","first_aid","ppe","warning_triangles","no_leaks"];
 
-// ── API ENDPOINTS ─────────────────────────────────────────────────────────────
+// -- API ENDPOINTS -------------------------------------------------------------
 // SHEETS_ID, OPS_SHEETS_ID, and SHEETS_KEY have been removed.
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
@@ -911,7 +911,7 @@ function getTodayKey()  {
   return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
 }
 
-// ── useIsIPad hook ────────────────────────────────────────────────────────────
+// -- useIsIPad hook ------------------------------------------------------------
 function useIsIPad() {
   const [isIPad, setIsIPad] = useState(window.innerWidth >= 768);
   useEffect(() => {
@@ -922,7 +922,7 @@ function useIsIPad() {
   return isIPad;
 }
 
-// ── iPad top bar (replaces hidden .topbar on iPad) ────────────────────────────
+// -- iPad top bar (replaces hidden .topbar on iPad) ----------------------------
 function IPadTopBar({ truck, onLogout, currentTab }) {
   const t = useT();
   const tabLabels = { home: t.home, receipt: t.receipts, tools: t.tools, hr: t.hr };
@@ -947,7 +947,7 @@ function IPadTopBar({ truck, onLogout, currentTab }) {
   );
 }
 
-// ── PROPERTY INSPECTION SUB-COMPONENTS ───────────────────────────────────────
+// -- PROPERTY INSPECTION SUB-COMPONENTS ---------------------------------------
 function PICheckRow({ck, label, required, checks, onToggle}) {
   const isChecked = !!checks[ck];
   const isFlagged = required && !isChecked;
@@ -975,7 +975,7 @@ function PISection({sk, titleKey, isOpen, onToggle, children}) {
   );
 }
 
-// ── PROPERTY INSPECTION FORM ──────────────────────────────────────────────────
+// -- PROPERTY INSPECTION FORM --------------------------------------------------
 function PropertyInspectionForm({ truck, onBack, onDone }) {
   const t = useT();
   const photoRef = useRef();
@@ -993,17 +993,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
   const [submitting,  setSubmitting]  = useState(false);
   const [submitted,   setSubmitted]   = useState(false);
   const [openSecs,    setOpenSecs]    = useState({s1:true,s2:true,s3:false});
-  const [gpsCoords,   setGpsCoords]   = useState(null);
 
-  // Request GPS permission as soon as the form opens
-  useEffect(() => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      pos => setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      err => console.warn("GPS permission denied or unavailable", err),
-      { timeout: 10000, enableHighAccuracy: true }
-    );
-  }, []);
 
   const togSec      = k => setOpenSecs(p=>({...p,[k]:!p[k]}));
   const toggleCheck = key => { setChecks(p=>({...p,[key]:!p[key]})); setFormErr(""); };
@@ -1029,41 +1019,16 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     const allCore = CORE_CHECKS.every(k=>checks[k]);
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
     setSubmitting(true);
-
-    // Use GPS captured on form open, or try one more time at submit
-    let lat = null, lng = null, mapsLink = null;
-    if (gpsCoords) {
-      lat = gpsCoords.lat;
-      lng = gpsCoords.lng;
-      mapsLink = "https://maps.google.com/?q=" + lat + "," + lng;
-    } else {
-      try {
-        const pos = await new Promise((res, rej) =>
-          navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 }));
-        lat = pos.coords.latitude;
-        lng = pos.coords.longitude;
-        mapsLink = "https://maps.google.com/?q=" + lat + "," + lng;
-      } catch(gpsErr) { console.warn("GPS unavailable", gpsErr); }
-    }
-
-    const propName = property.trim();
-    const photoName = photoB64 ? ("damage_" + truck.label.replace(/\s/g,"_") + "_" + Date.now() + ".jpg") : null;
-
     try {
       await fetch(PI_SCRIPT_URL,{
         method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
         body:JSON.stringify({
           sheet:"Property Inspection",
           date:getTodayKey(), time:getTimeStr(),
-          truck:truck.label, name:name.trim(), property:propName,
+          truck:truck.label, name:name.trim(), property:property.trim(),
           checks, damageNotes, notes,
-          lat:      lat      || "",
-          lng:      lng      || "",
-          mapsLink: mapsLink || "",
-          damagePhoto:     photoB64  || "",
-          damagePhotoMime: photoMime || "image/jpeg",
-          damagePhotoName: photoName || "",
-          propertyFolder:  propName,
+          damagePhoto:    photoB64  || null,
+          damagePhotoMime:photoMime || null,
         }),
       });
       setSubmitted(true);
@@ -1174,7 +1139,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
   );
 }
 
-// ── DOT WALKAROUND FORM ───────────────────────────────────────────────────────
+// -- DOT WALKAROUND FORM -------------------------------------------------------
 function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   const t = useT();
   const [name,       setName]       = useState("");
@@ -1318,7 +1283,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   );
 }
 
-// ── DAILY BRIEFING FORM ───────────────────────────────────────────────────────
+// -- DAILY BRIEFING FORM -------------------------------------------------------
 function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   const t = useT();
   const [name,       setName]       = useState("");
@@ -1396,7 +1361,7 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   );
 }
 
-// ── VEHICLE GUIDELINES ────────────────────────────────────────────────────────
+// -- VEHICLE GUIDELINES --------------------------------------------------------
 function VehicleGuideInline() {
   const t = useT();
   const [open,setOpen] = useState({});
@@ -1434,7 +1399,7 @@ function VehicleGuideInline() {
   );
 }
 
-// ── END OF DAY FORM ───────────────────────────────────────────────────────────
+// -- END OF DAY FORM -----------------------------------------------------------
 function EndOfDayForm({ truck, onBack, onDone }) {
   const t = useT();
   const [name,       setName]       = useState("");
@@ -1508,7 +1473,7 @@ function EndOfDayForm({ truck, onBack, onDone }) {
   );
 }
 
-// ── UNIFORM GUIDE ─────────────────────────────────────────────────────────────
+// -- UNIFORM GUIDE -------------------------------------------------------------
 function UniformGuideInline() {
   const t = useT();
   const [open,setOpen] = useState({});
@@ -1546,7 +1511,7 @@ function UniformGuideInline() {
   );
 }
 
-// ── TOOLS TAB ─────────────────────────────────────────────────────────────────
+// -- TOOLS TAB -----------------------------------------------------------------
 function ToolsTab({ truck, checkouts, setCheckouts }) {
   const t = useT();
   const [openCats,setOpenCats] = useState({"Hand Tools":true});
@@ -1595,7 +1560,7 @@ function ContactDropdown() {
   );
 }
 
-// ── HOME TAB ──────────────────────────────────────────────────────────────────
+// -- HOME TAB ------------------------------------------------------------------
 function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
   const t   = useT();
   const day = getTodayStr();
@@ -1665,7 +1630,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
   );
 }
 
-// ── RECEIPT FLOW ──────────────────────────────────────────────────────────────
+// -- RECEIPT FLOW --------------------------------------------------------------
 function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   const t = useT();
   const today = getTodayKey();
@@ -1741,7 +1706,7 @@ function HRContent({link}){
 function HRTab(){const t=useT();const[openHR,setOpenHR]=useState(null);return(<div>{!openHR?(<><div className="section-hd">HR &amp; Employee Portal</div>{HR_LINKS.map(f=>(<div key={f.name} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:f.url?"pointer":"default",opacity:f.url?1:0.6}} onClick={()=>{if(f.url)setOpenHR(f);}}><div style={{width:34,height:34,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/></div><div style={{flex:1}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{f.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{f.desc}</div></div>{f.url?<Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>:<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.comingSoon}</span>}</div>))}</>):(<div style={{animation:"fadeUp 0.3s ease both"}}><button className="back-btn" style={{marginBottom:14}} onClick={()=>setOpenHR(null)}><Ic n="back"/> {t.backHR}</button><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",marginBottom:10}}>{openHR.name}</div><HRContent link={openHR}/></div>)}</div>);}
 function ReceiptTab({truck,division,onGoHome}){return(<div style={{padding:"16px 16px 40px"}}><div className="section-hd">Submit a Receipt</div><NativeReceiptFlow truckLabel={truck.label} divisionLabel={division} onGoHome={onGoHome}/></div>);}
 
-// ── FORM STATE PERSISTENCE ────────────────────────────────────────────────────
+// -- FORM STATE PERSISTENCE ----------------------------------------------------
 function getFormStateKey(truckId) { return `jj_forms_${truckId}`; }
 function loadFormState(truckId) {
   try {
@@ -1764,7 +1729,7 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
   } catch(e) {}
 }
 
-// ── TRUCK HOME ────────────────────────────────────────────────────────────────
+// -- TRUCK HOME ----------------------------------------------------------------
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
   const t = useT();
   const isIPad = useIsIPad();
@@ -1844,7 +1809,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
-// ── MANAGER ───────────────────────────────────────────────────────────────────
+// -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
   const [history,     setHistory]    = useState([]);
   const [receipts,    setReceipts]   = useState([]);
@@ -1871,7 +1836,7 @@ function ManagerZone({ onLogout }) {
     setResetting(false);
   };
 
-  // ── fetchAll now calls the Apps Script doGet handler instead of the
+  // -- fetchAll now calls the Apps Script doGet handler instead of the
   //    Sheets REST API directly. This removes SHEETS_KEY, SHEETS_ID, and
   //    OPS_SHEETS_ID from the client entirely.
   const fetchAll = async () => {
@@ -2037,7 +2002,7 @@ function ManagerZone({ onLogout }) {
   );
 }
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
+// -- LOGIN ---------------------------------------------------------------------
 const MEMORY_KEY="jj_truck_memory";
 function getTodayDateStr(){return new Date().toLocaleDateString("en-US");}
 function loadMemory(){try{const raw=localStorage.getItem(MEMORY_KEY);if(!raw)return null;const mem=JSON.parse(raw);if(mem.date!==getTodayDateStr()){localStorage.removeItem(MEMORY_KEY);return null;}return mem;}catch(e){return null;}}
@@ -2160,7 +2125,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
   );
 }
 
-// ── ROOT ──────────────────────────────────────────────────────────────────────
+// -- ROOT ----------------------------------------------------------------------
 export default function App() {
   const[screen,setScreen]=useState("login");
   const[truck,setTruck]=useState(null);
