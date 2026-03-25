@@ -395,7 +395,7 @@ const Ic = ({ n, ...p }) => {
 const TRUCKS = Array.from({ length: 20 }, (_, i) => ({ id: i+1, label: `Truck ${i+1}` }));
 const LANG_KEY = "jj_lang";
 const LANGS = { en:"en", es:"es", pt:"pt" };
-const FLAGS = { en:"🇺🇸", es:"🇪🇸", pt:"🇧🇷" };
+const FLAGS = { en:"🇺🇸", es:"🇲🇽", pt:"🇧🇷" };
 function detectLang() { try { const s=localStorage.getItem(LANG_KEY); if(s&&LANGS[s])return s; } catch(e){} const nav=(navigator.language||"en").toLowerCase(); if(nav.startsWith("pt"))return"pt"; if(nav.startsWith("es"))return"es"; return"en"; }
 function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 
