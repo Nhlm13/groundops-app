@@ -897,7 +897,7 @@ const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6Ll
 
 const HR_LINKS = [
   {name:"Time Off Request",  desc:"Submit Time Off Request",      url:"https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true"},
-  {name:"Job Application",   desc:"Refer someone to the team",    url:"https://docs.google.com/forms/d/e/1FAIpQLSe405gWCY--4-chYWpku3PMaZ5zIl09W5HGCPUfDcbNuTuYYw/viewform?embedded=true"},
+  {name:"Job Application",   desc:"Refer someone to the team",    url:"https://tiny-faun-271fa9.netlify.app"},
   {name:"Contact a Manager", desc:"Send a message to management", url:"https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true"},
   {name:"Employee Handbook", desc:"Company policies & procedures",url:"https://drive.google.com/file/d/1UPIOc2q7rs7h-VQcT6Cvv4eaG_-vePGs/preview"},
   {name:"Uniform Guidelines",desc:"Dress code & uniform standards",url:"inline"},
