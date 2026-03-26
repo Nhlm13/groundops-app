@@ -394,6 +394,25 @@ const Ic = ({ n, ...p }) => {
 };
 
 const TRUCKS = Array.from({ length: 20 }, (_, i) => ({ id: i+1, label: `Truck ${i+1}`, supabaseId: null }));
+
+function useTrucks() {
+  const [trucks, setTrucks] = useState(TRUCKS);
+  useEffect(() => {
+    supabase
+      .from("trucks")
+      .select("id, name")
+      .eq("company_id", COMPANY_ID)
+      .eq("active", true)
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        setTrucks(prev => prev.map(t => {
+          const match = data.find(d => d.name === t.label);
+          return match ? { ...t, supabaseId: match.id } : t;
+        }));
+      });
+  }, []);
+  return trucks;
+}
 const LANG_KEY = "jj_lang";
 const LANGS = { en:"en", es:"es", pt:"pt" };
 const FLAGS = { en:"🇺🇸", es:"🇲🇽", pt:"🇧🇷" };
@@ -2015,11 +2034,11 @@ function getTodayDateStr(){return new Date().toLocaleDateString("en-US");}
 function loadMemory(){try{const raw=localStorage.getItem(MEMORY_KEY);if(!raw)return null;const mem=JSON.parse(raw);if(mem.date!==getTodayDateStr()){localStorage.removeItem(MEMORY_KEY);return null;}return mem;}catch(e){return null;}}
 function saveMemory(truck){try{localStorage.setItem(MEMORY_KEY,JSON.stringify({truckId:truck.id,date:getTodayDateStr()}));}catch(e){}}
 function clearMemory(){try{localStorage.removeItem(MEMORY_KEY);}catch(e){}}
-
 function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
+  const trucks = useTrucks();
   const t=useT();
   const memory=loadMemory();
-  const rememberedTruck=memory?TRUCKS.find(tr=>tr.id===memory.truckId)||null:null;
+  const rememberedTruck=memory?trucks.find(tr=>tr.id===memory.truckId)||null:null;
   const[mode,setMode]=useState("truck");
   const[dropOpen,setDropOpen]=useState(false);
   const[selected,setSel]=useState(rememberedTruck);
@@ -2053,7 +2072,7 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
                 </div>
                 {dropOpen&&(
                   <div className="truck-dropdown-list">
-                    {TRUCKS.map(tr=>(
+                    {trucks.map(tr=>(
                       <div key={tr.id} className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`} onClick={()=>{ setSel(tr); setDropOpen(false); setError(""); }}>
                         <Ic n="truck" style={{width:14,height:14}}/>
                         <span style={{flex:1}}>{tr.label}</span>
