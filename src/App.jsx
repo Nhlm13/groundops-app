@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { supabase } from "./supabaseClient";
 
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap');`;
 
@@ -392,7 +393,7 @@ const Ic = ({ n, ...p }) => {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>{paths[n]}</svg>;
 };
 
-const TRUCKS = Array.from({ length: 20 }, (_, i) => ({ id: i+1, label: `Truck ${i+1}` }));
+const TRUCKS = Array.from({ length: 20 }, (_, i) => ({ id: i+1, label: `Truck ${i+1}`, supabaseId: null }));
 const LANG_KEY = "jj_lang";
 const LANGS = { en:"en", es:"es", pt:"pt" };
 const FLAGS = { en:"🇺🇸", es:"🇲🇽", pt:"🇧🇷" };
@@ -891,9 +892,9 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
 const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
-const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
+const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 
 const HR_LINKS = [
   {name:"Time Off Request",  desc:"Submit Time Off Request",      url:"https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true"},
@@ -2140,14 +2141,24 @@ export default function App() {
 
   const postSignIn = async (tr) => {
     try {
-      await fetch(SIGNIN_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sheet:"Sign Ins",action:"signin",date:getTodayKey(),truck:tr.label,signInTime:getTimeStr()})});
+      const { data, error } = await supabase
+        .from("crew_sessions")
+        .insert({
+          company_id: COMPANY_ID,
+          truck_id: tr.supabaseId,
+          crew_name: "Unknown",
+          date: new Date().toISOString().split("T")[0],
+        })
+        .select()
+        .single();
+      if (error) console.warn("Supabase sign-in error", error);
+      else tr.sessionId = data.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
 
   const postSignOut = async (tr) => {
-    try {
-      await fetch(SIGNIN_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sheet:"Sign Ins",action:"signout",date:getTodayKey(),truck:tr.label,signOutTime:getTimeStr()})});
-    } catch(e){ console.warn("Sign-out post failed",e); }
+    // Sign-out is now handled by session end — no separate record needed
+    console.log("Session ended for", tr.label);
   };
 
   const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
