@@ -2159,14 +2159,27 @@ export default function App() {
   const[checkouts,setCheckouts]=useState({});
   const[lang,setLang]=useState(detectLang);
 
-  const postSignIn = async (tr) => {
+ const postSignIn = async (tr) => {
     console.log("postSignIn called for", tr.label, "supabaseId:", tr.supabaseId);
     try {
+      // Look up truck ID if not already loaded
+      let truckId = tr.supabaseId;
+      if (!truckId) {
+        const { data: truckData } = await supabase
+          .from("trucks")
+          .select("id")
+          .eq("name", tr.label)
+          .eq("company_id", COMPANY_ID)
+          .single();
+        truckId = truckData?.id || null;
+        console.log("looked up truckId:", truckId);
+      }
+
       const { data, error } = await supabase
         .from("crew_sessions")
         .insert({
           company_id: COMPANY_ID,
-          truck_id: tr.supabaseId,
+          truck_id: truckId,
           crew_name: "Unknown",
           date: new Date().toISOString().split("T")[0],
         })
@@ -2177,7 +2190,6 @@ export default function App() {
       else tr.sessionId = data.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
-
   const postSignOut = async (tr) => {
     // Sign-out is now handled by session end — no separate record needed
     console.log("Session ended for", tr.label);
