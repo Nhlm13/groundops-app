@@ -2160,6 +2160,7 @@ export default function App() {
   const[lang,setLang]=useState(detectLang);
 
   const postSignIn = async (tr) => {
+    console.log("postSignIn called for", tr.label, "supabaseId:", tr.supabaseId);
     try {
       const { data, error } = await supabase
         .from("crew_sessions")
@@ -2171,6 +2172,7 @@ export default function App() {
         })
         .select()
         .single();
+      console.log("insert result — data:", data, "error:", error);
       if (error) console.warn("Supabase sign-in error", error);
       else tr.sessionId = data.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
