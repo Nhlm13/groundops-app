@@ -892,6 +892,7 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
 const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
+const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
