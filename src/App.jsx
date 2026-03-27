@@ -364,6 +364,20 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
   .bnav-btn { font-size: 12px !important; padding: 18px 8px !important; }
   .bottom-nav::before { font-size: 24px; }
 }
+
+/* -- Desktop (≥ 1280px) -- */
+@media (min-width: 1280px) {
+  .bottom-nav { width: 200px !important; max-width: 200px !important; }
+  .bottom-nav::before { font-size: 26px; padding: 0 16px 24px; }
+  .bnav-btn { font-size: 13px !important; padding: 18px 16px !important; flex-direction: row !important; justify-content: flex-start !important; gap: 12px !important; }
+  .bnav-btn svg { width: 18px !important; height: 18px !important; }
+  .content { padding-left: 234px !important; padding-right: 64px !important; max-width: 100% !important; }
+  .mgr-topbar { padding-left: 220px !important; padding-right: 48px !important; }
+  .calendar-grid { grid-template-columns: repeat(7, 1fr) !important; gap: 6px !important; }
+  .calendar-day { min-height: 100px !important; padding: 8px !important; }
+  .calendar-day-num { font-size: 15px !important; }
+  .calendar-event { font-size: 11px !important; padding: 2px 6px !important; border-radius: 4px !important; }
+}
 `;
 
 const Ic = ({ n, ...p }) => {
@@ -2460,8 +2474,8 @@ function CalendarTab() {
 
   return (
     <div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-        <button onClick={prevMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>‹ Prev</button>
+<div className="calendar-grid" style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+  <button onClick={prevMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>‹ Prev</button>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--mgr-lt)",letterSpacing:2}}>{monthName}</div>
         <button onClick={nextMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Next ›</button>
       </div>
@@ -2489,15 +2503,16 @@ function CalendarTab() {
 
               return (
                 <div key={day} onClick={()=>setSelectedDay(isSelected ? null : dateStr)}
-                  style={{minHeight:56,background:isSelected?"rgba(42,90,149,0.15)":isToday?"rgba(74,109,32,0.1)":"var(--bark)",border:`1px solid ${isSelected?"var(--mgr)":isToday?"var(--leaf)":"var(--moss)"}`,borderRadius:6,padding:"4px",cursor:dayJobs.length>0||isToday?"pointer":"default",transition:"background 0.15s"}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,fontWeight:700,color:isToday?"var(--lime)":isSelected?"var(--mgr-lt)":"var(--stone)",marginBottom:2}}>{day}</div>
+  className="calendar-day"
+  style={{minHeight:56,background:isSelected?"rgba(42,90,149,0.15)":isToday?"rgba(74,109,32,0.1)":"var(--bark)",border:`1px solid ${isSelected?"var(--mgr)":isToday?"var(--leaf)":"var(--moss)"}`,borderRadius:6,padding:"4px",cursor:dayJobs.length>0||isToday?"pointer":"default",transition:"background 0.15s"}}>
+  <div className="calendar-day-num" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,fontWeight:700,color:isToday?"var(--lime)":isSelected?"var(--mgr-lt)":"var(--stone)",marginBottom:2}}>{day}</div>
                   {dayJobs.slice(0,3).map((job,ji)=>{
                     const prop = properties.find(p=>p.id===job.property_id);
                     const serviceType = prop?.service_types?.[0] || "Other";
                     const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
                     return (
-                      <div key={ji} style={{background:color,borderRadius:3,padding:"1px 4px",marginBottom:1,overflow:"hidden"}}>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:0.3}}>
+                      <div key={ji} className="calendar-event" style={{background:color,borderRadius:3,padding:"1px 4px",marginBottom:1,overflow:"hidden"}}>
+                       <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:0.3}}>
                           {prop?.client_name || "Job"}
                         </div>
                       </div>
