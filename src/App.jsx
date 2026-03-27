@@ -2172,8 +2172,15 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
   const[receiptOpen,setReceiptOpen]=useState(false);
   const[hrOpen,setHrOpen]=useState(false);
   const[openHR,setOpenHR]=useState(null);
-  const handleSelectTruck = truck => { saveMemory(truck); onTruckLogin(truck,""); };
-  const handleChangeTruck = () => { clearMemory(); setSel(null); setError(""); };
+const handleSelectTruck = truck => {
+    const savedName = loadCrewName();
+    if(!savedName) {
+      const name = window.prompt("Enter your name:");
+      if(name && name.trim()) saveCrewName(name.trim());
+    }
+    saveMemory(truck);
+    onTruckLogin(truck,"");
+  };  const handleChangeTruck = () => { clearMemory(); setSel(null); setError(""); };
   const tryMgr = async () => {
     setError("");
     try {
