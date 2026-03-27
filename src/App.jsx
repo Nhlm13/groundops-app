@@ -2049,7 +2049,7 @@ function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setS
 }
 
 // -- PROPERTY DETAIL ----------------------------------------------------------
-function PropertyDetail({ property, onBack, onAddSchedule }) {
+function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -2098,10 +2098,16 @@ function PropertyDetail({ property, onBack, onAddSchedule }) {
 
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,marginTop:4}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)"}}>Schedules</div>
-        <button onClick={onAddSchedule}
-          style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"6px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"#fff",cursor:"pointer"}}>
-          + Add Schedule
-        </button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={onAddOneTimeJob}
+            style={{background:"none",border:"1px solid var(--mgr)",borderRadius:8,padding:"6px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--mgr-lt)",cursor:"pointer"}}>
+            + One-Time
+          </button>
+          <button onClick={onAddSchedule}
+            style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"6px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"#fff",cursor:"pointer"}}>
+            + Schedule
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -2292,8 +2298,9 @@ function PropertiesTab() {
   useEffect(() => { fetchProperties(); }, []);
 
   if(view === "add") return <AddPropertyForm onBack={()=>setView("list")} onSaved={()=>{setView("list");fetchProperties();}}/>;
-  if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
-  if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")}/>; 
+if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
+if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={()=>setView("detail")} preselectedDate={null}/>;
+if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")}/>;
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
@@ -2406,6 +2413,98 @@ async function generateJobsFromSchedules() {
     console.warn("Job generation failed", e);
   }
 }
+// -- ADD ONE TIME JOB FORM ----------------------------------------------------
+function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
+  const [properties, setProperties] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [fields, setFields] = useState({
+    property_id: "",
+    date: preselectedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
+    service_type: "",
+    notes: "",
+  });
+
+  const SERVICE_TYPES = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
+  const set = (k, v) => setFields(f => ({...f, [k]: v}));
+
+  useEffect(() => {
+    supabase.from("properties").select("id, client_name, address").eq("company_id", COMPANY_ID).eq("active", true).order("client_name")
+      .then(({ data }) => setProperties(data || []));
+  }, []);
+
+  const handleSubmit = async () => {
+    if(!fields.property_id || !fields.date || !fields.service_type) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from("jobs").insert({
+        company_id: COMPANY_ID,
+        property_id: fields.property_id,
+        schedule_id: null,
+        date: fields.date,
+        status: "scheduled",
+        sort_order: 0,
+        notes: fields.notes || null,
+      });
+      if(error){ setError("Failed to save job."); setSubmitting(false); return; }
+      onSaved();
+    } catch(e){ setError("Failed to save job."); }
+    setSubmitting(false);
+  };
+
+  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};
+  const labelStyle = {fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4,display:"block"};
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={onBack}><Ic n="back"/> Back</button>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:38,height:38,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="map" style={{width:17,height:17,color:"var(--mgr-lt)"}}/></div>
+        <div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>Add One-Time Job</div>
+          <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Schedule a single visit</div>
+        </div>
+      </div>
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <label style={labelStyle}>Property *</label>
+        <select value={fields.property_id} onChange={e=>set("property_id",e.target.value)}
+          style={{...inputStyle,appearance:"none"}}>
+          <option value="">Select a property...</option>
+          {properties.map(p=>(
+            <option key={p.id} value={p.id}>{p.client_name} — {p.address}</option>
+          ))}
+        </select>
+
+        <label style={labelStyle}>Date *</label>
+        <input style={inputStyle} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
+
+        <label style={labelStyle}>Service Type *</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+          {SERVICE_TYPES.map(type=>(
+            <button key={type} onClick={()=>set("service_type",type)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.service_type===type?"var(--mgr)":"var(--moss)"}`,background:fields.service_type===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.service_type===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {type}
+            </button>
+          ))}
+        </div>
+
+        <label style={labelStyle}>Notes (optional)</label>
+        <textarea style={{...inputStyle,resize:"none",height:80}} placeholder="Any special instructions for this visit..." value={fields.notes} onChange={e=>set("notes",e.target.value)}/>
+      </div>
+
+      {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
+
+      <button disabled={submitting} onClick={handleSubmit}
+        style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--mgr)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
+        {submitting?"Saving...":"Add Job"}
+      </button>
+    </div>
+  );
+}
 // -- CALENDAR TAB -------------------------------------------------------------
 function CalendarTab() {
  const [jobs, setJobs] = useState([]);
@@ -2419,6 +2518,7 @@ function CalendarTab() {
   });
   const [selectedDay, setSelectedDay] = useState(null);
   const [assigningJob, setAssigningJob] = useState(null);
+  const [addingJob, setAddingJob] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -2516,12 +2616,19 @@ const assignJobToTruck = async (jobId, truckId) => {
   });
 
   return (
-    <div>
-<div className="calendar-grid" style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-  <button onClick={prevMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>‹ Prev</button>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--mgr-lt)",letterSpacing:2}}>{monthName}</div>
-        <button onClick={nextMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Next ›</button>
-      </div>
+  <div>
+    {addingJob && <AddOneTimeJobForm
+      onBack={()=>setAddingJob(false)}
+      onSaved={()=>{ setAddingJob(false); setCurrentMonth(m=>({...m})); }}
+      preselectedDate={selectedDay || new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"})}
+    />}
+    {!addingJob && (
+      <>
+        {/* ALL YOUR EXISTING CALENDAR CONTENT GOES HERE */}
+      </>
+    )}
+  </div>
+);
 
       {loading ? (
         <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
