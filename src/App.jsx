@@ -2181,7 +2181,8 @@ function PropertiesTab() {
   useEffect(() => { fetchProperties(); }, []);
 
   if(view === "add") return <AddPropertyForm onBack={()=>setView("list")} onSaved={()=>{setView("list");fetchProperties();}}/>;
- 
+  if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
+  if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")}/>; 
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
