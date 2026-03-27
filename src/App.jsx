@@ -913,7 +913,6 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -1041,24 +1040,47 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
   };
 
   const handleSubmit = async () => {
-   if(!name.trim()){setNameErr(true);return;}
-saveCrewName(name.trim());
+    if(!name.trim()){setNameErr(true);return;}
+    saveCrewName(name.trim());
     if(!property.trim()){setPropErr(true);return;}
     const allCore = CORE_CHECKS.every(k=>checks[k]);
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
     setSubmitting(true);
     try {
-      await fetch(PI_SCRIPT_URL,{
-        method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({
-          sheet:"Property Inspection",
-          date:getTodayKey(), time:getTimeStr(),
-          truck:truck.label, name:name.trim(), property:property.trim(),
-          checks, damageNotes, notes,
-          damagePhoto:    photoB64  || null,
-          damagePhotoMime:photoMime || null,
-        }),
-      });
+      const { data, error } = await supabase
+        .from("property_inspections")
+        .insert({
+          company_id: COMPANY_ID,
+          session_id: truck.sessionId || null,
+          date: new Date().toISOString().split("T")[0],
+          notes: `Property: ${property.trim()}${damageNotes ? ` | Damage: ${damageNotes}` : ""}${notes ? ` | Notes: ${notes}` : ""}`,
+        })
+        .select()
+        .single();
+      console.log("PI result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
+      if(error){ console.warn("PI insert error", JSON.stringify(error)); setSubmitted(true); setSubmitting(false); return; }
+
+      // Upload damage photo if present
+      if(photoB64 && data?.id) {
+        const byteChars = atob(photoB64);
+        const byteArray = new Uint8Array(byteChars.length);
+        for(let i = 0; i < byteChars.length; i++) byteArray[i] = byteChars.charCodeAt(i);
+        const blob = new Blob([byteArray], { type: photoMime || "image/jpeg" });
+        const fileName = `${data.id}_${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from("property-inspection-photos")
+          .upload(fileName, blob, { contentType: photoMime || "image/jpeg" });
+        if(uploadError) console.warn("Photo upload error", uploadError);
+        else {
+          const { data: urlData } = supabase.storage
+            .from("property-inspection-photos")
+            .getPublicUrl(fileName);
+          await supabase.from("property_inspection_photos").insert({
+            inspection_id: data.id,
+            storage_url: urlData.publicUrl,
+          });
+        }
+      }
       setSubmitted(true);
     } catch(e){console.warn(e);setSubmitted(true);}
     setSubmitting(false);
