@@ -2392,6 +2392,154 @@ async function generateJobsFromSchedules() {
     console.warn("Job generation failed", e);
   }
 }
+// -- CALENDAR TAB -------------------------------------------------------------
+function CalendarTab() {
+  const [jobs, setJobs] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  });
+  const [selectedDay, setSelectedDay] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const firstDay = new Date(currentMonth.year, currentMonth.month, 1);
+      const lastDay = new Date(currentMonth.year, currentMonth.month + 1, 0);
+      const firstStr = firstDay.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const lastStr = lastDay.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+      const [{ data: jobData }, { data: propData }] = await Promise.all([
+        supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).gte("date", firstStr).lte("date", lastStr).order("date"),
+        supabase.from("properties").select("id, client_name, service_types").eq("company_id", COMPANY_ID),
+      ]);
+      setJobs(jobData || []);
+      setProperties(propData || []);
+      setLoading(false);
+    };
+    fetchData();
+  }, [currentMonth]);
+
+  const SERVICE_COLORS = {
+    "Mowing": "#4a6d20",
+    "Fine Gardening": "#2a5a95",
+    "Irrigation": "#0e7490",
+    "Fertilization": "#a06010",
+    "Cleanup": "#7a6845",
+    "Mulching": "#6b4e2a",
+    "Other": "#6a6658",
+  };
+
+  const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
+  const monthName = new Date(currentMonth.year, currentMonth.month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  const jobsByDate = {};
+  jobs.forEach(job => {
+    if(!jobsByDate[job.date]) jobsByDate[job.date] = [];
+    jobsByDate[job.date].push(job);
+  });
+
+  const prevMonth = () => setCurrentMonth(m => {
+    if(m.month === 0) return { year: m.year - 1, month: 11 };
+    return { year: m.year, month: m.month - 1 };
+  });
+  const nextMonth = () => setCurrentMonth(m => {
+    if(m.month === 11) return { year: m.year + 1, month: 0 };
+    return { year: m.year, month: m.month + 1 };
+  });
+
+  const selectedDayJobs = selectedDay ? (jobsByDate[selectedDay] || []) : [];
+  const selectedDayProps = selectedDayJobs.map(job => {
+    const prop = properties.find(p => p.id === job.property_id);
+    return { ...job, property: prop };
+  });
+
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <button onClick={prevMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>‹ Prev</button>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--mgr-lt)",letterSpacing:2}}>{monthName}</div>
+        <button onClick={nextMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Next ›</button>
+      </div>
+
+      {loading ? (
+        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+      ) : (
+        <>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:2}}>
+            {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=>(
+              <div key={d} style={{textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",padding:"4px 0",textTransform:"uppercase"}}>{d}</div>
+            ))}
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
+            {Array.from({length: firstDayOfMonth}).map((_,i)=>(
+              <div key={`empty-${i}`} style={{minHeight:56,background:"rgba(196,191,176,0.1)",borderRadius:6}}/>
+            ))}
+            {Array.from({length: daysInMonth}).map((_,i)=>{
+              const day = i + 1;
+              const dateStr = `${currentMonth.year}-${String(currentMonth.month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+              const dayJobs = jobsByDate[dateStr] || [];
+              const isToday = dateStr === todayStr;
+              const isSelected = dateStr === selectedDay;
+
+              return (
+                <div key={day} onClick={()=>setSelectedDay(isSelected ? null : dateStr)}
+                  style={{minHeight:56,background:isSelected?"rgba(42,90,149,0.15)":isToday?"rgba(74,109,32,0.1)":"var(--bark)",border:`1px solid ${isSelected?"var(--mgr)":isToday?"var(--leaf)":"var(--moss)"}`,borderRadius:6,padding:"4px",cursor:dayJobs.length>0||isToday?"pointer":"default",transition:"background 0.15s"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,fontWeight:700,color:isToday?"var(--lime)":isSelected?"var(--mgr-lt)":"var(--stone)",marginBottom:2}}>{day}</div>
+                  {dayJobs.slice(0,3).map((job,ji)=>{
+                    const prop = properties.find(p=>p.id===job.property_id);
+                    const serviceType = prop?.service_types?.[0] || "Other";
+                    const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
+                    return (
+                      <div key={ji} style={{background:color,borderRadius:3,padding:"1px 4px",marginBottom:1,overflow:"hidden"}}>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:0.3}}>
+                          {prop?.client_name || "Job"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {dayJobs.length > 3 && (
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"var(--stone)",letterSpacing:0.3}}>+{dayJobs.length-3} more</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {selectedDay && (
+            <div style={{marginTop:14,animation:"fadeUp 0.2s ease both"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--mgr-lt)",marginBottom:8}}>
+                {new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,marginLeft:8,fontWeight:400}}>{selectedDayJobs.length} job{selectedDayJobs.length!==1?"s":""}</span>
+              </div>
+              {selectedDayJobs.length === 0 ? (
+                <div style={{textAlign:"center",padding:"16px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1}}>No jobs scheduled</div>
+              ) : selectedDayProps.map((job,i)=>{
+                const serviceType = job.property?.service_types?.[0] || "Other";
+                const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
+                return (
+                  <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:`4px solid ${color}`,borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.property?.client_name||"Unknown Property"}</div>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:job.status==="completed"?"rgba(74,109,32,0.12)":job.status==="in_progress"?"rgba(160,96,16,0.12)":"rgba(196,191,176,0.2)",color:job.status==="completed"?"var(--lime)":job.status==="in_progress"?"var(--warn)":"var(--stone)"}}>{job.status}</span>
+                    </div>
+                    <div style={{fontSize:12,color:"var(--stone)"}}>{serviceType}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
   const [tab, setTab] = useState("activity");
@@ -2600,12 +2748,14 @@ function ManagerZone({ onLogout }) {
   {tab==="activity" && <ActivityTab/>}
   {tab==="receipts" && <ReceiptsTab/>}
   {tab==="properties" && <PropertiesTab/>}
+  {tab==="calendar" && <CalendarTab/>}
 </div>
 
      <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
   <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
   <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
   <button className={`bnav-btn ${tab==="properties"?"active":""}`} style={tab==="properties"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("properties")}><Ic n="map"/>Properties</button>
+  <button className={`bnav-btn ${tab==="calendar"?"active":""}`} style={tab==="calendar"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("calendar")}><Ic n="clock"/>Calendar</button>
 </nav>
     </div>
   );
