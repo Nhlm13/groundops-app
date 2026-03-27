@@ -2184,13 +2184,12 @@ export default function App() {
         console.log("looked up truckId:", truckId);
       }
 
-      const savedName = loadCrewName();
-      const { data, error } = await supabase
-        .from("crew_sessions")
-        .insert({
-          company_id: COMPANY_ID,
-          truck_id: truckId,
-          crew_name: "Unknown",
+     const { data, error } = await supabase
+  .from("crew_sessions")
+  .insert({
+    company_id: COMPANY_ID,
+    truck_id: truckId,
+    crew_name: loadCrewName() || "Unknown",
           date: new Date().toISOString().split("T")[0],
         })
         .select()
