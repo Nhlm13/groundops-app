@@ -931,6 +931,7 @@ function getTimeStr() {
     timeZone:"America/New_York"
   }); 
 }
+ function getTodayKey()  {
   const d = new Date();
   return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
 }
