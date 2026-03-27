@@ -1332,16 +1332,28 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
     if(!acked)return;
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      console.log("Attempting briefing insert with:", {
+        company_id: COMPANY_ID,
+        session_id: truck.sessionId || null,
+        date: new Date().toISOString().split("T")[0],
+      });
+      const { data, error } = await supabase
         .from("briefing_acknowledgments")
         .insert({
           company_id: COMPANY_ID,
           session_id: truck.sessionId || null,
           date: new Date().toISOString().split("T")[0],
-        });
-      if(error) console.warn("Briefing insert error", error);
+        })
+        .select()
+        .single();
+      console.log("Briefing result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
+      if(error) console.warn("Briefing insert error", JSON.stringify(error));
+      else console.log("Briefing insert SUCCESS");
       setSubmitted(true);
-    } catch(e){console.warn(e);setSubmitted(true);}
+    } catch(e){
+      console.warn("Briefing caught error:", JSON.stringify(e));
+      setSubmitted(true);
+    }
     setSubmitting(false);
   };
 
