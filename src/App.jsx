@@ -913,7 +913,6 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
@@ -1472,13 +1471,25 @@ function EndOfDayForm({ truck, onBack, onDone }) {
   const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
 
   const handleSubmit = async () => {
-   if(!name.trim()){setNameErr(true);return;}
-saveCrewName(name.trim());
+    if(!name.trim()){setNameErr(true);return;}
+    saveCrewName(name.trim());
     if(!acked)return;
     setSubmitting(true);
     try {
-      await fetch(DB_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({sheet:"End of Day",date:getTodayKey(),time:getTimeStr(),truck:truck.label,name:name.trim()})});
+      const { data, error } = await supabase
+        .from("end_of_day_checklists")
+        .insert({
+          company_id: COMPANY_ID,
+          session_id: truck.sessionId || null,
+          truck_id: truck.supabaseId || null,
+          date: new Date().toISOString().split("T")[0],
+          checklist_data: {},
+          completed_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      console.log("EOD result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
+      if(error) console.warn("EOD insert error", JSON.stringify(error));
       setSubmitted(true);
     } catch(e){console.warn(e);setSubmitted(true);}
     setSubmitting(false);
