@@ -912,7 +912,6 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // SHEETS_ID, OPS_SHEETS_ID, and SHEETS_KEY have been removed.
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
-const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 
 const HR_LINKS = [
@@ -1998,8 +1997,8 @@ function ManagerZone({ onLogout }) {
     setLoading(false);
   };
 
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [selectedDate]);
-
   const todayLabel = new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
 
   const DateBar = () => (
