@@ -1733,7 +1733,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     if(err){setFormErr(err);return;}
     setSubmitting(true);
     try{
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("receipts")
         .insert({
           company_id: COMPANY_ID,
