@@ -913,7 +913,6 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
 const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
-const DOT_SCRIPT_URL    = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const DB_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const PI_SCRIPT_URL     = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
