@@ -2488,8 +2488,6 @@ const assignJobToTruck = async (jobId, truckId) => {
     }
     setAssigningJob(null);
   };
-
-  const daysInMonth = ...
   
   const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
