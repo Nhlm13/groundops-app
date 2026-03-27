@@ -1046,7 +1046,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
     setSubmitting(true);
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("property_inspections")
         .insert({
           company_id: COMPANY_ID,
@@ -1218,7 +1218,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
     saveCrewName(name.trim());
     setSubmitting(true);
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("dot_inspections")
         .insert({
           company_id: COMPANY_ID,
@@ -1361,7 +1361,7 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
     setSubmitting(true);
     try {
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("briefing_acknowledgments")
         .insert({
           company_id: COMPANY_ID,
@@ -1489,7 +1489,7 @@ function EndOfDayForm({ truck, onBack, onDone }) {
     if(!acked)return;
     setSubmitting(true);
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("end_of_day_checklists")
         .insert({
           company_id: COMPANY_ID,
@@ -1733,7 +1733,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     if(err){setFormErr(err);return;}
     setSubmitting(true);
     try{
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("receipts")
         .insert({
           company_id: COMPANY_ID,
@@ -1757,7 +1757,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     setUploading(true);
     try{
       const fileName = `${receiptIdRef.current || Date.now()}_${Date.now()}.jpg`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("receipts")
         .upload(fileName, file, { contentType: file.type || "image/jpeg" });
       if(uploadError){ console.warn("Photo upload error", JSON.stringify(uploadError)); }
@@ -2297,7 +2297,7 @@ export default function App() {
         truckId = truckData?.id || null;
       }
 
-     const { data, error } = await supabase
+     const { error } = await supabase
   .from("crew_sessions")
   .insert({
     company_id: COMPANY_ID,
