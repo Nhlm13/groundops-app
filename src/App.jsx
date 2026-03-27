@@ -2313,6 +2313,85 @@ function PropertiesTab() {
     </div>
   );
 }
+// -- JOB GENERATION -----------------------------------------------------------
+async function generateJobsFromSchedules() {
+  try {
+    // Get all active schedules with their properties
+    const { data: schedules } = await supabase
+      .from("schedules")
+      .select("*, properties!inner(id, company_id, client_name, active)")
+      .eq("properties.company_id", COMPANY_ID)
+      .eq("properties.active", true);
+
+    if(!schedules || schedules.length === 0) return;
+
+    // Get existing jobs for next 60 days to avoid duplicates
+    const today = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(today.getDate() + 60);
+    const todayStr = today.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const futureStr = futureDate.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+    const { data: existingJobs } = await supabase
+      .from("jobs")
+      .select("property_id, date, schedule_id")
+      .eq("company_id", COMPANY_ID)
+      .gte("date", todayStr)
+      .lte("date", futureStr);
+
+    const existingKeys = new Set(
+      (existingJobs || []).map(j => `${j.schedule_id}_${j.date}`)
+    );
+
+    const DAY_MAP = { Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6, Sun:0 };
+    const FREQ_DAYS = { weekly:7, biweekly:14, monthly:30, custom:7 };
+
+    const jobsToInsert = [];
+
+    for(const schedule of schedules) {
+      const startDate = new Date(schedule.start_date + "T12:00:00");
+      const endDate = schedule.end_date ? new Date(schedule.end_date + "T12:00:00") : futureDate;
+      const targetDay = DAY_MAP[schedule.day_of_week];
+      const interval = FREQ_DAYS[schedule.frequency] || 7;
+
+      // Find first occurrence on or after today that matches the day of week
+      let current = new Date(Math.max(startDate, today));
+      current.setHours(12, 0, 0, 0);
+
+      // Advance to the correct day of week
+      while(current.getDay() !== targetDay) {
+        current.setDate(current.getDate() + 1);
+      }
+
+      // Generate jobs at the correct interval
+      while(current <= endDate && current <= futureDate) {
+        const dateStr = current.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+        const key = `${schedule.id}_${dateStr}`;
+
+        if(!existingKeys.has(key) && dateStr >= todayStr) {
+          jobsToInsert.push({
+            company_id: COMPANY_ID,
+            property_id: schedule.property_id,
+            schedule_id: schedule.id,
+            date: dateStr,
+            status: "scheduled",
+            sort_order: 0,
+            notes: null,
+          });
+          existingKeys.add(key);
+        }
+        current.setDate(current.getDate() + interval);
+      }
+    }
+
+    if(jobsToInsert.length > 0) {
+      await supabase.from("jobs").insert(jobsToInsert);
+      console.log(`Generated ${jobsToInsert.length} jobs`);
+    }
+  } catch(e) {
+    console.warn("Job generation failed", e);
+  }
+}
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
   const [tab, setTab] = useState("activity");
@@ -2363,6 +2442,8 @@ function ManagerZone({ onLogout }) {
 
 // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [selectedDate]);
+  
+  useEffect(() => { generateJobsFromSchedules(); }, []);
   const todayLabel = new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
 
   const DateBar = () => (
