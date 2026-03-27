@@ -1937,6 +1937,81 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
+// -- PROPERTY DETAIL ----------------------------------------------------------
+function PropertyDetail({ property, onBack, onAddSchedule }) {
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from("schedules").select("*").eq("property_id", property.id)
+      .then(({ data }) => { setSchedules(data || []); setLoading(false); });
+  }, [property.id]);
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={onBack}><Ic n="back"/> Properties</button>
+
+      {property.photo_url && <img src={property.photo_url} alt="property" style={{width:"100%",borderRadius:10,border:"1px solid var(--moss)",marginBottom:12,display:"block"}}/>}
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:14,marginBottom:10}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>{property.client_name}</div>
+        <div style={{fontSize:13,color:"var(--stone)",marginTop:4}}>{property.address}</div>
+        {property.client_phone&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📞 {property.client_phone}</div>}
+        {property.client_email&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>✉️ {property.client_email}</div>}
+      </div>
+
+      {property.service_types?.length>0&&(
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Service Types</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {property.service_types.map(t=>(
+              <span key={t} style={{padding:"4px 10px",borderRadius:6,background:"rgba(42,90,149,0.12)",border:"1px solid var(--mgr)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)"}}>{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(property.service_notes||property.special_instructions)&&(
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10}}>
+          {property.service_notes&&<><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>Access Notes</div><div style={{fontSize:13,color:"var(--cream)",marginBottom:10}}>{property.service_notes}</div></>}
+          {property.special_instructions&&<><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>Special Instructions</div><div style={{fontSize:13,color:"var(--cream)"}}>{property.special_instructions}</div></>}
+        </div>
+      )}
+
+      {property.base_service_price>0&&(
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>Base Service Price</span>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)"}}>${parseFloat(property.base_service_price).toFixed(2)}</span>
+        </div>
+      )}
+
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,marginTop:4}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--stone)"}}>Schedules</div>
+        <button onClick={onAddSchedule}
+          style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"6px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"#fff",cursor:"pointer"}}>
+          + Add Schedule
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{textAlign:"center",padding:"24px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Loading...</div>
+      ) : schedules.length === 0 ? (
+        <div style={{textAlign:"center",padding:"24px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,textTransform:"uppercase"}}>No schedules yet</div>
+      ) : schedules.map(s=>(
+        <div key={s.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{s.service_type}</span>
+            {s.price>0&&<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)"}}>${parseFloat(s.price).toFixed(2)}</span>}
+          </div>
+          <div style={{fontSize:12,color:"var(--stone)"}}>
+            {s.frequency.charAt(0).toUpperCase()+s.frequency.slice(1)} · {s.day_of_week}s · {s.start_date}{s.end_date?` → ${s.end_date}`:""}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // -- ADD PROPERTY FORM --------------------------------------------------------
 function AddPropertyForm({ onBack, onSaved }) {
   const photoRef = useRef();
