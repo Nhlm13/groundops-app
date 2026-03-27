@@ -1937,6 +1937,243 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
+// -- ADD PROPERTY FORM --------------------------------------------------------
+function AddPropertyForm({ onBack, onSaved }) {
+  const photoRef = useRef();
+  const [submitting, setSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [fields, setFields] = useState({
+    client_name: "", address: "", client_phone: "", client_email: "",
+    billing_contact: "", billing_email: "", service_notes: "",
+    special_instructions: "", base_service_price: "",
+  });
+  const [serviceTypes, setServiceTypes] = useState([]);
+  const [error, setError] = useState("");
+
+  const SERVICE_TYPE_OPTIONS = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
+  const set = (k, v) => setFields(f => ({...f, [k]: v}));
+  const toggleServiceType = type => setServiceTypes(prev =>
+    prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+  );
+
+  const handlePhoto = e => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleSubmit = async () => {
+    if(!fields.client_name.trim() || !fields.address.trim()) {
+      setError("Property name and address are required.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      let photoUrl = null;
+      if(photoFile) {
+        const fileName = `${COMPANY_ID}_${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from("property-photos")
+          .upload(fileName, photoFile, { contentType: photoFile.type || "image/jpeg" });
+        if(!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from("property-photos")
+            .getPublicUrl(fileName);
+          photoUrl = urlData.publicUrl;
+        }
+      }
+      const { error } = await supabase.from("properties").insert({
+        company_id: COMPANY_ID,
+        client_name: fields.client_name.trim(),
+        address: fields.address.trim(),
+        client_phone: fields.client_phone.trim() || null,
+        client_email: fields.client_email.trim() || null,
+        billing_contact: fields.billing_contact.trim() || null,
+        billing_email: fields.billing_email.trim() || null,
+        service_notes: fields.service_notes.trim() || null,
+        special_instructions: fields.special_instructions.trim() || null,
+        base_service_price: parseFloat(fields.base_service_price) || 0,
+        service_types: serviceTypes,
+        photo_url: photoUrl,
+        active: true,
+      });
+      if(error){ setError("Failed to save property."); setSubmitting(false); return; }
+      onSaved();
+    } catch(e){ setError("Failed to save property."); }
+    setSubmitting(false);
+  };
+
+  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};
+  const labelStyle = {fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4,display:"block"};
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={onBack}><Ic n="back"/> Back</button>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:38,height:38,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="map" style={{width:17,height:17,color:"var(--mgr-lt)"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>Add Property</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Client & service details</div></div>
+      </div>
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Property Info</div>
+        <label style={labelStyle}>Property / Client Name *</label>
+        <input style={inputStyle} type="text" placeholder="e.g. Smith Residence" value={fields.client_name} onChange={e=>set("client_name",e.target.value)}/>
+        <label style={labelStyle}>Address *</label>
+        <input style={inputStyle} type="text" placeholder="123 Main St, City, MA" value={fields.address} onChange={e=>set("address",e.target.value)}/>
+        <label style={labelStyle}>Client Phone</label>
+        <input style={inputStyle} type="tel" placeholder="(508) 555-0000" value={fields.client_phone} onChange={e=>set("client_phone",e.target.value)}/>
+        <label style={labelStyle}>Client Email</label>
+        <input style={inputStyle} type="email" placeholder="client@email.com" value={fields.client_email} onChange={e=>set("client_email",e.target.value)}/>
+      </div>
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Billing</div>
+        <label style={labelStyle}>Billing Contact (if different)</label>
+        <input style={inputStyle} type="text" placeholder="Name" value={fields.billing_contact} onChange={e=>set("billing_contact",e.target.value)}/>
+        <label style={labelStyle}>Billing Email</label>
+        <input style={inputStyle} type="email" placeholder="billing@email.com" value={fields.billing_email} onChange={e=>set("billing_email",e.target.value)}/>
+        <label style={labelStyle}>Base Service Price ($)</label>
+        <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.base_service_price} onChange={e=>set("base_service_price",e.target.value)}/>
+      </div>
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Service Types</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+          {SERVICE_TYPE_OPTIONS.map(type=>(
+            <button key={type} onClick={()=>toggleServiceType(type)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${serviceTypes.includes(type)?"var(--mgr)":"var(--moss)"}`,background:serviceTypes.includes(type)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:serviceTypes.includes(type)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {type}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Notes & Access</div>
+        <label style={labelStyle}>Gate Codes / Access Notes</label>
+        <textarea style={{...inputStyle,resize:"none",height:72}} placeholder="e.g. Gate code 1234, dog on property..." value={fields.service_notes} onChange={e=>set("service_notes",e.target.value)}/>
+        <label style={labelStyle}>Special Instructions</label>
+        <textarea style={{...inputStyle,resize:"none",height:72}} placeholder="e.g. Don't blow clippings toward pool..." value={fields.special_instructions} onChange={e=>set("special_instructions",e.target.value)}/>
+      </div>
+
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Property Photo</div>
+        <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
+        {!photoPreview ? (
+          <div onClick={()=>photoRef.current.click()} style={{display:"flex",alignItems:"center",gap:10,background:"var(--bark2)",border:"1.5px dashed var(--moss)",borderRadius:8,padding:"14px",cursor:"pointer"}}>
+            <Ic n="camera" style={{width:20,height:20,color:"var(--stone)"}}/>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1}}>Tap to add property photo</span>
+          </div>
+        ) : (
+          <div style={{position:"relative"}}>
+            <img src={photoPreview} alt="property" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
+            <button onClick={()=>{setPhotoPreview(null);setPhotoFile(null);}} style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",border:"none",borderRadius:"50%",width:28,height:28,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✕</button>
+          </div>
+        )}
+      </div>
+
+      {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
+
+      <button disabled={submitting} onClick={handleSubmit}
+        style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--mgr)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
+        {submitting?"Saving...":"Save Property"}
+      </button>
+    </div>
+  );
+}
+
+// -- PROPERTIES TAB -----------------------------------------------------------
+function PropertiesTab() {
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("list");
+  const [selected, setSelected] = useState(null);
+
+  const fetchProperties = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("company_id", COMPANY_ID)
+      .eq("active", true)
+      .order("client_name");
+    setProperties(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchProperties(); }, []);
+
+  if(view === "add") return <AddPropertyForm onBack={()=>setView("list")} onSaved={()=>{setView("list");fetchProperties();}}/>;
+  if(view === "detail" && selected) return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={()=>{setView("list");setSelected(null);}}><Ic n="back"/> Properties</button>
+      {selected.photo_url && <img src={selected.photo_url} alt="property" style={{width:"100%",borderRadius:10,border:"1px solid var(--moss)",marginBottom:12,display:"block"}}/>}
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:14,marginBottom:10}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>{selected.client_name}</div>
+        <div style={{fontSize:13,color:"var(--stone)",marginTop:4}}>{selected.address}</div>
+        {selected.client_phone&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📞 {selected.client_phone}</div>}
+        {selected.client_email&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>✉️ {selected.client_email}</div>}
+      </div>
+      {selected.service_types?.length>0&&(
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Service Types</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {selected.service_types.map(t=>(
+              <span key={t} style={{padding:"4px 10px",borderRadius:6,background:"rgba(42,90,149,0.12)",border:"1px solid var(--mgr)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)"}}>{t}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {(selected.service_notes||selected.special_instructions)&&(
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10}}>
+          {selected.service_notes&&<><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>Access Notes</div><div style={{fontSize:13,color:"var(--cream)",marginBottom:10}}>{selected.service_notes}</div></>}
+          {selected.special_instructions&&<><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>Special Instructions</div><div style={{fontSize:13,color:"var(--cream)"}}>{selected.special_instructions}</div></>}
+        </div>
+      )}
+      {selected.base_service_price>0&&(
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>Base Service Price</span>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)"}}>${parseFloat(selected.base_service_price).toFixed(2)}</span>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2}}>{properties.length} Properties</div>
+        <button onClick={()=>setView("add")}
+          style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"8px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>
+          + Add Property
+        </button>
+      </div>
+      {loading ? (
+        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+      ) : properties.length === 0 ? (
+        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>No properties yet</div>
+      ) : properties.map(p => (
+        <div key={p.id} onClick={()=>{setSelected(p);setView("detail");}}
+          style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+          <div style={{width:40,height:40,borderRadius:8,background:"rgba(42,90,149,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"}}>
+            {p.photo_url
+              ? <img src={p.photo_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+              : <Ic n="map" style={{width:18,height:18,color:"var(--mgr-lt)"}}/>
+            }
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.client_name}</div>
+            <div style={{fontSize:12,color:"var(--stone)",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.address}</div>
+            {p.service_types?.length>0&&<div style={{fontSize:11,color:"var(--mgr-lt)",marginTop:2,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5}}>{p.service_types.join(" · ")}</div>}
+          </div>
+          <Ic n="chev" style={{width:16,height:16,color:"var(--moss)",flexShrink:0}}/>
+        </div>
+      ))}
+    </div>
+  );
+}
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
   const [tab, setTab] = useState("activity");
@@ -2139,15 +2376,17 @@ function ManagerZone({ onLogout }) {
         </div>
       </div>
 
-      <div className="content" style={{background:"#ddd9d0"}}>
-        {tab==="activity" && <ActivityTab/>}
-        {tab==="receipts" && <ReceiptsTab/>}
-      </div>
+     <div className="content" style={{background:"#ddd9d0"}}>
+  {tab==="activity" && <ActivityTab/>}
+  {tab==="receipts" && <ReceiptsTab/>}
+  {tab==="properties" && <PropertiesTab/>}
+</div>
 
-      <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-        <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
-        <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
-      </nav>
+     <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
+  <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
+  <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
+  <button className={`bnav-btn ${tab==="properties"?"active":""}`} style={tab==="properties"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("properties")}><Ic n="map"/>Properties</button>
+</nav>
     </div>
   );
 }
