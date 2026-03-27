@@ -1727,11 +1727,11 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
 // -- RECEIPT FLOW --------------------------------------------------------------
 function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   const t = useT();
-  const today = getTodayKey();
   const [step,setStep]=useState("form");
   const [submitting,setSubmitting]=useState(false);
   const [uploading,setUploading]=useState(false);
   const [photoUrl,setPhotoUrl]=useState("");
+  const [receiptId,setReceiptId]=useState(null);
   const [formErr,setFormErr]=useState("");
   const photoRef=useRef();
   const [fields,setFields]=useState({name:"",division:divisionLabel||"",type:"",gallons:"",fuelType:"",atShop:null,vendor:"",total:"",notes:""});
@@ -1739,7 +1739,55 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   const isFuel=fields.type===t.fuel;const isWalkIn=!truckLabel;const displayTruck=truckLabel||"General Submission";
   const validate=()=>{if(!fields.name.trim())return t.errName;if(!fields.division)return t.errDivision;if(!fields.type)return t.errType;if(isFuel){if(!fields.gallons.trim())return t.errGallons;if(!fields.fuelType)return t.errFuelType;if(fields.atShop===null)return t.errLocation;if(fields.atShop===false&&!fields.total.trim())return t.errCost;}else{if(!fields.vendor.trim())return t.errVendor;if(!fields.total.trim())return t.errTotal;}return null;};
   const toBase64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
-  const handleSubmit=async()=>{const err=validate();if(err){setFormErr(err);return;}setSubmitting(true);try{await fetch(APPS_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sheet:"Receipts",date:today,time:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),name:fields.name,truck:displayTruck,division:fields.division,type:fields.type,vendor:isFuel?"Fuel":fields.vendor,gallons:isFuel?fields.gallons:"",fuelType:isFuel?fields.fuelType:"",location:isFuel?(fields.atShop?"Shop":"Gas Station"):"",total:isFuel?(fields.atShop?"":fields.total):fields.total,notes:fields.notes,sendEmail:true,emailTo:"admin@jandjandsonlawncare.com"})});setStep("photo");}catch(e){console.warn(e);}setSubmitting(false);};
+  const handleSubmit=async()=>{
+    const err=validate();
+    if(err){setFormErr(err);return;}
+    setSubmitting(true);
+    try{
+      const { data, error } = await supabase
+        .from("receipts")
+        .insert({
+          company_id: COMPANY_ID,
+          session_id: null,
+          vendor: isFuel ? "Fuel" : fields.vendor,
+          amount: parseFloat(fields.total) || 0,
+          date: new Date().toISOString().split("T")[0],
+          photo_url: "",
+        })
+        .select()
+        .single();
+      console.log("Receipt insert — data:", JSON.stringify(data), "error:", JSON.stringify(error));
+      if(error){ console.warn("Receipt insert error", JSON.stringify(error)); setSubmitting(false); return; }
+      setReceiptId(data.id);
+      setStep("photo");
+    }catch(e){console.warn(e);}
+    setSubmitting(false);
+  };
+  const handlePhoto=async e=>{
+    const file=e.target.files?.[0];
+    if(!file)return;
+    setUploading(true);
+    try{
+      const fileName = `${receiptId || Date.now()}_${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(fileName, file, { contentType: file.type || "image/jpeg" });
+      if(uploadError){ console.warn("Photo upload error", uploadError); }
+      else {
+        const { data: urlData } = supabase.storage
+          .from("receipts")
+          .getPublicUrl(fileName);
+        await supabase
+          .from("receipts")
+          .update({ photo_url: urlData.publicUrl })
+          .eq("id", receiptId);
+      }
+      setPhotoUrl(URL.createObjectURL(file));
+      setStep("success");
+    }catch(e){console.warn(e);}
+    setUploading(false);
+  };
+  const reset=()=>{setStep("form");setPhotoUrl("");setFormErr("");setReceiptId(null);setFields({name:"",division:divisionLabel||"",type:"",gallons:"",fuelType:"",atShop:null,vendor:"",total:"",notes:""});};
   const handlePhoto=async e=>{const file=e.target.files?.[0];if(!file)return;setUploading(true);try{const b64=await toBase64(file);await fetch(APPS_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify({sheet:"Receipts",photo:b64,photoMime:file.type||"image/jpeg",photoName:`receipt_${displayTruck.replace(/\s/g,"_")}_${Date.now()}.jpg`,photoOnly:true})});setPhotoUrl(URL.createObjectURL(file));setStep("success");}catch(e){console.warn(e);}setUploading(false);};
   const reset=()=>{setStep("form");setPhotoUrl("");setFormErr("");setFields({name:"",division:divisionLabel||"",type:"",gallons:"",fuelType:"",atShop:null,vendor:"",total:"",notes:""});};
   const inputStyle={width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
