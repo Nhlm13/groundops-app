@@ -1999,7 +1999,7 @@ function JobsTab({ truck }) {
                 {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>✓ Done</span>}
               </div>
               <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>📍 {property?.address}</div>
-              {property?.service_types?.length>0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{property.service_types.join(" · ")}</div>}
+              {(job.service_type || property?.service_types?.length>0) && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{job.service_type || property?.service_types?.join(" · ")}</div>}
               {property?.service_notes && (
                 <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--warn)",textTransform:"uppercase",marginBottom:2}}>Access Notes</div>
@@ -2601,6 +2601,7 @@ async function generateJobsFromSchedules() {
             status: "scheduled",
             sort_order: 0,
             notes: null,
+            service_type: schedule.service_type || null,
           });
           existingKeys.add(key);
         }
@@ -2860,9 +2861,9 @@ const assignJobToTruck = async (jobId, truckId) => {
                       style={{minHeight:56,background:isSelected?"rgba(42,90,149,0.15)":isToday?"rgba(74,109,32,0.1)":"var(--bark)",border:`1px solid ${isSelected?"var(--mgr)":isToday?"var(--leaf)":"var(--moss)"}`,borderRadius:6,padding:"4px",cursor:dayJobs.length>0||isToday?"pointer":"default",transition:"background 0.15s"}}>
                       <div className="calendar-day-num" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,fontWeight:700,color:isToday?"var(--lime)":isSelected?"var(--mgr-lt)":"var(--stone)",marginBottom:2}}>{day}</div>
                       {dayJobs.slice(0,3).map((job,ji)=>{
-                        const prop = properties.find(p=>p.id===job.property_id);
-                        const serviceType = prop?.service_types?.[0] || "Other";
-                        const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
+                       const prop = properties.find(p=>p.id===job.property_id);
+                       const serviceType = job.service_type || prop?.service_types?.[0] || "Other";
+                       const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
                         return (
                           <div key={ji} className="calendar-event" style={{background:color,borderRadius:3,padding:"1px 4px",marginBottom:1,overflow:"hidden"}}>
                             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:0.3}}>
@@ -2887,7 +2888,7 @@ const assignJobToTruck = async (jobId, truckId) => {
                   {selectedDayJobs.length === 0 ? (
                     <div style={{textAlign:"center",padding:"16px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1}}>No jobs scheduled</div>
                   ) : selectedDayProps.map((job,i)=>{
-                    const serviceType = job.property?.service_types?.[0] || "Other";
+                    const serviceType = job.service_type || job.property?.service_types?.[0] || "Other";
                     const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
                     const assignment = assignments[job.id];
                     const assignedTruck = trucks.find(t=>t.id===assignment?.truck_id);
