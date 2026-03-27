@@ -1046,7 +1046,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
     setSubmitting(true);
     try {
-      const { error } = await supabase
+      const { data error } = await supabase
         .from("property_inspections")
         .insert({
           company_id: COMPANY_ID,
