@@ -2167,14 +2167,24 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
   const[dropOpen,setDropOpen]=useState(false);
   const[selected,setSel]=useState(rememberedTruck);
   const[mgrPass,setMgrPass]=useState("");
+  const[mgrEmail,setMgrEmail]=useState("");
   const[error,setError]=useState("");
   const[receiptOpen,setReceiptOpen]=useState(false);
   const[hrOpen,setHrOpen]=useState(false);
   const[openHR,setOpenHR]=useState(null);
   const handleSelectTruck = truck => { saveMemory(truck); onTruckLogin(truck,""); };
   const handleChangeTruck = () => { clearMemory(); setSel(null); setError(""); };
-  const tryMgr = () => { if(mgrPass==="ground25")onMgrLogin(); else{setError(t.wrongPass);setMgrPass("");} };
-
+  const tryMgr = async () => {
+    setError("");
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: mgrEmail,
+        password: mgrPass,
+      });
+      if(error){ setError(t.wrongPass); setMgrPass(""); }
+      else onMgrLogin();
+    } catch(e){ setError(t.wrongPass); setMgrPass(""); }
+  };
   return (
     <div className="splash">
       <FlagSelector lang={lang} setLang={setLang}/>
@@ -2261,7 +2271,10 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
       {mode==="manager"&&(
         <div className="mgr-box">
           <div className="mgr-box-header"><Ic n="shield" style={{width:18,height:18,color:"var(--mgr-lt)"}}/><span>Manager Zone</span></div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Email</div>
+          <input className="mgr-input" type="email" placeholder="manager@company.com" value={mgrEmail} onChange={e=>{setMgrEmail(e.target.value);setError("");}} style={{letterSpacing:1,marginBottom:10}}/>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.mgrPassword}</div>
+          <input className="mgr-input" type="password" placeholder="••••••••" value={mgrPass} onChange={e=>{setMgrPass(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&tryMgr()}/>
           <input className="mgr-input" type="password" placeholder="••••••••" value={mgrPass} onChange={e=>{setMgrPass(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&tryMgr()}/>
           <button className="btn-mgr" onClick={tryMgr}>{t.enterMgrZone}</button>
           {error&&<div className="error-msg">{error}</div>}
