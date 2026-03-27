@@ -1052,7 +1052,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         .insert({
           company_id: COMPANY_ID,
           session_id: truck.sessionId || null,
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
           notes: `Property: ${property.trim()}${damageNotes ? ` | Damage: ${damageNotes}` : ""}${notes ? ` | Notes: ${notes}` : ""}`,
         })
         .select()
@@ -1226,7 +1226,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
           company_id: COMPANY_ID,
           session_id: truck.sessionId || null,
           truck_id: truck.supabaseId || null,
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
           checklist_data: checks,
           notes: notes || null,
           passed: uncheckedHigh === 0,
@@ -1366,14 +1366,14 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
       console.log("Attempting briefing insert with:", {
         company_id: COMPANY_ID,
         session_id: truck.sessionId || null,
-        date: new Date().toISOString().split("T")[0],
+        date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
       });
       const { data, error } = await supabase
         .from("briefing_acknowledgments")
         .insert({
           company_id: COMPANY_ID,
           session_id: truck.sessionId || null,
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
         })
         .select()
         .single();
@@ -1504,7 +1504,7 @@ function EndOfDayForm({ truck, onBack, onDone }) {
           company_id: COMPANY_ID,
           session_id: truck.sessionId || null,
           truck_id: truck.supabaseId || null,
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
           checklist_data: {},
           completed_at: new Date().toISOString(),
         })
@@ -1750,7 +1750,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
           session_id: null,
           vendor: isFuel ? "Fuel" : fields.vendor,
           amount: parseFloat(fields.total) || 0,
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
           photo_url: "",
         })
         .select()
@@ -2296,7 +2296,7 @@ export default function App() {
     company_id: COMPANY_ID,
     truck_id: truckId,
     crew_name: loadCrewName() || "Unknown",
-          date: new Date().toISOString().split("T")[0],
+          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
         })
         .select()
         .single();
