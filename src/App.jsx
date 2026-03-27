@@ -1871,6 +1871,207 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
   } catch(e) {}
 }
 
+// -- JOBS TAB -----------------------------------------------------------------
+function JobsTab({ truck }) {
+  const [jobs, setJobs] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [completing, setCompleting] = useState(null);
+  const [completionNote, setCompletionNote] = useState("");
+  const [completionPhoto, setCompletionPhoto] = useState(null);
+  const [completionPhotoFile, setCompletionPhotoFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const photoRef = useRef();
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      const { data: assignments } = await supabase
+        .from("job_assignments")
+        .select("job_id, truck_id")
+        .eq("truck_id", truck.supabaseId);
+
+      if(!assignments || assignments.length === 0) { setLoading(false); return; }
+
+      const jobIds = assignments.map(a => a.job_id);
+      const { data: jobData } = await supabase
+        .from("jobs")
+        .select("*")
+        .in("id", jobIds)
+        .eq("date", today)
+        .order("sort_order");
+
+      if(!jobData || jobData.length === 0) { setLoading(false); return; }
+
+      const propIds = [...new Set(jobData.map(j => j.property_id))];
+      const { data: propData } = await supabase
+        .from("properties")
+        .select("id, client_name, address, service_notes, special_instructions, photo_url, service_types")
+        .in("id", propIds);
+
+      setJobs(jobData);
+      setProperties(propData || []);
+      setLoading(false);
+    };
+    if(truck.supabaseId) fetchJobs();
+  }, [truck.supabaseId, today]);
+
+  const handleComplete = async (job) => {
+    setSubmitting(true);
+    try {
+      let photoUrl = null;
+      if(completionPhotoFile) {
+        const fileName = `${job.id}_${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from("job-completion-photos")
+          .upload(fileName, completionPhotoFile, { contentType: completionPhotoFile.type || "image/jpeg" });
+        if(!uploadError) {
+          const { data: urlData } = supabase.storage.from("job-completion-photos").getPublicUrl(fileName);
+          photoUrl = urlData.publicUrl;
+        }
+      }
+      await supabase.from("job_completions").insert({
+        job_id: job.id,
+        session_id: truck.sessionId || null,
+        notes: completionNote || null,
+        materials_used: [],
+        completed_at: new Date().toISOString(),
+      });
+      if(photoUrl) {
+        const { data: completion } = await supabase
+          .from("job_completions")
+          .select("id")
+          .eq("job_id", job.id)
+          .single();
+        if(completion) {
+          await supabase.from("job_completion_photos").insert({
+            job_completion_id: completion.id,
+            storage_url: photoUrl,
+          });
+        }
+      }
+      setJobs(prev => prev.map(j => j.id === job.id ? {...j, status: "completed"} : j));
+      setCompleting(null);
+      setCompletionNote("");
+      setCompletionPhoto(null);
+      setCompletionPhotoFile(null);
+    } catch(e){ console.warn(e); }
+    setSubmitting(false);
+  };
+
+  const handlePhotoSelect = e => {
+    const file = e.target.files?.[0];
+    if(!file) return;
+    setCompletionPhotoFile(file);
+    setCompletionPhoto(URL.createObjectURL(file));
+  };
+
+  const prop = (job) => properties.find(p => p.id === job.property_id);
+
+  if(loading) return (
+    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading jobs...</div>
+  );
+
+  if(jobs.length === 0) return (
+    <div style={{textAlign:"center",padding:"48px 0"}}>
+      <Ic n="map" style={{width:40,height:40,color:"var(--moss)",marginBottom:12}}/>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>No jobs assigned for today</div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="section-hd">Today's Jobs — {jobs.length} assigned</div>
+      {jobs.map(job => {
+        const property = prop(job);
+        const isCompleted = job.status === "completed";
+        const isCompleting = completing?.id === job.id;
+
+        return (
+          <div key={job.id} style={{background:"var(--bark)",border:`1px solid ${isCompleted?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderLeft:`4px solid ${isCompleted?"var(--leaf)":"var(--lime)"}`,borderRadius:10,marginBottom:12,overflow:"hidden",opacity:isCompleted?0.8:1}}>
+            {property?.photo_url && (
+              <img src={property.photo_url} alt="property" style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>
+            )}
+            <div style={{padding:"12px 14px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isCompleted?"var(--leaf)":"var(--lime)",letterSpacing:2,lineHeight:1}}>{property?.client_name||"Unknown Property"}</div>
+                {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>✓ Done</span>}
+              </div>
+              <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>📍 {property?.address}</div>
+              {property?.service_types?.length>0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{property.service_types.join(" · ")}</div>}
+              {property?.service_notes && (
+                <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--warn)",textTransform:"uppercase",marginBottom:2}}>Access Notes</div>
+                  <div style={{fontSize:12,color:"var(--cream)"}}>{property.service_notes}</div>
+                </div>
+              )}
+              {property?.special_instructions && (
+                <div style={{background:"rgba(42,90,149,0.08)",border:"1px solid rgba(42,90,149,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:2}}>Special Instructions</div>
+                  <div style={{fontSize:12,color:"var(--cream)"}}>{property.special_instructions}</div>
+                </div>
+              )}
+              {job.notes && (
+                <div style={{background:"rgba(74,109,32,0.08)",border:"1px solid rgba(74,109,32,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--leaf)",textTransform:"uppercase",marginBottom:2}}>Manager Notes</div>
+                  <div style={{fontSize:12,color:"var(--cream)"}}>{job.notes}</div>
+                </div>
+              )}
+
+              {!isCompleted && (
+                <>
+                  {!isCompleting ? (
+                    <button onClick={()=>setCompleting(job)}
+                      style={{width:"100%",padding:"12px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
+                      Mark Complete
+                    </button>
+                  ) : (
+                    <div style={{marginTop:8,borderTop:"1px solid var(--moss)",paddingTop:12,animation:"fadeUp 0.2s ease both"}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Notes (optional)</div>
+                      <textarea
+                        style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:64,marginBottom:10}}
+                        placeholder="Any notes about this job..."
+                        value={completionNote}
+                        onChange={e=>setCompletionNote(e.target.value)}
+                      />
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Photo (optional)</div>
+                      <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhotoSelect}/>
+                      {!completionPhoto ? (
+                        <div onClick={()=>photoRef.current.click()}
+                          style={{display:"flex",alignItems:"center",gap:10,background:"var(--bark2)",border:"1.5px dashed var(--moss)",borderRadius:8,padding:"12px",cursor:"pointer",marginBottom:10}}>
+                          <Ic n="camera" style={{width:18,height:18,color:"var(--stone)"}}/>
+                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1}}>Take completion photo</span>
+                        </div>
+                      ) : (
+                        <div style={{position:"relative",marginBottom:10}}>
+                          <img src={completionPhoto} alt="completion" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
+                          <button onClick={()=>{setCompletionPhoto(null);setCompletionPhotoFile(null);}}
+                            style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",border:"none",borderRadius:"50%",width:28,height:28,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✕</button>
+                        </div>
+                      )}
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>{setCompleting(null);setCompletionNote("");setCompletionPhoto(null);setCompletionPhotoFile(null);}}
+                          style={{flex:1,padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
+                          Cancel
+                        </button>
+                        <button disabled={submitting} onClick={()=>handleComplete(job)}
+                          style={{flex:2,padding:"12px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer"}}>
+                          {submitting?"Saving...":"Submit"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // -- TRUCK HOME ----------------------------------------------------------------
 function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
   const t = useT();
@@ -1933,20 +2134,22 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
           <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
           <EndOfDayForm truck={truck} onBack={()=>setActiveForm(null)} onDone={()=>{setActiveForm(null);setEodComplete(true);setTab("home");}}/></div>
         )}
+        {tab==="jobs"   &&<JobsTab truck={truck}/>}
         {tab==="receipt"&&<ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
         {tab==="tools"  &&<ToolsTab truck={truck} checkouts={checkouts} setCheckouts={setCheckouts}/>}
         {tab==="hr"     &&<HRTab/>}
       </div>
 
-      <nav className="bottom-nav">
-        <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
-        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
-        <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
-          <Ic n="wrench"/>{t.tools}
-          {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
-        </button>
-        <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
-      </nav>
+     <nav className="bottom-nav">
+  <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
+  <button className={`bnav-btn ${tab==="jobs"?"active":""}`}    onClick={()=>setTab("jobs")}><Ic n="clip"/>Jobs</button>
+  <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
+  <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
+    <Ic n="wrench"/>{t.tools}
+    {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
+  </button>
+  <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
+</nav>
     </div>
   );
 }
