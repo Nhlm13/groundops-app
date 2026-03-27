@@ -2297,18 +2297,18 @@ export default function App() {
         truckId = truckData?.id || null;
       }
 
-     const { error } = await supabase
+     const { data: sessionData, error } = await supabase
   .from("crew_sessions")
   .insert({
     company_id: COMPANY_ID,
     truck_id: truckId,
     crew_name: loadCrewName() || "Unknown",
-          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
-        })
-        .select()
-        .single();
-      if (error) console.warn("Supabase sign-in error", error);
-      else tr.sessionId = data.id;
+    date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
+  })
+  .select()
+  .single();
+if (error) console.warn("Supabase sign-in error", error);
+else tr.sessionId = sessionData.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
   const postSignOut = async (tr) => {
