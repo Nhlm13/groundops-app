@@ -1937,6 +1937,9 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
+// -- ADD SCHEDULE FORM --------------------------------------------------------
+function AddScheduleForm({ property, onBack, onSaved }) {
+
 // -- PROPERTY DETAIL ----------------------------------------------------------
 function PropertyDetail({ property, onBack, onAddSchedule }) {
   const [schedules, setSchedules] = useState([]);
