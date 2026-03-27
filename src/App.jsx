@@ -912,7 +912,6 @@ const HIGH_PRIORITY_KEYS = ["tires_exterior","lug_nuts","lights_exterior","tires
 // SHEETS_ID, OPS_SHEETS_ID, and SHEETS_KEY have been removed.
 // Manager data is now fetched via SIGNIN_SCRIPT_URL?action=fetchManager
 // which is handled by the doGet function in the Apps Script backend.
-const APPS_SCRIPT_URL   = "https://script.google.com/macros/s/AKfycbzKm07D55ohLfV45KGJN7WDGUlZL3qj1Ofpfn8P5gWiWm8yyDCZjsQbpfmptsm6EcBN/exec";
 const SIGNIN_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkJmZAHsq6LlLL_bMc182kYpvEgaobDAEXmRZiiAlu8kOutN4PAL4ZPFpHVLe9YU5Ezw/exec";
 const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -932,7 +931,6 @@ function getTimeStr() {
     timeZone:"America/New_York"
   }); 
 }
-function getTodayKey()  {
   const d = new Date();
   return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
 }
@@ -1738,7 +1736,6 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   const set=(k,v)=>{setFields(f=>({...f,[k]:v}));setFormErr("");};
   const isFuel=fields.type===t.fuel;const isWalkIn=!truckLabel;const displayTruck=truckLabel||"General Submission";
   const validate=()=>{if(!fields.name.trim())return t.errName;if(!fields.division)return t.errDivision;if(!fields.type)return t.errType;if(isFuel){if(!fields.gallons.trim())return t.errGallons;if(!fields.fuelType)return t.errFuelType;if(fields.atShop===null)return t.errLocation;if(fields.atShop===false&&!fields.total.trim())return t.errCost;}else{if(!fields.vendor.trim())return t.errVendor;if(!fields.total.trim())return t.errTotal;}return null;};
-  const toBase64=file=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
   const handleSubmit=async()=>{
     const err=validate();
     if(err){setFormErr(err);return;}
