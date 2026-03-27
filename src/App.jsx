@@ -1196,14 +1196,25 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   const totalChecked  = allItems.filter(i=>checks[i.key]).length;
 
   const handleSubmit = async () => {
-   if(!name.trim()){setNameErr(true);return;}
-saveCrewName(name.trim());
+    if(!name.trim()){setNameErr(true);return;}
+    saveCrewName(name.trim());
     setSubmitting(true);
     try {
-      await fetch(DOT_SCRIPT_URL,{
-        method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({sheet:"DOT walkaround",date:getTodayKey(),time:getTimeStr(),truck:truck.label,name:name.trim(),division:"",checks,notes}),
-      });
+      const { data, error } = await supabase
+        .from("dot_inspections")
+        .insert({
+          company_id: COMPANY_ID,
+          session_id: truck.sessionId || null,
+          truck_id: truck.supabaseId || null,
+          date: new Date().toISOString().split("T")[0],
+          checklist_data: checks,
+          notes: notes || null,
+          passed: uncheckedHigh === 0,
+        })
+        .select()
+        .single();
+      console.log("DOT result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
+      if(error) console.warn("DOT insert error", JSON.stringify(error));
       setSubmitted(true);
     } catch(e){console.warn(e);setSubmitted(true);}
     setSubmitting(false);
