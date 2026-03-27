@@ -1056,7 +1056,6 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
         })
         .select()
         .single();
-      console.log("PI result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
       if(error){ console.warn("PI insert error", JSON.stringify(error)); setSubmitted(true); setSubmitting(false); return; }
 
       // Upload damage photo if present
@@ -1232,7 +1231,6 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
         })
         .select()
         .single();
-      console.log("DOT result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
       if(error) console.warn("DOT insert error", JSON.stringify(error));
       setSubmitted(true);
     } catch(e){console.warn(e);setSubmitted(true);}
@@ -1362,11 +1360,7 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
     if(!acked)return;
     setSubmitting(true);
     try {
-      console.log("Attempting briefing insert with:", {
-        company_id: COMPANY_ID,
-        session_id: truck.sessionId || null,
-        date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
-      });
+      
       const { data, error } = await supabase
         .from("briefing_acknowledgments")
         .insert({
@@ -1376,9 +1370,7 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
         })
         .select()
         .single();
-      console.log("Briefing result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
       if(error) console.warn("Briefing insert error", JSON.stringify(error));
-      else console.log("Briefing insert SUCCESS");
       setSubmitted(true);
     } catch(e){
       console.warn("Briefing caught error:", JSON.stringify(e));
@@ -1509,7 +1501,6 @@ function EndOfDayForm({ truck, onBack, onDone }) {
         })
         .select()
         .single();
-      console.log("EOD result — data:", JSON.stringify(data), "error:", JSON.stringify(error));
       if(error) console.warn("EOD insert error", JSON.stringify(error));
       setSubmitted(true);
     } catch(e){console.warn(e);setSubmitted(true);}
@@ -1754,7 +1745,6 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
         })
         .select()
         .single();
-      console.log("Receipt insert — data:", JSON.stringify(data), "error:", JSON.stringify(error));
       if(error){ console.warn("Receipt insert error", JSON.stringify(error)); setSubmitting(false); return; }
       receiptIdRef.current = data.id;
       setStep("photo");
@@ -1766,12 +1756,10 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     if(!file)return;
     setUploading(true);
     try{
-      console.log("Uploading photo, receiptIdRef:", receiptIdRef.current);
       const fileName = `${receiptIdRef.current || Date.now()}_${Date.now()}.jpg`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("receipts")
         .upload(fileName, file, { contentType: file.type || "image/jpeg" });
-      console.log("Upload result — data:", JSON.stringify(uploadData), "error:", JSON.stringify(uploadError));
       if(uploadError){ console.warn("Photo upload error", JSON.stringify(uploadError)); }
       else {
         const { data: urlData } = supabase.storage
@@ -2296,7 +2284,6 @@ export default function App() {
   const[lang,setLang]=useState(detectLang);
 
  const postSignIn = async (tr) => {
-    console.log("postSignIn called for", tr.label, "supabaseId:", tr.supabaseId);
     try {
       // Look up truck ID if not already loaded
       let truckId = tr.supabaseId;
@@ -2308,7 +2295,6 @@ export default function App() {
           .eq("company_id", COMPANY_ID)
           .single();
         truckId = truckData?.id || null;
-        console.log("looked up truckId:", truckId);
       }
 
      const { data, error } = await supabase
@@ -2321,14 +2307,12 @@ export default function App() {
         })
         .select()
         .single();
-      console.log("insert result — data:", data, "error:", error);
       if (error) console.warn("Supabase sign-in error", error);
       else tr.sessionId = data.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
   const postSignOut = async (tr) => {
     // Sign-out is now handled by session end — no separate record needed
-    console.log("Session ended for", tr.label);
   };
 
   const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
