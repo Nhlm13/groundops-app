@@ -1327,15 +1327,19 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
 
   const handleSubmit = async () => {
-   if(!name.trim()){setNameErr(true);return;}
-saveCrewName(name.trim());
     if(!name.trim()){setNameErr(true);return;}
-saveCrewName(name.trim());
+    saveCrewName(name.trim());
     if(!acked)return;
     setSubmitting(true);
     try {
-      await fetch(DB_SCRIPT_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},
-        body:JSON.stringify({sheet:"Daily Briefing",date:getTodayKey(),time:getTimeStr(),truck:truck.label,name:name.trim()})});
+      const { error } = await supabase
+        .from("briefing_acknowledgments")
+        .insert({
+          company_id: COMPANY_ID,
+          session_id: truck.sessionId || null,
+          date: new Date().toISOString().split("T")[0],
+        });
+      if(error) console.warn("Briefing insert error", error);
       setSubmitted(true);
     } catch(e){console.warn(e);setSubmitted(true);}
     setSubmitting(false);
