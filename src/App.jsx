@@ -2101,7 +2101,7 @@ function PropertyDetail({ property, onBack, onAddSchedule }) {
             {s.price>0&&<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)"}}>${parseFloat(s.price).toFixed(2)}</span>}
           </div>
           <div style={{fontSize:12,color:"var(--stone)"}}>
-            {s.frequency.charAt(0).toUpperCase()+s.frequency.slice(1)} · {s.day_of_week}s · {s.start_date}{s.end_date?` → ${s.end_date}`:""}
+            {s.frequency.charAt(0).toUpperCase()+s.frequency.slice(1)} · {s.day_of_week} · {s.start_date}{s.end_date?` → ${s.end_date}`:""}
           </div>
         </div>
       ))}
