@@ -1731,7 +1731,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   const [submitting,setSubmitting]=useState(false);
   const [uploading,setUploading]=useState(false);
   const [photoUrl,setPhotoUrl]=useState("");
-  const [receiptId,setReceiptId]=useState(null);
+  const receiptIdRef = useRef(null);
   const [formErr,setFormErr]=useState("");
   const photoRef=useRef();
   const [fields,setFields]=useState({name:"",division:divisionLabel||"",type:"",gallons:"",fuelType:"",atShop:null,vendor:"",total:"",notes:""});
@@ -1757,7 +1757,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
         .single();
       console.log("Receipt insert — data:", JSON.stringify(data), "error:", JSON.stringify(error));
       if(error){ console.warn("Receipt insert error", JSON.stringify(error)); setSubmitting(false); return; }
-      setReceiptId(data.id);
+      receiptIdRef.current = data.id;
       setStep("photo");
     }catch(e){console.warn(e);}
     setSubmitting(false);
@@ -1767,11 +1767,13 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     if(!file)return;
     setUploading(true);
     try{
-      const fileName = `${receiptId || Date.now()}_${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
+      console.log("Uploading photo, receiptIdRef:", receiptIdRef.current);
+      const fileName = `${receiptIdRef.current || Date.now()}_${Date.now()}.jpg`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from("receipts")
         .upload(fileName, file, { contentType: file.type || "image/jpeg" });
-      if(uploadError){ console.warn("Photo upload error", uploadError); }
+      console.log("Upload result — data:", JSON.stringify(uploadData), "error:", JSON.stringify(uploadError));
+      if(uploadError){ console.warn("Photo upload error", JSON.stringify(uploadError)); }
       else {
         const { data: urlData } = supabase.storage
           .from("receipts")
@@ -1779,14 +1781,14 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
         await supabase
           .from("receipts")
           .update({ photo_url: urlData.publicUrl })
-          .eq("id", receiptId);
+          .eq("id", receiptIdRef.current);
       }
       setPhotoUrl(URL.createObjectURL(file));
       setStep("success");
     }catch(e){console.warn(e);}
     setUploading(false);
   };
-  const reset=()=>{setStep("form");setPhotoUrl("");setFormErr("");setReceiptId(null);setFields({name:"",division:divisionLabel||"",type:"",gallons:"",fuelType:"",atShop:null,vendor:"",total:"",notes:""});};
+  const reset=()=>{setStep("form");setPhotoUrl("");setFormErr("");receiptIdRef.current=null;setFields({name:"",division:divisionLabel||"",type:"",gallons:"",fuelType:"",atShop:null,vendor:"",total:"",notes:""});};
   const inputStyle={width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
   const StepBar=({done})=>(<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:20}}>{["Details","Photo"].map((sl,i)=>{const active=done>i;const current=done===i;return(<React.Fragment key={i}>{i>0&&<div style={{flex:1,height:2,background:active?"var(--lime)":"var(--moss)",borderRadius:1}}/>}<div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:24,height:24,borderRadius:"50%",background:active?"var(--moss)":current?"var(--lime)":"transparent",border:`2px solid ${active||current?"var(--lime)":"var(--moss)"}`,display:"flex",alignItems:"center",justifyContent:"center"}}>{active?<Ic n="check" style={{width:12,height:12,color:"var(--earth)"}}/>:<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:current?"var(--earth)":"var(--stone)"}}>{i+1}</span>}</div><span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,color:active?"var(--stone)":current?"var(--lime)":"var(--stone)",textDecoration:active?"line-through":"none"}}>{sl}</span></div></React.Fragment>);})}</div>);
 
