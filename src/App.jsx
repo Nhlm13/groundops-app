@@ -2464,6 +2464,33 @@ function CalendarTab() {
     "Other": "#6a6658",
   };
 
+const assignJobToTruck = async (jobId, truckId) => {
+    const existing = assignments[jobId];
+    if(existing) {
+      await supabase.from("job_assignments").update({ truck_id: truckId }).eq("id", existing.id);
+      setAssignments(prev => ({...prev, [jobId]: {...existing, truck_id: truckId}}));
+    } else {
+      const { data } = await supabase.from("job_assignments").insert({
+        job_id: jobId,
+        truck_id: truckId,
+        crew_name: "",
+      }).select().single();
+      if(data) setAssignments(prev => ({...prev, [jobId]: data}));
+    }
+    setAssigningJob(null);
+  };
+
+  const unassignJob = async (jobId) => {
+    const existing = assignments[jobId];
+    if(existing) {
+      await supabase.from("job_assignments").delete().eq("id", existing.id);
+      setAssignments(prev => { const next = {...prev}; delete next[jobId]; return next; });
+    }
+    setAssigningJob(null);
+  };
+
+  const daysInMonth = ...
+  
   const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
   const monthName = new Date(currentMonth.year, currentMonth.month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
