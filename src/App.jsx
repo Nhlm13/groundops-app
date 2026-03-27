@@ -414,6 +414,9 @@ function useTrucks() {
   return trucks;
 }
 const LANG_KEY = "jj_lang";
+const CREW_NAME_KEY = "jj_crew_name";
+function loadCrewName() { try { return localStorage.getItem(CREW_NAME_KEY) || ""; } catch(e) { return ""; } }
+function saveCrewName(name) { try { localStorage.setItem(CREW_NAME_KEY, name); } catch(e) {} }
 const LANGS = { en:"en", es:"es", pt:"pt" };
 const FLAGS = { en:"🇺🇸", es:"🇲🇽", pt:"🇧🇷" };
 function detectLang() { try { const s=localStorage.getItem(LANG_KEY); if(s&&LANGS[s])return s; } catch(e){} const nav=(navigator.language||"en").toLowerCase(); if(nav.startsWith("pt"))return"pt"; if(nav.startsWith("es"))return"es"; return"en"; }
@@ -1005,7 +1008,7 @@ function PISection({sk, titleKey, isOpen, onToggle, children}) {
 function PropertyInspectionForm({ truck, onBack, onDone }) {
   const t = useT();
   const photoRef = useRef();
-  const [name,        setName]        = useState("");
+  const [name,       setName]       = useState(loadCrewName);
   const [property,    setProperty]    = useState("");
   const [checks,      setChecks]      = useState({});
   const [damageNotes, setDamageNotes] = useState("");
@@ -1040,7 +1043,8 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
   };
 
   const handleSubmit = async () => {
-    if(!name.trim()){setNameErr(true);return;}
+   if(!name.trim()){setNameErr(true);return;}
+saveCrewName(name.trim());
     if(!property.trim()){setPropErr(true);return;}
     const allCore = CORE_CHECKS.every(k=>checks[k]);
     if(!allCore){setFormErr(t.piIncompleteWarning);return;}
@@ -1168,7 +1172,7 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
 // -- DOT WALKAROUND FORM -------------------------------------------------------
 function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   const t = useT();
-  const [name,       setName]       = useState("");
+  const [name,       setName]       = useState(loadCrewName);
   const [checks,     setChecks]     = useState({});
   const [notes,      setNotes]      = useState("");
   const [openCats,   setOpenCats]   = useState({exterior:true,trailer:true,fluid:true,interior:true,safety:true});
@@ -1192,7 +1196,8 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   const totalChecked  = allItems.filter(i=>checks[i.key]).length;
 
   const handleSubmit = async () => {
-    if(!name.trim()){setNameErr(true);return;}
+   if(!name.trim()){setNameErr(true);return;}
+saveCrewName(name.trim());
     setSubmitting(true);
     try {
       await fetch(DOT_SCRIPT_URL,{
@@ -1312,7 +1317,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
 // -- DAILY BRIEFING FORM -------------------------------------------------------
 function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   const t = useT();
-  const [name,       setName]       = useState("");
+  const [name,       setName]       = useState(loadCrewName);
   const [acked,      setAcked]      = useState(false);
   const [nameErr,    setNameErr]    = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -1322,7 +1327,10 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
 
   const handleSubmit = async () => {
+   if(!name.trim()){setNameErr(true);return;}
+saveCrewName(name.trim());
     if(!name.trim()){setNameErr(true);return;}
+saveCrewName(name.trim());
     if(!acked)return;
     setSubmitting(true);
     try {
@@ -1428,7 +1436,7 @@ function VehicleGuideInline() {
 // -- END OF DAY FORM -----------------------------------------------------------
 function EndOfDayForm({ truck, onBack, onDone }) {
   const t = useT();
-  const [name,       setName]       = useState("");
+  const [name,       setName]       = useState(loadCrewName);
   const [acked,      setAcked]      = useState(false);
   const [nameErr,    setNameErr]    = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -1438,7 +1446,8 @@ function EndOfDayForm({ truck, onBack, onDone }) {
   const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
 
   const handleSubmit = async () => {
-    if(!name.trim()){setNameErr(true);return;}
+   if(!name.trim()){setNameErr(true);return;}
+saveCrewName(name.trim());
     if(!acked)return;
     setSubmitting(true);
     try {
@@ -2175,6 +2184,7 @@ export default function App() {
         console.log("looked up truckId:", truckId);
       }
 
+      const savedName = loadCrewName();
       const { data, error } = await supabase
         .from("crew_sessions")
         .insert({
