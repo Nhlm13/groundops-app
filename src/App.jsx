@@ -2275,7 +2275,6 @@ function LoginScreen({ onTruckLogin, onMgrLogin, lang, setLang }) {
           <input className="mgr-input" type="email" placeholder="manager@company.com" value={mgrEmail} onChange={e=>{setMgrEmail(e.target.value);setError("");}} style={{letterSpacing:1,marginBottom:10}}/>
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.mgrPassword}</div>
           <input className="mgr-input" type="password" placeholder="••••••••" value={mgrPass} onChange={e=>{setMgrPass(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&tryMgr()}/>
-          <input className="mgr-input" type="password" placeholder="••••••••" value={mgrPass} onChange={e=>{setMgrPass(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&tryMgr()}/>
           <button className="btn-mgr" onClick={tryMgr}>{t.enterMgrZone}</button>
           {error&&<div className="error-msg">{error}</div>}
           <div className="mgr-toggle" style={{color:"var(--stone)"}} onClick={()=>{setMode("truck");setError("");}}>{t.backToLogin}</div>
