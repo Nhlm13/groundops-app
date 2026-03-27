@@ -1952,92 +1952,189 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
 
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
-  const [history,     setHistory]    = useState([]);
-  const [receipts,    setReceipts]   = useState([]);
-  const [tab,         setTab]        = useState("forms");
-  const [loading,     setLoading]    = useState(false);
-  const [lastRefresh, setLastRefresh]= useState(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [resetting,        setResetting]        = useState(false);
-  const [resetDone,        setResetDone]        = useState(false);
+  const [tab, setTab] = useState("activity");
+  const [loading, setLoading] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(() => 
+    new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" })
+  );
+  const [sessions, setSessions] = useState([]);
+  const [briefings, setBriefings] = useState([]);
+  const [dots, setDots] = useState([]);
+  const [eods, setEods] = useState([]);
+  const [propInspections, setPropInspections] = useState([]);
+  const [receipts, setReceipts] = useState([]);
+  const [trucks, setTrucks] = useState([]);
 
-  const handleReset = async () => {
-    setResetting(true);
-    try {
-      await fetch(SIGNIN_SCRIPT_URL, {
-        method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"},
-        body: JSON.stringify({ action:"reset" }),
-      });
-      setHistory([]);
-      setReceipts([]);
-      setResetDone(true);
-      setShowResetConfirm(false);
-      setTimeout(()=>setResetDone(false), 3000);
-    } catch(e){ console.warn(e); }
-    setResetting(false);
-  };
-
-  // -- fetchAll now calls the Apps Script doGet handler instead of the
-  //    Sheets REST API directly. This removes SHEETS_KEY, SHEETS_ID, and
-  //    OPS_SHEETS_ID from the client entirely.
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const res  = await fetch(`${SIGNIN_SCRIPT_URL}?action=fetchManager`);
-      const data = await res.json();
-
-      const hRows = (data.history  || []).slice(1).slice(-50).reverse();
-      setHistory(hRows.map(r => ({
-        date:   r[0] || "",
-        time:   r[1] || "",
-        type:   r[2] || "",
-        truck:  r[3] || "",
-        name:   r[4] || "",
-        detail: r[5] || "",
-        status: r[6] || "",
-      })));
-
-      const rRows = (data.receipts || []).slice(1).slice(-50).reverse();
-      setReceipts(rRows.map(r => ({
-        date:     r[0] || "",
-        time:     r[1] || "",
-        truck:    r[2] || "",
-        type:     r[4] || "",
-        total:    r[5] || "",
-        merchant: r[6] || "",
-        photo:    !!r[7],
-      })));
-
-      setLastRefresh(new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit" }));
-    } catch(e) { console.warn("Fetch failed", e); }
+      const [
+        { data: truckData },
+        { data: sessionData },
+        { data: briefingData },
+        { data: dotData },
+        { data: eodData },
+        { data: propData },
+        { data: receiptData },
+      ] = await Promise.all([
+        supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
+        supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+        supabase.from("briefing_acknowledgments").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+        supabase.from("dot_inspections").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+        supabase.from("end_of_day_checklists").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+        supabase.from("property_inspections").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+        supabase.from("receipts").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+      ]);
+      setTrucks(truckData || []);
+      setSessions(sessionData || []);
+      setBriefings(briefingData || []);
+      setDots(dotData || []);
+      setEods(eodData || []);
+      setPropInspections(propData || []);
+      setReceipts(receiptData || []);
+      setLastRefresh(new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" }));
+    } catch(e) { console.warn("Manager fetch failed", e); }
     setLoading(false);
   };
 
-  useEffect(()=>{
-    fetchAll();
-    const interval = setInterval(fetchAll, 10*60*1000);
-    return ()=>clearInterval(interval);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
+  useEffect(() => { fetchAll(); }, [selectedDate]);
 
-  const StatusBadge = ({status}) => {
-    const pass = status && (status.startsWith("PASS") || status==="ACKNOWLEDGED" || status==="COMPLETE");
-    const fail = status && (status.startsWith("FLAG") || status==="INCOMPLETE");
-    const bg  = pass?"rgba(74,109,32,0.12)":fail?"rgba(192,68,42,0.12)":"var(--bark2)";
-    const col = pass?"var(--lime)":fail?"var(--danger)":"var(--stone)";
-    const bdr = pass?"var(--leaf)":fail?"var(--danger)":"var(--moss)";
-    const lbl = status==="ACKNOWLEDGED"?"✓ Done":pass?"✓ "+status:fail?"✗ "+status:status||"—";
-    return (<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,background:bg,border:`1px solid ${bdr}`,borderRadius:4,padding:"2px 8px",color:col,textTransform:"uppercase",flexShrink:0,whiteSpace:"nowrap"}}>{lbl}</span>);
+  const todayLabel = new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
+
+  const DateBar = () => (
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:"10px 14px"}}>
+      <Ic n="clock" style={{width:14,height:14,color:"var(--stone)",flexShrink:0}}/>
+      <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
+        style={{background:"none",border:"none",color:"var(--cream)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,flex:1,outline:"none",cursor:"pointer"}}/>
+      <button onClick={()=>setSelectedDate(new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"}))}
+        style={{background:"var(--lime)",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--earth)",cursor:"pointer",textTransform:"uppercase"}}>
+        Today
+      </button>
+      <button onClick={fetchAll} disabled={loading}
+        style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>
+        {loading?"…":"Refresh"}
+      </button>
+    </div>
+  );
+
+  const ActivityTab = () => {
+    if(sessions.length === 0) return (
+      <div>
+        <DateBar/>
+        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
+          {loading ? "Loading..." : "No active trucks for this date"}
+        </div>
+      </div>
+    );
+
+    return (
+      <div>
+        <DateBar/>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5,marginBottom:12}}>
+          {lastRefresh && `Updated ${lastRefresh} · `}{sessions.length} truck{sessions.length!==1?"s":""} active
+        </div>
+        {sessions.map(session => {
+          const hasBriefing = briefings.some(b => b.session_id === session.id);
+          const dotRecord = dots.find(d => d.session_id === session.id);
+          const hasDot = !!dotRecord;
+          const dotFlagged = dotRecord && !dotRecord.passed;
+          const hasProp = propInspections.some(p => p.session_id === session.id);
+          const propCount = propInspections.filter(p => p.session_id === session.id).length;
+          const hasEod = eods.some(e => e.session_id === session.id);
+          const truck = trucks.find(t => t.id === session.truck_id);
+          const missingRequired = !hasBriefing || !hasDot;
+
+          return (
+            <div key={session.id} style={{background:"var(--bark)",border:`1px solid ${dotFlagged?"var(--danger)":missingRequired?"var(--warn)":"var(--moss)"}`,borderLeft:`4px solid ${dotFlagged?"var(--danger)":missingRequired?"var(--warn)":"var(--leaf)"}`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
+              <div style={{padding:"12px 14px",borderBottom:"1px solid var(--moss)",display:"flex",alignItems:"center",gap:10}}>
+                <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
+                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck?.name || "Unknown Truck"}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",marginLeft:4}}>{session.crew_name}</span>
+                {dotFlagged && (
+                  <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:4,padding:"2px 8px",color:"var(--danger)",letterSpacing:1,textTransform:"uppercase"}}>DOT Flagged</span>
+                )}
+                {!dotFlagged && missingRequired && (
+                  <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(160,96,16,0.12)",border:"1px solid var(--warn)",borderRadius:4,padding:"2px 8px",color:"var(--warn)",letterSpacing:1,textTransform:"uppercase"}}>Incomplete</span>
+                )}
+              </div>
+              <div style={{padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
+                {[
+                  {label:"Briefing", done:hasBriefing},
+                  {label:"DOT", done:hasDot, flagged:dotFlagged},
+                  {label:`Property${propCount>0?` (${propCount})`:""}`, done:hasProp},
+                  {label:"EOD", done:hasEod},
+                ].map(({label,done,flagged})=>(
+                  <span key={label} style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"3px 10px",borderRadius:4,textTransform:"uppercase",background:flagged?"rgba(192,68,42,0.12)":done?"rgba(74,109,32,0.12)":"rgba(160,96,16,0.12)",color:flagged?"var(--danger)":done?"var(--lime)":"var(--warn)",border:`1px solid ${flagged?"var(--danger)":done?"var(--leaf)":"var(--warn)"}`}}>
+                    {done&&!flagged?"✓ ":flagged?"✗ ":"⏳ "}{label}
+                  </span>
+                ))}
+              </div>
+              <div style={{padding:"4px 14px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>
+                Started {new Date(session.started_at).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
-  const TypePill = ({type}) => {
-    const map = {"Daily Briefing":{lbl:"Briefing",bg:"rgba(42,90,149,0.12)",col:"var(--mgr-lt)"},"DOT Walk-Around":{lbl:"DOT",bg:"rgba(160,96,16,0.12)",col:"var(--warn)"},"Property Inspection":{lbl:"Property",bg:"rgba(74,109,32,0.12)",col:"var(--leaf)"},"End of Day":{lbl:"End of Day",bg:"rgba(122,104,69,0.12)",col:"var(--dirt)"}};
-    const c = map[type]||{lbl:type,bg:"var(--bark2)",col:"var(--stone)"};
-    return (<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,background:c.bg,borderRadius:4,padding:"2px 7px",color:c.col,textTransform:"uppercase",flexShrink:0}}>{c.lbl}</span>);
-  };
+  const ReceiptsTab = () => {
+    const totalSpend = receipts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+    const fuelTotal = receipts.filter(r=>r.vendor==="Fuel").reduce((sum,r)=>sum+(parseFloat(r.amount)||0),0);
+    const otherTotal = totalSpend - fuelTotal;
 
-  const EmptyState = ({msg}) => (<div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>{loading?"Loading...":msg}</div>);
-  const todayLabel = new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+    return (
+      <div>
+        <DateBar/>
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:10,padding:"14px 16px",marginBottom:14}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Daily Spend Summary</div>
+          <div style={{display:"flex",gap:10}}>
+            <div style={{flex:1,background:"var(--bark2)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",lineHeight:1}}>${totalSpend.toFixed(2)}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginTop:2}}>Total</div>
+            </div>
+            <div style={{flex:1,background:"var(--bark2)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--warn)",lineHeight:1}}>${fuelTotal.toFixed(2)}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginTop:2}}>Fuel</div>
+            </div>
+            <div style={{flex:1,background:"var(--bark2)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--dirt)",lineHeight:1}}>${otherTotal.toFixed(2)}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginTop:2}}>Other</div>
+            </div>
+          </div>
+        </div>
+
+        {receipts.length===0?(
+          <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
+            {loading?"Loading...":"No receipts for this date"}
+          </div>
+        ):receipts.map((r,i)=>{
+          const truck = trucks.find(t=>t.id===sessions.find(s=>s.id===r.session_id)?.truck_id);
+          const session = sessions.find(s=>s.id===r.session_id);
+          return (
+            <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{truck?.name||"General"}</span>
+                  {session&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{session.crew_name}</span>}
+                </div>
+                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.amount>0?`$${parseFloat(r.amount).toFixed(2)}`:""}</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.vendor||"—"}</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{new Date(r.created_at).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})}</div>
+                </div>
+                {r.photo_url&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="screen" style={{background:"#ddd9d0"}}>
@@ -2055,90 +2152,22 @@ function ManagerZone({ onLogout }) {
         </div>
       </div>
 
-      {showResetConfirm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
-          <div style={{background:"var(--bark)",borderRadius:14,padding:"24px",width:"100%",maxWidth:340,boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--danger)",letterSpacing:2,marginBottom:8}}>Reset All Data?</div>
-            <div style={{fontSize:13,color:"var(--stone)",lineHeight:1.6,marginBottom:20}}>This will permanently delete all entries from Daily Briefing, DOT, Property Inspection, End of Day, Sign Ins, and History. Column headers will remain. This cannot be undone.</div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setShowResetConfirm(false)} style={{flex:1,padding:"13px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>Cancel</button>
-              <button onClick={handleReset} disabled={resetting} style={{flex:1,padding:"13px",background:"var(--danger)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"#fff",cursor:resetting?"not-allowed":"pointer",opacity:resetting?0.7:1}}>{resetting?"Resetting...":"Yes, Reset"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="content" style={{background:"#ddd9d0"}}>
-        {resetDone&&(<div style={{background:"rgba(192,68,42,0.1)",border:"1px solid var(--danger)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--danger)",letterSpacing:0.5,display:"flex",alignItems:"center",gap:8}}><Ic n="check" style={{width:14,height:14,flexShrink:0}}/> All data has been reset successfully.</div>)}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          {lastRefresh?<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>Updated {lastRefresh}</span>:<span/>}
-          <button onClick={fetchAll} disabled={loading} style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",cursor:"pointer",letterSpacing:1,textTransform:"uppercase"}}>{loading?"…":"Refresh"}</button>
-        </div>
-
-        {tab==="forms"&&(()=>{
-          const grouped = {};
-          const truckOrder = [];
-          history.forEach(r=>{ if(!grouped[r.truck]){ grouped[r.truck]=[]; truckOrder.push(r.truck); } grouped[r.truck].push(r); });
-          return (
-            <>
-              <div className="section-hd" style={{color:"var(--mgr)"}}>Activity by Truck ({truckOrder.length} trucks)</div>
-              {truckOrder.length===0?<EmptyState msg="No submissions yet"/>:truckOrder.map(truck=>{
-                const entries = grouped[truck];
-                return (
-                  <div key={truck} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,marginBottom:10,overflow:"hidden"}}>
-                    <div style={{background:"rgba(74,109,32,0.08)",borderBottom:"1px solid var(--moss)",padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-                      <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
-                      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck}</span>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginLeft:"auto",textTransform:"uppercase"}}>{entries.length} {entries.length===1?"submission":"submissions"}</span>
-                    </div>
-                    {entries.map((r,i)=>(
-                      <div key={i} style={{padding:"10px 14px",borderBottom:i<entries.length-1?"1px solid rgba(196,191,176,0.4)":"none"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.time}</span>
-                          <TypePill type={r.type}/>
-                          <div style={{marginLeft:"auto"}}><StatusBadge status={r.status}/></div>
-                        </div>
-                        {r.name&&<div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{r.name}</div>}
-                        {r.detail&&<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)",fontWeight:600,marginTop:2}}>{r.detail}</div>}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </>
-          );
-        })()}
-
-        {tab==="receipts"&&(
-          <>
-            <div className="section-hd" style={{color:"var(--mgr)"}}>Recent Receipts ({receipts.length})</div>
-            {receipts.length===0?<EmptyState msg="No receipts yet"/>:receipts.map((r,i)=>(
-              <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{r.truck}</span>
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{r.date} · {r.time}</span>
-                  </div>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.total?`$${r.total}`:""}</span>
-                </div>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.merchant||"—"}</div>
-                    <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{r.type}</div>
-                  </div>
-                  {r.photo&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
+        <ActivityTab/>
       </div>
 
+      {tab==="activity" && (
+        <div className="content" style={{background:"#ddd9d0",display:"none"}}/>
+      )}
+
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-        <button className={`bnav-btn ${tab==="forms"?"active":""}`} style={tab==="forms"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("forms")}><Ic n="clip"/>Activity</button>
+        <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
         <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
-        <button className="bnav-btn" style={{color:"var(--danger)"}} onClick={()=>setShowResetConfirm(true)}><Ic n="del"/>Reset</button>
       </nav>
+
+      <div className="content" style={{background:"#ddd9d0",display:tab==="receipts"?"block":"none",position:"absolute",top:0,left:0,right:0,bottom:60,overflow:"auto",paddingTop:"calc(60px + env(safe-area-inset-top))"}}>
+        <ReceiptsTab/>
+      </div>
     </div>
   );
 }
