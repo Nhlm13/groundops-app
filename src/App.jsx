@@ -2135,7 +2135,7 @@ function ManagerZone({ onLogout }) {
     );
   };
 
-  return (
+ return (
     <div className="screen" style={{background:"#ddd9d0"}}>
       <div className="mgr-topbar">
         <div style={{display:"flex",flexDirection:"column"}}>
@@ -2152,21 +2152,14 @@ function ManagerZone({ onLogout }) {
       </div>
 
       <div className="content" style={{background:"#ddd9d0"}}>
-        <ActivityTab/>
+        {tab==="activity" && <ActivityTab/>}
+        {tab==="receipts" && <ReceiptsTab/>}
       </div>
-
-      {tab==="activity" && (
-        <div className="content" style={{background:"#ddd9d0",display:"none"}}/>
-      )}
 
       <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
         <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
         <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
       </nav>
-
-      <div className="content" style={{background:"#ddd9d0",display:tab==="receipts"?"block":"none",position:"absolute",top:0,left:0,right:0,bottom:60,overflow:"auto",paddingTop:"calc(60px + env(safe-area-inset-top))"}}>
-        <ReceiptsTab/>
-      </div>
     </div>
   );
 }
