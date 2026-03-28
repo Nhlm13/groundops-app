@@ -1885,7 +1885,7 @@ function JobsTab({ truck }) {
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
   useEffect(() => {
-    const fetchJobs = async () => {
+   const fetchJobs = async () => {
       setLoading(true);
       const { data: assignments } = await supabase
         .from("job_assignments")
@@ -1905,12 +1905,18 @@ function JobsTab({ truck }) {
       if(!jobData || jobData.length === 0) { setLoading(false); return; }
 
       const propIds = [...new Set(jobData.map(j => j.property_id))];
-      const { data: propData } = await supabase
-        .from("properties")
-        .select("id, client_name, address, service_notes, special_instructions, photo_url, service_types")
-        .in("id", propIds);
+      const [{ data: propData }, { data: completionData }] = await Promise.all([
+        supabase.from("properties").select("id, client_name, address, service_notes, special_instructions, photo_url, service_types").in("id", propIds),
+        supabase.from("job_completions").select("job_id").in("job_id", jobIds),
+      ]);
 
-      setJobs(jobData);
+      const completedJobIds = new Set((completionData || []).map(c => c.job_id));
+      const jobsWithStatus = jobData.map(j => ({
+        ...j,
+        status: completedJobIds.has(j.id) ? "completed" : j.status,
+      }));
+
+      setJobs(jobsWithStatus);
       setProperties(propData || []);
       setLoading(false);
     };
