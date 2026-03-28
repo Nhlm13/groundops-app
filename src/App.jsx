@@ -2392,8 +2392,8 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEd
 
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:14,marginBottom:10}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>{property.client_name}</div>
-        <div style={{fontSize:13,color:"var(--stone)",marginTop:4}}>{property.address}</div>
-        {property.client_phone&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📞 {property.client_phone}</div>}
+<div style={{fontSize:13,color:"var(--stone)",marginTop:4}}>{property.address}</div>
+        <span style={{display:"inline-block",marginTop:6,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:property.property_type==="commercial"?"rgba(160,96,16,0.12)":"rgba(42,90,149,0.12)",color:property.property_type==="commercial"?"var(--warn)":"var(--mgr-lt)"}}>{property.property_type||"Residential"}</span>        {property.client_phone&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📞 {property.client_phone}</div>}
         {property.client_email&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>✉️ {property.client_email}</div>}
       </div>
 
@@ -2478,7 +2478,7 @@ function AddPropertyForm({ onBack, onSaved }) {
   const [fields, setFields] = useState({
     client_name: "", address: "", client_phone: "", client_email: "",
     billing_contact: "", billing_email: "", service_notes: "",
-    special_instructions: "", base_service_price: "",
+    special_instructions: "", base_service_price: "", property_type: "residential",
   });
   const [serviceTypes, setServiceTypes] = useState([]);
   const [error, setError] = useState("");
@@ -2529,6 +2529,7 @@ function AddPropertyForm({ onBack, onSaved }) {
         base_service_price: parseFloat(fields.base_service_price) || 0,
         service_types: serviceTypes,
         photo_url: photoUrl,
+        property_type: fields.property_type || "residential",
         active: true,
       });
       if(error){ setError("Failed to save property."); setSubmitting(false); return; }
@@ -2550,6 +2551,17 @@ function AddPropertyForm({ onBack, onSaved }) {
 
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Property Info</div>
+        <label style={labelStyle}>Property Type *</label>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+          {["Residential","Commercial"].map(type=>(
+            <button key={type} onClick={()=>set("property_type",type.toLowerCase())}
+              style={{padding:"10px",borderRadius:8,border:`1.5px solid ${fields.property_type===type.toLowerCase()?"var(--mgr)":"var(--moss)"}`,background:fields.property_type===type.toLowerCase()?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.property_type===type.toLowerCase()?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {type}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Property / Client Name *</label>
+        <input style={inputStyle} type="text" placeholder="e.g. Smith Residence" value={fields.client_name} onChange={e=>set("client_name",e.target.value)}/>
         <label style={labelStyle}>Property / Client Name *</label>
         <input style={inputStyle} type="text" placeholder="e.g. Smith Residence" value={fields.client_name} onChange={e=>set("client_name",e.target.value)}/>
         <label style={labelStyle}>Address *</label>
@@ -2623,6 +2635,7 @@ function PropertiesTab() {
   const [view, setView] = useState("list");
   const [selected, setSelected] = useState(null);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("all");
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -2643,20 +2656,29 @@ function PropertiesTab() {
   if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={()=>setView("detail")} preselectedDate={null}/>;
   if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
   if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}}/>;
+  const filteredProperties = typeFilter === "all" ? properties : properties.filter(p => p.property_type === typeFilter);
   return (
     <div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2}}>{properties.length} Properties</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2}}>{filteredProperties.length} Properties</div>
         <button onClick={()=>setView("add")}
           style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"8px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>
           + Add Property
         </button>
       </div>
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        {["all","residential","commercial"].map(type=>(
+          <button key={type} onClick={()=>setTypeFilter(type)}
+            style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${typeFilter===type?"var(--mgr)":"var(--moss)"}`,background:typeFilter===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:typeFilter===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600,textTransform:"capitalize"}}>
+            {type==="all"?"All":type.charAt(0).toUpperCase()+type.slice(1)}
+          </button>
+        ))}
+      </div>
       {loading ? (
         <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
       ) : properties.length === 0 ? (
         <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>No properties yet</div>
-      ) : properties.map(p => (
+      ) : filteredProperties.map(p => (
         <div key={p.id} onClick={()=>{setSelected(p);setView("detail");}}
           style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
           <div style={{width:40,height:40,borderRadius:8,background:"rgba(42,90,149,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"}}>
