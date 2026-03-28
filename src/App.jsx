@@ -2622,6 +2622,7 @@ function PropertiesTab() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list");
   const [selected, setSelected] = useState(null);
+  const [selectedSchedule, setSelectedSchedule] = useState(null);
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -2638,9 +2639,10 @@ function PropertiesTab() {
   useEffect(() => { fetchProperties(); }, []);
 
   if(view === "add") return <AddPropertyForm onBack={()=>setView("list")} onSaved={()=>{setView("list");fetchProperties();}}/>;
-if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
-if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={()=>setView("detail")} preselectedDate={null}/>;
-if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")}/>;
+  if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
+  if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={()=>setView("detail")} preselectedDate={null}/>;
+  if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
+  if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}}/>;
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
