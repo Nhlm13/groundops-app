@@ -3530,12 +3530,9 @@ if(existing) {
     })
     .select()
     .single();
-  if(error) console.warn("Supabase sign-in error", error);
   sessionData = newSession;
 }
 if(sessionData) tr.sessionId = sessionData.id;
-if (error) console.warn("Supabase sign-in error", error);
-else tr.sessionId = sessionData.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
   const postSignOut = async (tr) => {
