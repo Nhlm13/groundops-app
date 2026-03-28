@@ -3520,7 +3520,7 @@ let sessionData;
 if(existing) {
   sessionData = existing;
 } else {
-  const { data: newSession, error } = await supabase
+  const { data: newSession } = await supabase
     .from("crew_sessions")
     .insert({
       company_id: COMPANY_ID,
