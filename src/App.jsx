@@ -2154,6 +2154,113 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   );
 }
 
+// -- EDIT SCHEDULE FORM -------------------------------------------------------
+function EditScheduleForm({ schedule, onBack, onSaved }) {
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [fields, setFields] = useState({
+    service_type: schedule.service_type || "",
+    frequency: schedule.frequency || "",
+    day_of_week: schedule.day_of_week || "",
+    start_date: schedule.start_date || "",
+    end_date: schedule.end_date || "",
+    price: schedule.price || "",
+  });
+
+  const SERVICE_TYPES = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
+  const FREQUENCIES = [
+    {label:"Weekly", value:"weekly"},
+    {label:"Biweekly", value:"biweekly"},
+    {label:"Monthly", value:"monthly"},
+    {label:"Custom", value:"custom"},
+  ];
+  const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  const set = (k, v) => setFields(f => ({...f, [k]: v}));
+
+  const handleSubmit = async () => {
+    if(!fields.service_type || !fields.frequency || !fields.day_of_week || !fields.start_date) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await supabase.from("schedules").update({
+        service_type: fields.service_type,
+        frequency: fields.frequency,
+        day_of_week: fields.day_of_week,
+        start_date: fields.start_date,
+        end_date: fields.end_date || null,
+        price: parseFloat(fields.price) || 0,
+      }).eq("id", schedule.id);
+
+      await supabase.from("jobs")
+        .delete()
+        .eq("schedule_id", schedule.id)
+        .eq("status", "scheduled")
+        .gte("date", new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
+
+      onSaved();
+    } catch(e){ setError("Failed to save changes."); }
+    setSubmitting(false);
+  };
+
+  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};
+  const labelStyle = {fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4,display:"block"};
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease both"}}>
+      <button className="back-btn" style={{marginBottom:14}} onClick={onBack}><Ic n="back"/> Back</button>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:38,height:38,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="clock" style={{width:17,height:17,color:"var(--mgr-lt)"}}/></div>
+        <div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>Edit Schedule</div>
+          <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Changes will regenerate future jobs</div>
+        </div>
+      </div>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+        <label style={labelStyle}>Service Type *</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+          {SERVICE_TYPES.map(type=>(
+            <button key={type} onClick={()=>set("service_type",type)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.service_type===type?"var(--mgr)":"var(--moss)"}`,background:fields.service_type===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.service_type===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {type}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Frequency *</label>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+          {FREQUENCIES.map(f=>(
+            <button key={f.value} onClick={()=>set("frequency",f.value)}
+              style={{padding:"10px",borderRadius:8,border:`1.5px solid ${fields.frequency===f.value?"var(--mgr)":"var(--moss)"}`,background:fields.frequency===f.value?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.frequency===f.value?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Day of Week *</label>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+          {DAYS.map(day=>(
+            <button key={day} onClick={()=>set("day_of_week",day)}
+              style={{padding:"8px 12px",borderRadius:8,border:`1.5px solid ${fields.day_of_week===day?"var(--mgr)":"var(--moss)"}`,background:fields.day_of_week===day?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.day_of_week===day?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {day}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Start Date *</label>
+        <input style={inputStyle} type="date" value={fields.start_date} onChange={e=>set("start_date",e.target.value)}/>
+        <label style={labelStyle}>End Date (optional)</label>
+        <input style={inputStyle} type="date" value={fields.end_date} onChange={e=>set("end_date",e.target.value)}/>
+        <label style={labelStyle}>Price per Visit ($)</label>
+        <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.price} onChange={e=>set("price",e.target.value)}/>
+      </div>
+      {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
+      <button disabled={submitting} onClick={handleSubmit}
+        style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--mgr)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
+        {submitting?"Saving...":"Save Changes"}
+      </button>
+    </div>
+  );
+}
+
 // -- ADD SCHEDULE FORM --------------------------------------------------------
 function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -2252,7 +2359,7 @@ function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setS
 }
 
 // -- PROPERTY DETAIL ----------------------------------------------------------
-function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob }) {
+function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEditSchedule }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -2260,6 +2367,22 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob }) {
     supabase.from("schedules").select("*").eq("property_id", property.id)
       .then(({ data }) => { setSchedules(data || []); setLoading(false); });
   }, [property.id]);
+
+  const onTogglePause = async (schedule) => {
+    await supabase.from("schedules").update({ paused: !schedule.paused }).eq("id", schedule.id);
+    setSchedules(prev => prev.map(s => s.id === schedule.id ? {...s, paused: !s.paused} : s));
+  };
+
+  const onCancelSchedule = async (schedule) => {
+    if(!window.confirm("Cancel this schedule? Future unstarted jobs will be removed.")) return;
+    await supabase.from("schedules").update({ active: false }).eq("id", schedule.id);
+    await supabase.from("jobs")
+      .delete()
+      .eq("schedule_id", schedule.id)
+      .eq("status", "scheduled")
+      .gte("date", new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
+    setSchedules(prev => prev.filter(s => s.id !== schedule.id));
+  };
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
@@ -2318,13 +2441,27 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob }) {
       ) : schedules.length === 0 ? (
         <div style={{textAlign:"center",padding:"24px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1,textTransform:"uppercase"}}>No schedules yet</div>
       ) : schedules.map(s=>(
-        <div key={s.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+        <div key={s.id} style={{background:"var(--bark)",border:`1px solid ${s.paused?"var(--warn)":"var(--moss)"}`,borderRadius:9,padding:"12px 14px",marginBottom:8}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{s.service_type}</span>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:s.paused?"var(--warn)":"var(--cream)"}}>{s.service_type}{s.paused&&" (Paused)"}</span>
             {s.price>0&&<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)"}}>${parseFloat(s.price).toFixed(2)}</span>}
           </div>
-          <div style={{fontSize:12,color:"var(--stone)"}}>
+          <div style={{fontSize:12,color:"var(--stone)",marginBottom:10}}>
             {s.frequency.charAt(0).toUpperCase()+s.frequency.slice(1)} · {s.day_of_week} · {s.start_date}{s.end_date?` → ${s.end_date}`:""}
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            <button onClick={()=>onEditSchedule(s)}
+              style={{padding:"5px 10px",borderRadius:6,border:"1px solid var(--mgr)",background:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--mgr-lt)",cursor:"pointer",textTransform:"uppercase"}}>
+              Edit
+            </button>
+            <button onClick={()=>onTogglePause(s)}
+              style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${s.paused?"var(--leaf)":"var(--warn)"}`,background:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:s.paused?"var(--leaf)":"var(--warn)",cursor:"pointer",textTransform:"uppercase"}}>
+              {s.paused?"Resume":"Pause"}
+            </button>
+            <button onClick={()=>onCancelSchedule(s)}
+              style={{padding:"5px 10px",borderRadius:6,border:"1px solid var(--danger)",background:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--danger)",cursor:"pointer",textTransform:"uppercase"}}>
+              Cancel
+            </button>
           </div>
         </div>
       ))}
