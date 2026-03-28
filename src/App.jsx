@@ -2359,18 +2359,19 @@ function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setS
 }
 
 // -- PROPERTY DETAIL ----------------------------------------------------------
-function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEditSchedule }) {
+function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEditSchedule, onRefresh }) {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("schedules").select("*").eq("property_id", property.id)
+    supabase.from("schedules").select("*").eq("property_id", property.id).eq("active", true)
       .then(({ data }) => { setSchedules(data || []); setLoading(false); });
   }, [property.id]);
 
   const onTogglePause = async (schedule) => {
     await supabase.from("schedules").update({ paused: !schedule.paused }).eq("id", schedule.id);
     setSchedules(prev => prev.map(s => s.id === schedule.id ? {...s, paused: !s.paused} : s));
+    if(onRefresh) onRefresh();
   };
 
   const onCancelSchedule = async (schedule) => {
@@ -2382,6 +2383,7 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEd
       .eq("status", "scheduled")
       .gte("date", new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
     setSchedules(prev => prev.filter(s => s.id !== schedule.id));
+    if(onRefresh) onRefresh();
   };
 
   return (
@@ -2392,8 +2394,9 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEd
 
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:14,marginBottom:10}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>{property.client_name}</div>
-<div style={{fontSize:13,color:"var(--stone)",marginTop:4}}>{property.address}</div>
-        <span style={{display:"inline-block",marginTop:6,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:property.property_type==="commercial"?"rgba(160,96,16,0.12)":"rgba(42,90,149,0.12)",color:property.property_type==="commercial"?"var(--warn)":"var(--mgr-lt)"}}>{property.property_type||"Residential"}</span>        {property.client_phone&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📞 {property.client_phone}</div>}
+        <div style={{fontSize:13,color:"var(--stone)",marginTop:4}}>{property.address}</div>
+        <span style={{display:"inline-block",marginTop:6,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:property.property_type==="commercial"?"rgba(160,96,16,0.12)":"rgba(42,90,149,0.12)",color:property.property_type==="commercial"?"var(--warn)":"var(--mgr-lt)"}}>{property.property_type||"Residential"}</span>
+        {property.client_phone&&<div style={{fontSize:13,color:"var(--stone)",marginTop:6}}>📞 {property.client_phone}</div>}
         {property.client_email&&<div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>✉️ {property.client_email}</div>}
       </div>
 
@@ -2656,8 +2659,7 @@ function PropertiesTab() {
   if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
   if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}} preselectedDate={null}/>;
   if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
-  if(view === "detail" && selected) return <PropertyDetail property={properties.find(p=>p.id===selected.id)||selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}}/>;
-
+if(view === "detail" && selected) return <PropertyDetail property={properties.find(p=>p.id===selected.id)||selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}} onRefresh={fetchProperties}/>;
   const filteredProperties = typeFilter === "all" ? properties : properties.filter(p => p.property_type === typeFilter);
 
   return (
