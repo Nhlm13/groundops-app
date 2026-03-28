@@ -1872,6 +1872,9 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
 }
 
 // -- JOBS TAB -----------------------------------------------------------------
+const handleComplete = async (job) => {
+    console.log("completing job, truck.sessionId:", truck.sessionId, "truck.supabaseId:", truck.supabaseId);
+    setSubmitting(true);
 function JobsTab({ truck }) {
   const [jobs, setJobs] = useState([]);
   const [properties, setProperties] = useState([]);
