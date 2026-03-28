@@ -2686,7 +2686,9 @@ async function generateJobsFromSchedules() {
       .eq("properties.company_id", COMPANY_ID)
       .eq("properties.active", true);
 
-    if(!schedules || schedules.length === 0) return;
+if(!schedules || schedules.length === 0) return;
+
+    const activeSchedules = schedules.filter(s => !s.paused && s.active !== false);
 
     // Get existing jobs for next 60 days to avoid duplicates
     const today = new Date();
@@ -2711,7 +2713,7 @@ async function generateJobsFromSchedules() {
 
     const jobsToInsert = [];
 
-    for(const schedule of schedules) {
+    for(const schedule of activeSchedules) {
       const startDate = new Date(schedule.start_date + "T12:00:00");
       const endDate = schedule.end_date ? new Date(schedule.end_date + "T12:00:00") : futureDate;
       const targetDay = DAY_MAP[schedule.day_of_week];
