@@ -2931,6 +2931,13 @@ const assignJobToTruck = async (jobId, truckId) => {
     }
     setAssigningJob(null);
   };
+
+const skipJob = async (jobId) => {
+    if(!window.confirm("Skip this job? It will be removed from the calendar.")) return;
+    await supabase.from("jobs").delete().eq("id", jobId);
+    setJobs(prev => prev.filter(j => j.id !== jobId));
+    setAssignments(prev => { const next = {...prev}; delete next[jobId]; return next; });
+  };
   
   const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
@@ -3036,8 +3043,15 @@ const assignJobToTruck = async (jobId, truckId) => {
                         onClick={()=>setAssigningJob(assigningJob?.id===job.id ? null : job)}>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
                           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.property?.client_name||"Unknown Property"}</div>
-                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:job.status==="completed"?"rgba(74,109,32,0.12)":job.status==="in_progress"?"rgba(160,96,16,0.12)":"rgba(196,191,176,0.2)",color:job.status==="completed"?"var(--lime)":job.status==="in_progress"?"var(--warn)":"var(--stone)"}}>{job.status}</span>
-                        </div>
+<div style={{display:"flex",alignItems:"center",gap:6}}>
+  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:job.status==="completed"?"rgba(74,109,32,0.12)":job.status==="in_progress"?"rgba(160,96,16,0.12)":"rgba(196,191,176,0.2)",color:job.status==="completed"?"var(--lime)":job.status==="in_progress"?"var(--warn)":"var(--stone)"}}>{job.status}</span>
+  {job.status==="scheduled"&&(
+    <button onClick={e=>{e.stopPropagation();skipJob(job.id);}}
+      style={{padding:"2px 8px",borderRadius:4,border:"1px solid var(--danger)",background:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--danger)",cursor:"pointer",textTransform:"uppercase"}}>
+      Skip
+    </button>
+  )}
+</div>                        </div>
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                           <div style={{fontSize:12,color:"var(--stone)"}}>{serviceType}</div>
                           {assignedTruck ? (
