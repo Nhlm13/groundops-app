@@ -2647,16 +2647,19 @@ function PropertiesTab() {
       .order("client_name");
     setProperties(data || []);
     setLoading(false);
+    return data || [];
   };
 
   useEffect(() => { fetchProperties(); }, []);
 
   if(view === "add") return <AddPropertyForm onBack={()=>setView("list")} onSaved={()=>{setView("list");fetchProperties();}}/>;
-  if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
-  if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={()=>setView("detail")} preselectedDate={null}/>;
-  if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={()=>setView("detail")}/>;
-  if(view === "detail" && selected) return <PropertyDetail property={selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}}/>;
+  if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
+  if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}} preselectedDate={null}/>;
+  if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
+  if(view === "detail" && selected) return <PropertyDetail property={properties.find(p=>p.id===selected.id)||selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}}/>;
+
   const filteredProperties = typeFilter === "all" ? properties : properties.filter(p => p.property_type === typeFilter);
+
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
