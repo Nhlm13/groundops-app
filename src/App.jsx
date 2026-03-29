@@ -3655,12 +3655,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         const assignedIds = new Set((todayAssignments||[]).map(a => a.job_id));
         setUnassignedCount((todayJobs||[]).filter(j => !assignedIds.has(j.id)).length);
 
-        // Weather
-        fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&temperature_unit=fahrenheit&forecast_days=1")
-          .then(r => r.json())
-          .then(d => setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weathercode }))
-          .catch(() => {});
-
       } catch(e){ console.warn(e); }
       setLoading(false);
     };
@@ -3713,6 +3707,14 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       }
     });
   }, [serviceData]);
+  useEffect(() => {
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&temperature_unit=fahrenheit&forecast_days=1")
+    .then(r => r.json())
+    .then(d => {
+      setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weathercode });
+    })
+    .catch(e => console.warn("Weather fetch failed", e));
+}, []);
 
   const maxHours = truckData.length > 0 ? Math.max(...truckData.map(t => t.hours)) : 1;
 
