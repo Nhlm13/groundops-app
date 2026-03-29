@@ -3514,16 +3514,13 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   const [stats, setStats] = useState({ revenue: 0, jobs: 0, laborHours: 0, clients: 0, newClients: 0, receiptsTotal: 0 });
   const [revenueData, setRevenueData] = useState([]);
   const [serviceData, setServiceData] = useState([]);
-  const [truckData, setTruckData] = useState([]);
   const [unassignedCount, setUnassignedCount] = useState(0);
   const [weather, setWeather] = useState(null);
   const [quickAction, setQuickAction] = useState(null);
   const chartRef1 = useRef(null);
   const chartRef2 = useRef(null);
-  const chartRef3 = useRef(null);
   const chartInst1 = useRef(null);
   const chartInst2 = useRef(null);
-  const chartInst3 = useRef(null);
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const thisMonth = today.slice(0, 7);
 
@@ -3536,15 +3533,11 @@ function OwnerDashboard({ onLogout, onManagerView }) {
           { data: timeLogs },
           { data: receipts },
           { data: properties },
-          { data: trucks },
-          { data: assignments },
         ] = await Promise.all([
           supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("status", "completed"),
           supabase.from("job_time_logs").select("*").eq("company_id", COMPANY_ID),
           supabase.from("receipts").select("*").eq("company_id", COMPANY_ID),
           supabase.from("properties").select("id, created_at, property_type").eq("company_id", COMPANY_ID).eq("active", true),
-          supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
-          supabase.from("job_assignments").select("*"),
         ]);
 
         const thisMonthJobs = (jobs||[]).filter(j => j.date?.startsWith(thisMonth));
@@ -3584,19 +3577,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         (timeLogs||[]).forEach(l => { svcCounts[l.service_type] = (svcCounts[l.service_type]||0) + 1; });
         setServiceData(Object.entries(svcCounts).sort((a,b)=>b[1]-a[1]).slice(0,5));
 
-        const truckHours = {};
-        (timeLogs||[]).filter(l => l.started_at?.startsWith(thisMonth)).forEach(l => {
-          const job = (jobs||[]).find(j => j.id === l.job_id);
-          if(!job) return;
-          const assignment = (assignments||[]).find(a => a.job_id === job.id);
-          if(!assignment) return;
-          const truck = (trucks||[]).find(t => t.id === assignment.truck_id);
-          if(!truck) return;
-          truckHours[truck.name] = (truckHours[truck.name]||0) + (l.duration_seconds||0);
-        });
-        const truckArr = Object.entries(truckHours).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,secs]) => ({name, hours: Math.round(secs/3600)}));
-        setTruckData(truckArr);
-
         const { data: todayJobs } = await supabase.from("jobs").select("id").eq("company_id", COMPANY_ID).eq("date", today).eq("status", "scheduled");
         const { data: todayAssignments } = await supabase.from("job_assignments").select("job_id");
         const assignedIds = new Set((todayAssignments||[]).map(a => a.job_id));
@@ -3623,14 +3603,12 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       .catch(e => console.warn("Weather fetch failed", e));
   }, []);
 
-  // Single combined chart useEffect — waits for loading to be false so canvases are in the DOM
   useEffect(() => {
     if(loading) return;
     if(!window.Chart) return;
 
     if(chartInst1.current) chartInst1.current.destroy();
     if(chartInst2.current) chartInst2.current.destroy();
-    if(chartInst3.current) chartInst3.current.destroy();
 
     if(revenueData.length > 0 && chartRef1.current) {
       chartInst1.current = new window.Chart(chartRef1.current, {
@@ -3658,7 +3636,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         type: 'doughnut',
         data: {
           labels: serviceData.map(([id]) => getServiceLabel(id, "en")),
-          datasets: [{ data: serviceData.map(([,c]) => c), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7'], borderWidth: 0 }]
+          datasets: [{ data: serviceData.map(([,c]) => c), backgroundColor: ['#0A369D','#e05540','#f0a500','#22a86e','#9b59b6'], borderWidth: 0 }]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
@@ -3666,21 +3644,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         }
       });
     }
-
-    if(truckData.length > 0 && chartRef3.current) {
-      chartInst3.current = new window.Chart(chartRef3.current, {
-        type: 'doughnut',
-        data: {
-          labels: truckData.map(t => t.name),
-          datasets: [{ data: truckData.map(t => t.hours), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7','#162238'], borderWidth: 0 }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#4472CA', boxWidth: 10, padding: 8 } } }
-        }
-      });
-    }
-  }, [loading, revenueData, serviceData, truckData]);
+  }, [loading, revenueData, serviceData]);
 
   const cardStyle = {
     background:"#fff",
@@ -3809,21 +3773,11 @@ function OwnerDashboard({ onLogout, onManagerView }) {
               </div>
             </div>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-              <div style={cardStyle}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
-                <div style={{position:"relative",height:160}}>
-                  <canvas ref={chartRef2}></canvas>
-                </div>
+            <div style={{...cardStyle, marginBottom:12}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
+              <div style={{position:"relative",height:200}}>
+                <canvas ref={chartRef2}></canvas>
               </div>
-              {truckData.length > 0 && (
-                <div style={cardStyle}>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Truck hours</div>
-                  <div style={{position:"relative",height:160}}>
-                    <canvas ref={chartRef3}></canvas>
-                  </div>
-                </div>
-              )}
             </div>
           </>
         )}
