@@ -2191,7 +2191,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
                 {isInProgress && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--lime)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>⏱ In Progress</span>}
               </div>
               <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>📍 {property?.address}</div>
-              {job.service_types?.length > 0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
+              {job.service_types?.length > 0 && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,color:"var(--lime)",letterSpacing:1,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
               {property?.service_notes && (
                 <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--warn)",textTransform:"uppercase",marginBottom:2}}>Access Notes</div>
@@ -2210,6 +2210,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
                   <div style={{fontSize:12,color:"var(--cream)"}}>{job.notes}</div>
                 </div>
               )}
+              {isCompleted && <CompletedJobNoteEditor jobId={job.id}/>}
               {!isCompleted && (
                 <button onClick={()=>startJob(job)}
                   style={{width:"100%",padding:"12px",background:isInProgress?"rgba(74,109,32,0.2)":"var(--lime)",border:isInProgress?"2px solid var(--lime)":"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:isInProgress?"var(--lime)":"var(--earth)",cursor:"pointer",marginTop:4}}>
