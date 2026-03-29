@@ -3581,8 +3581,10 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   const [quickAction, setQuickAction] = useState(null);
   const chartRef1 = useRef(null);
   const chartRef2 = useRef(null);
+  const chartRef3 = useRef(null);
   const chartInst1 = useRef(null);
   const chartInst2 = useRef(null);
+  const chartInst3 = useRef(null);
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const thisMonth = today.slice(0, 7);
 
@@ -3610,11 +3612,19 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         const totalLaborSecs = (timeLogs||[]).filter(l => l.started_at?.startsWith(thisMonth)).reduce((s,l) => s+(l.duration_seconds||0), 0);
         const totalReceipts = (receipts||[]).filter(r => r.date?.startsWith(thisMonth)).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
 
+        // New clients: only those whose created_at is in this calendar month
+        const newThisMonth = (properties||[]).filter(p => {
+          if(!p.created_at) return false;
+          const d = new Date(p.created_at);
+          const key = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" }).slice(0, 7);
+          return key === thisMonth;
+        }).length;
+
         setStats({
           jobs: thisMonthJobs.length,
           laborHours: Math.round(totalLaborSecs / 3600),
           clients: (properties||[]).length,
-          newClients: (properties||[]).filter(p => p.created_at?.startsWith(thisMonth)).length,
+          newClients: newThisMonth,
           receiptsTotal: totalReceipts,
           revenue: thisMonthJobs.length * 185,
         });
@@ -3670,7 +3680,14 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   }, []);
 
   useEffect(() => {
-    if(revenueData.length === 0 || !chartRef1.current) return;
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&temperature_unit=fahrenheit&forecast_days=1")
+      .then(r => r.json())
+      .then(d => setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weathercode }))
+      .catch(e => console.warn("Weather fetch failed", e));
+  }, []);
+
+  useEffect(() => {
+    if(revenueData.length === 0 || !chartRef1.current || !window.Chart) return;
     if(chartInst1.current) chartInst1.current.destroy();
     chartInst1.current = new window.Chart(chartRef1.current, {
       type: 'bar',
@@ -3693,7 +3710,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   }, [revenueData]);
 
   useEffect(() => {
-    if(serviceData.length === 0 || !chartRef2.current) return;
+    if(serviceData.length === 0 || !chartRef2.current || !window.Chart) return;
     if(chartInst2.current) chartInst2.current.destroy();
     chartInst2.current = new window.Chart(chartRef2.current, {
       type: 'doughnut',
@@ -3707,16 +3724,22 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       }
     });
   }, [serviceData]);
-  useEffect(() => {
-  fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&temperature_unit=fahrenheit&forecast_days=1")
-    .then(r => r.json())
-    .then(d => {
-      setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weathercode });
-    })
-    .catch(e => console.warn("Weather fetch failed", e));
-}, []);
 
-  const maxHours = truckData.length > 0 ? Math.max(...truckData.map(t => t.hours)) : 1;
+  useEffect(() => {
+    if(truckData.length === 0 || !chartRef3.current || !window.Chart) return;
+    if(chartInst3.current) chartInst3.current.destroy();
+    chartInst3.current = new window.Chart(chartRef3.current, {
+      type: 'doughnut',
+      data: {
+        labels: truckData.map(t => t.name),
+        datasets: [{ data: truckData.map(t => t.hours), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7','#162238'], borderWidth: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#4472CA', boxWidth: 10, padding: 8 } } }
+      }
+    });
+  }, [truckData]);
 
   const cardStyle = {
     background:"#fff",
@@ -3851,7 +3874,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
               </div>
             </div>
 
-            {/* Service breakdown */}
+            {/* Service breakdown + Truck hours side by side */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div style={cardStyle}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
@@ -3859,25 +3882,15 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                   <canvas ref={chartRef2}></canvas>
                 </div>
               </div>
-            </div>
-
-            {/* Truck performance */}
-            {truckData.length > 0 && (
-              <div style={{...cardStyle, marginBottom:12}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:12}}>Truck hours — this month</div>
-                {truckData.map((t,i)=>(
-                  <div key={i} style={{marginBottom:10}}>
-                    <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,marginBottom:4}}>
-                      <span style={{color:"#333"}}>{t.name}</span>
-                      <span style={{color:"#0A369D",fontWeight:700}}>{t.hours}h</span>
-                    </div>
-                    <div style={{height:6,background:"#CFDEE7",borderRadius:3}}>
-                      <div style={{height:"100%",width:`${Math.round((t.hours/maxHours)*100)}%`,background:"#4472CA",borderRadius:3}}></div>
-                    </div>
+              {truckData.length > 0 && (
+                <div style={cardStyle}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Truck hours</div>
+                  <div style={{position:"relative",height:160}}>
+                    <canvas ref={chartRef3}></canvas>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
