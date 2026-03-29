@@ -3671,22 +3671,24 @@ function ManagerZone({ onLogout }) {
           {lastRefresh && `Updated ${lastRefresh} · `}{sessions.length} truck{sessions.length!==1?"s":""} active
         </div>
 
-        {/* Daily Summary Card */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
-          {[
-            {label:"Active", value:sessions.length, color:"var(--lime)"},
-            {label:"In Progress", value:jobData.active.length, color:"var(--warn)"},
-            {label:"Completed", value:jobData.completed.length, color:"var(--leaf)"},
-            {label:"Labor Hrs", value:jobData.completed.reduce((sum,j)=>sum+j.timeLogs.reduce((s,l)=>s+(l.duration_seconds||0),0),0), color:"var(--mgr-lt)", isTime:true},
-          ].map(({label,value,color,isTime})=>(
-            <div key={label} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"8px",textAlign:"center"}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color,lineHeight:1}}>
-                {isTime ? `${Math.floor(value/3600)}h ${Math.floor((value%3600)/60)}m` : value}
+      {/* Daily Summary Card */}
+        {!jobsLoading && (
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+            {[
+              {label:"Active", value:sessions.length, color:"var(--lime)"},
+              {label:"In Progress", value:jobData.active.length, color:"var(--warn)"},
+              {label:"Completed", value:jobData.completed.length, color:"var(--leaf)"},
+              {label:"Labor Hrs", value:jobData.completed.reduce((sum,j)=>sum+j.timeLogs.reduce((s,l)=>s+(l.duration_seconds||0),0),0), color:"var(--mgr-lt)", isTime:true},
+            ].map(({label,value,color,isTime})=>(
+              <div key={label} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"8px",textAlign:"center"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color,lineHeight:1}}>
+                  {isTime ? `${Math.floor(value/3600)}h ${Math.floor((value%3600)/60)}m` : value}
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase",marginTop:2}}>{label}</div>
               </div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase",marginTop:2}}>{label}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {sessions.map(session => {
           const hasBriefing = briefings.some(b => b.session_id === session.id);
