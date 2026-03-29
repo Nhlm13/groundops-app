@@ -1674,10 +1674,8 @@ function ContactsTab() {
 function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
   const t   = useT();
   const day = getTodayStr();
-  const [showContacts, setShowContacts] = useState(false);
-
   return (
-    <div style={{position:"relative"}}>
+    <div>
       <div className="greeting">
         <div className="greeting-icon"><Ic n="truck"/></div>
         <div><div className="greet-name">{truck.label}</div><div className="greet-sub">{day}</div></div>
@@ -1731,12 +1729,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           {!eodComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
       </div>
-          <div style={{background:"var(--bark)",borderRadius:"16px 16px 0 0",width:"100%",padding:"20px 16px 40px",animation:"fadeUp 0.25s ease both"}}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"var(--lime)"}}>{t.contactMgr}</div>
-              <button onClick={()=>setShowContacts(false)} style={{background:"none",border:"none",color:"var(--stone)",fontSize:20,cursor:"pointer",lineHeight:1}}>✕</button>
-            </div>
+    </div>
   );
 }
 
