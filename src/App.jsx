@@ -1648,6 +1648,28 @@ function UniformGuideInline() {
   );
 }
 
+// -- CONTACTS TAB -------------------------------------------------------------
+function ContactsTab() {
+  const t = useT();
+  return (
+    <div>
+      <div className="section-hd">{t.contactMgr}</div>
+      {CONTACTS.map(c=>(
+        <div key={c.name} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:10,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:44,height:44,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>
+            {c.initials}
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:16,color:"var(--cream)"}}>{c.name}</div>
+            <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{c.role}</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1,marginTop:4}}>{c.phone.replace("tel:+1","")}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // -- HOME TAB ------------------------------------------------------------------
 function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
   const t   = useT();
@@ -1709,17 +1731,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           {!eodComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
       </div>
-
-      {/* Floating contact button */}
-      <button onClick={()=>setShowContacts(true)}
-        style={{position:"fixed",bottom:80,right:20,width:52,height:52,borderRadius:"50%",background:"var(--lime)",border:"none",boxShadow:"0 4px 12px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:100,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"var(--earth)",letterSpacing:1}}>
-        📞
-      </button>
-
-      {/* Contact modal */}
-      {showContacts && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"flex-end"}}
-          onClick={()=>setShowContacts(false)}>
           <div style={{background:"var(--bark)",borderRadius:"16px 16px 0 0",width:"100%",padding:"20px 16px 40px",animation:"fadeUp 0.25s ease both"}}
             onClick={e=>e.stopPropagation()}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
@@ -2302,6 +2313,7 @@ function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
         {tab==="jobs"   &&<JobsTab truck={truck} onJobCountChange={setAssignedJobCount}/>}
         {tab==="receipt"&&<ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
         {tab==="hr"     &&<HRTab/>}
+        {tab==="contacts" && <ContactsTab/>}
       </div>
 
       <nav className="bottom-nav">
@@ -2312,6 +2324,7 @@ function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
         </button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
         <button className={`bnav-btn ${tab==="hr"?"active":""}`} onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
+        <button className={`bnav-btn ${tab==="contacts"?"active":""}`} onClick={()=>setTab("contacts")} style={{fontSize:18}}>📞</button>
       </nav>
     </div>
   );
