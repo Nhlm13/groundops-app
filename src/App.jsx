@@ -948,6 +948,7 @@ function FlagSelector({ lang, setLang }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 const CONTACTS = [
   {name:"Jonny",role:"General Manager",    initials:"JF",phone:"tel:+15085550001"},
   {name:"Jon",  role:"Mowing Manager",     initials:"JG",phone:"tel:+15085550002"},
