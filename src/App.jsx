@@ -1015,7 +1015,7 @@ function IPadTopBar({ truck, onLogout, currentTab }) {
       zIndex:49,
     }}>
       <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0,overflow:"hidden"}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,flexShrink:0}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4",letterSpacing:2,flexShrink:0}}>
           {tabLabels[currentTab] || t.home}
         </div>
         <div className="truck-pill" style={{flexShrink:0,whiteSpace:"nowrap"}}><Ic n="truck" style={{width:12,height:12,flexShrink:0}}/>{truck.label}</div>
@@ -1146,13 +1146,13 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
       <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}>
-        <Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/>
+        <Ic n="check" style={{width:36,height:36,color:"#92B4F4"}}/>
       </div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:4}}>{t.allDone}</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#92B4F4",letterSpacing:3,marginBottom:4}}>{t.allDone}</div>
       <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>{property}</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
       <div style={{display:"flex",gap:8,width:"100%"}}>
-        <button onClick={resetForNext} style={{flex:1,padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.piAnotherProperty}</button>
+        <button onClick={resetForNext} style={{flex:1,padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.piAnotherProperty}</button>
         <button onClick={onDone} style={{flex:1,padding:"14px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.goHome}</button>
       </div>
     </div>
@@ -1162,10 +1162,10 @@ function PropertyInspectionForm({ truck, onBack, onDone }) {
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <Ic n="map" style={{width:17,height:17,color:"var(--lime)"}}/>
+          <Ic n="map" style={{width:17,height:17,color:"#92B4F4"}}/>
         </div>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.piTitle}</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.piTitle}</div>
           <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.piSubtitle}</div>
         </div>
       </div>
@@ -1298,14 +1298,14 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
         <Ic n={uncheckedHigh===0?"check":"alert"} style={{width:36,height:36,color:uncheckedHigh===0?"var(--lime)":"var(--danger)"}}/>
       </div>
       {uncheckedHigh===0
-        ? <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center"}}>{t.safeTravels}</div>
+        ? <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#92B4F4",letterSpacing:3,marginBottom:2,textAlign:"center"}}>{t.safeTravels}</div>
         : <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--danger)",letterSpacing:3,marginBottom:2}}>FLAGGED</div>
       }
       {uncheckedHigh>0&&<div style={{fontSize:13,color:"var(--danger)",textAlign:"center",marginBottom:6}}>{uncheckedHigh} {t.dotFlagNote}</div>}
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24,marginTop:6}}>{truck.label} · {name}</div>
       <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
         {uncheckedHigh===0&&onOpenPropInspect&&(
-          <button onClick={onOpenPropInspect} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.completePropInspect}</button>
+          <button onClick={onOpenPropInspect} style={{width:"100%",padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.completePropInspect}</button>
         )}
         <button onClick={onDone} style={{width:"100%",padding:"12px",background:uncheckedHigh===0&&onOpenPropInspect?"none":"var(--lime)",border:uncheckedHigh===0&&onOpenPropInspect?"1px solid var(--moss)":"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:uncheckedHigh===0&&onOpenPropInspect?"var(--stone)":"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
       </div>
@@ -1316,10 +1316,10 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          <Ic n="dot" style={{width:17,height:17,color:"var(--lime)"}}/>
+          <Ic n="dot" style={{width:17,height:17,color:"#92B4F4"}}/>
         </div>
         <div style={{flex:1}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.dotTitle}</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.dotTitle}</div>
           <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{truck.label} · {totalChecked}/{allItems.length} items</div>
         </div>
         {uncheckedHigh>0&&<div style={{background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:6,padding:"3px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--danger)",letterSpacing:1}}>{uncheckedHigh} HIGH</div>}
@@ -1344,7 +1344,7 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
             <div className={`dot-cat-header ${headerState}`} onClick={()=>toggleCategory(cat)}>
               <div style={{width:28,height:28,borderRadius:7,background:allChecked?"rgba(74,109,32,0.2)":"rgba(196,191,176,0.3)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background 0.15s"}}>
                 {allChecked
-                  ?<Ic n="check" style={{width:13,height:13,color:"var(--lime)"}}/>
+                  ?<Ic n="check" style={{width:13,height:13,color:"#92B4F4"}}/>
                   :<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:12,color:"var(--stone)"}}>{checkedCount}/{cat.items.length}</span>
                 }
               </div>
@@ -1448,12 +1448,12 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
 
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
-      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/></div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:3,marginBottom:2,textAlign:"center",lineHeight:1.1}}>{t.briefingCompleteTitle}</div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,marginBottom:8,textAlign:"center"}}>{t.briefingCompleteSubtitle}</div>
+      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"#92B4F4"}}/></div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#92B4F4",letterSpacing:3,marginBottom:2,textAlign:"center",lineHeight:1.1}}>{t.briefingCompleteTitle}</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4",letterSpacing:2,marginBottom:8,textAlign:"center"}}>{t.briefingCompleteSubtitle}</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
       <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
-        <button onClick={onOpenDOT||onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.performDOT}</button>
+        <button onClick={onOpenDOT||onDone} style={{width:"100%",padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.performDOT}</button>
         <button onClick={onDone} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.goHome}</button>
       </div>
     </div>
@@ -1462,8 +1462,8 @@ function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="book" style={{width:17,height:17,color:"var(--lime)"}}/></div>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.dbTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.dbSubtitle}</div></div>
+        <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="book" style={{width:17,height:17,color:"#92B4F4"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.dbTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.dbSubtitle}</div></div>
       </div>
       <div style={{background:"var(--bark)",border:`1px solid ${nameErr?"var(--danger)":"var(--moss)"}`,borderRadius:10,padding:14,marginBottom:14}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.dbNameLabel}</div>
@@ -1513,8 +1513,8 @@ function VehicleGuideInline() {
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:40,height:40,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="truck" style={{width:18,height:18,color:"var(--lime)"}}/></div>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.vehicleTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.vehicleSubtitle}</div></div>
+        <div style={{width:40,height:40,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="truck" style={{width:18,height:18,color:"#92B4F4"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.vehicleTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.vehicleSubtitle}</div></div>
       </div>
       <S k="shop"     icon="box"    bg="rgba(74,109,32,0.12)"  titleKey="vSec_shop">    <Items items={t.vItems_shop}/></S>
       <S k="road"     icon="truck"  bg="rgba(160,96,16,0.1)"   titleKey="vSec_road">    <Items items={t.vItems_road}/></S>
@@ -1578,18 +1578,18 @@ function EndOfDayForm({ truck, onBack, onDone }) {
 
   if(submitted) return (
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
-      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/></div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:6}}>{t.allDone}</div>
+      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"#92B4F4"}}/></div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#92B4F4",letterSpacing:3,marginBottom:6}}>{t.allDone}</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
-      <button onClick={onDone} style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
+      <button onClick={onDone} style={{width:"100%",padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.goHome}</button>
     </div>
   );
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="sun" style={{width:17,height:17,color:"var(--lime)"}}/></div>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.eodTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.eodSubtitle}</div></div>
+        <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="sun" style={{width:17,height:17,color:"#92B4F4"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.eodTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.eodSubtitle}</div></div>
       </div>
       <div style={{background:"var(--bark)",border:`1px solid ${nameErr?"var(--danger)":"var(--moss)"}`,borderRadius:10,padding:14,marginBottom:14}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.eodNameLabel}</div>
@@ -1631,8 +1631,8 @@ function UniformGuideInline() {
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:40,height:40,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="shield" style={{width:18,height:18,color:"var(--lime)"}}/></div>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{t.uniformTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.uniformSubtitle}</div></div>
+        <div style={{width:40,height:40,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="shield" style={{width:18,height:18,color:"#92B4F4"}}/></div>
+        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.uniformTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.uniformSubtitle}</div></div>
       </div>
       <S k="purpose"      icon="clip"   bg="rgba(74,109,32,0.12)"  titleKey="uSec_purpose">     <Items items={t.uItems_purpose}/></S>
       <S k="issuance"     icon="box"    bg="rgba(74,109,32,0.12)"  titleKey="uSec_issuance">    <Items items={t.uItems_issuance}/></S>
@@ -1656,13 +1656,13 @@ function ContactsTab() {
       <div className="section-hd">{t.contactMgr}</div>
       {CONTACTS.map(c=>(
         <div key={c.name} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:10,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14}}>
-          <div style={{width:44,height:44,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>
+          <div style={{width:44,height:44,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"#92B4F4",letterSpacing:1}}>
             {c.initials}
           </div>
           <div style={{flex:1}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:16,color:"var(--cream)"}}>{c.name}</div>
             <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{c.role}</div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1,marginTop:4}}>{c.phone.replace("tel:+1","")}</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:1,marginTop:4}}>{c.phone.replace("tel:+1","")}</div>
           </div>
         </div>
       ))}
@@ -1684,7 +1684,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
       <div className="action-cards-grid">
         <div className="action-card" onClick={briefingComplete?undefined:onOpenBriefing} style={{opacity:briefingComplete?0.75:1,cursor:briefingComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:briefingComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-            <Ic n={briefingComplete?"check":"book"} style={{width:18,height:18,color:"var(--lime)"}}/>
+            <Ic n={briefingComplete?"check":"book"} style={{width:18,height:18,color:"#92B4F4"}}/>
           </div>
           <div className="action-card-info">
             <div className="action-card-name">{t.dailyBriefing}</div>
@@ -1695,7 +1695,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
         </div>
         <div className="action-card" onClick={dotComplete?undefined:onOpenDOT} style={{opacity:dotComplete?0.75:1,cursor:dotComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:dotComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-            <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"var(--lime)"}}/>
+            <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"#92B4F4"}}/>
           </div>
           <div className="action-card-info">
             <div className="action-card-name">{t.dotCheck}</div>
@@ -1706,7 +1706,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
         </div>
         <div className="action-card" onClick={onOpenPropInspect}>
           <div className="action-card-icon" style={{background:propInspectCount>0?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-            <Ic n="map" style={{width:18,height:18,color:"var(--lime)"}}/>
+            <Ic n="map" style={{width:18,height:18,color:"#92B4F4"}}/>
           </div>
           <div className="action-card-info">
             <div className="action-card-name">{t.propInspect}</div>
@@ -1719,7 +1719,7 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
         </div>
         <div className="action-card" onClick={eodComplete?undefined:onOpenEOD} style={{opacity:eodComplete?0.75:1,cursor:eodComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:eodComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-            <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"var(--lime)"}}/>
+            <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"#92B4F4"}}/>
           </div>
           <div className="action-card-info">
             <div className="action-card-name">{t.endOfDay}</div>
@@ -1820,7 +1820,7 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <StepBar done={1}/>
       <div className="success-banner" style={{marginBottom:16}}><Ic n="check" style={{width:14,height:14,flexShrink:0}}/> {t.receiptSaved}</div>
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{fields.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{displayTruck} · {fields.division}</div></div><div style={{textAlign:"right"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)",lineHeight:1}}>{isFuel&&fields.atShop?`${fields.gallons} gal`:`$${fields.total}`}</div><div style={{fontSize:11,color:"var(--stone)",marginTop:2}}>{fields.type}{isFuel?` · ${fields.fuelType}`:""}</div></div></div>{isFuel&&<div style={{fontSize:12,color:"var(--stone)"}}>{fields.atShop?t.atShop:t.gasStation}{fields.gallons?` · ${fields.gallons} gal`:""}</div>}{!isFuel&&<div style={{fontSize:12,color:"var(--stone)"}}>{fields.vendor}</div>}</div>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:12,padding:16,marginBottom:16}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}><div><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{fields.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{displayTruck} · {fields.division}</div></div><div style={{textAlign:"right"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#92B4F4",lineHeight:1}}>{isFuel&&fields.atShop?`${fields.gallons} gal`:`$${fields.total}`}</div><div style={{fontSize:11,color:"var(--stone)",marginTop:2}}>{fields.type}{isFuel?` · ${fields.fuelType}`:""}</div></div></div>{isFuel&&<div style={{fontSize:12,color:"var(--stone)"}}>{fields.atShop?t.atShop:t.gasStation}{fields.gallons?` · ${fields.gallons} gal`:""}</div>}{!isFuel&&<div style={{fontSize:12,color:"var(--stone)"}}>{fields.vendor}</div>}</div>
       <div style={{fontSize:13,color:"var(--stone)",marginBottom:10}}>{t.photoDesc}</div>
       <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhoto}/>
       <div className="receipt-upload" onClick={()=>!uploading&&photoRef.current.click()} style={{opacity:uploading?0.6:1,marginBottom:12,borderColor:uploading?"var(--moss)":"var(--leaf)",padding:"28px 16px"}}>
@@ -1832,13 +1832,13 @@ function NativeReceiptFlow({ truckLabel, divisionLabel, onGoHome, onClose }) {
   );
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
-      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"var(--lime)"}}/></div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"var(--lime)",letterSpacing:3,marginBottom:4}}>{t.allDone}</div>
+      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"#92B4F4"}}/></div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#92B4F4",letterSpacing:3,marginBottom:4}}>{t.allDone}</div>
       <div style={{fontSize:13,color:"var(--stone)",textAlign:"center",marginBottom:4}}>{isFuel?`${fields.gallons} gal ${fields.fuelType}`:`${fields.vendor} · $${fields.total}`}</div>
       <div style={{fontSize:12,color:"var(--stone)",marginBottom:20}}>{fields.type} · {displayTruck} · {fields.division}</div>
       {photoUrl&&<img src={photoUrl} alt="receipt" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",marginBottom:16}}/>}
       <div style={{display:"flex",gap:8,width:"100%"}}>
-        <button onClick={reset} style={{flex:1,padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.submitAnother}</button>
+        <button onClick={reset} style={{flex:1,padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.submitAnother}</button>
         <button onClick={onGoHome||onClose} style={{flex:1,padding:"14px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{onGoHome?t.goHome:t.done}</button>
       </div>
     </div>
@@ -1897,7 +1897,7 @@ function CompletedJobNoteEditor({ jobId }) {
   };
 
   if(saved) return (
-    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1,marginTop:6}}>✓ Note saved</div>
+    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#92B4F4",letterSpacing:1,marginTop:6}}>✓ Note saved</div>
   );
 
   return (
@@ -2115,9 +2115,9 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
         }}><Ic n="back"/> {t.back}</button>
 
         <div style={{background:"var(--bark)",border:"1px solid var(--lime)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{property?.client_name}</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{property?.client_name}</div>
           <div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📍 {property?.address}</div>
-          {totalSecs > 0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",marginTop:6,letterSpacing:1}}>{t.totalTime}: <span style={{color:"var(--lime)",fontWeight:700}}>{formatTime(totalSecs)}</span></div>}
+          {totalSecs > 0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",marginTop:6,letterSpacing:1}}>{t.totalTime}: <span style={{color:"#92B4F4",fontWeight:700}}>{formatTime(totalSecs)}</span></div>}
         </div>
 
         {property?.service_notes && (
@@ -2137,7 +2137,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
 
         {SERVICE_GROUPS.map(group => (
           <div key={group.label.en} style={{marginBottom:12}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--lime)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{group.label[lang]||group.label.en}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"#92B4F4",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{group.label[lang]||group.label.en}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {group.ids.map(id => {
                 const svc = SERVICE_TYPES.find(s => s.id === id);
@@ -2147,7 +2147,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
                 return (
                   <button key={svc.id} onClick={()=>switchService(svc.id)}
                     style={{padding:"8px 12px",borderRadius:8,border:`2px solid ${isActive?"var(--lime)":"var(--moss)"}`,background:isActive?"rgba(74,109,32,0.2)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:isActive?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}}>
-                    {isActive && <span style={{position:"absolute",top:3,right:5,width:7,height:7,borderRadius:"50%",background:"var(--lime)",animation:"pulse 1s infinite"}}/>}
+                    {isActive && <span style={{position:"absolute",top:3,right:5,width:7,height:7,borderRadius:"50%",background:"#5E7CE2",animation:"pulse 1s infinite"}}/>}
                     <span>{svc[lang]||svc.en}</span>
                     {secs > 0 && <span style={{fontSize:10,color:isActive?"var(--lime)":"var(--stone)",letterSpacing:0.5}}>{formatTime(secs)}</span>}
                   </button>
@@ -2176,7 +2176,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
           finalLogsRef.current = logs;
           setCompleting(activeJob);
         }}
-          style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
+          style={{width:"100%",padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
           {t.completeJob}
         </button>
       </div>
@@ -2210,7 +2210,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
             {SERVICE_TYPES.filter(s => finalLogsRef.current[s.id] > 0).map(svc => (
               <div key={svc.id} style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                 <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>{svc[lang]||svc.en}</span>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--lime)",fontWeight:700}}>{formatTime(finalLogsRef.current[svc.id])}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#92B4F4",fontWeight:700}}>{formatTime(finalLogsRef.current[svc.id])}</span>
               </div>
             ))}
           </div>
@@ -2243,11 +2243,11 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
             <div style={{padding:"12px 14px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isCompleted?"var(--leaf)":isInProgress?"var(--lime)":"var(--cream)",letterSpacing:2,lineHeight:1}}>{property?.client_name||"Unknown Property"}</div>
-                {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>{t.jobComplete}</span>}
-                {isInProgress && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--lime)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>⏱ In Progress</span>}
+                {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#92B4F4",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>{t.jobComplete}</span>}
+                {isInProgress && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#92B4F4",background:"rgba(74,109,32,0.12)",border:"1px solid var(--lime)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>⏱ In Progress</span>}
               </div>
               <a href={`https://maps.apple.com/?q=${encodeURIComponent(property?.address||"")}`} target="_blank" rel="noopener noreferrer" style={{fontSize:13,color:"var(--mgr-lt)",marginBottom:4,display:"block",textDecoration:"none"}}>📍 {property?.address}</a>
-              {job.service_types?.length > 0 && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,color:"var(--lime)",letterSpacing:1,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
+              {job.service_types?.length > 0 && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,color:"#92B4F4",letterSpacing:1,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
               {property?.service_notes && (
                 <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--warn)",textTransform:"uppercase",marginBottom:2}}>Access Notes</div>
@@ -2352,7 +2352,7 @@ function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
         <button className={`bnav-btn ${tab==="home"?"active":""}`} onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
         <button className={`bnav-btn ${tab==="jobs"?"active":""}`} onClick={()=>setTab("jobs")} style={{position:"relative"}}>
           <Ic n="clip"/>Jobs
-          {assignedJobCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--lime)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{assignedJobCount}</span>}
+          {assignedJobCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"#5E7CE2",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{assignedJobCount}</span>}
         </button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
         <button className={`bnav-btn ${tab==="hr"?"active":""}`} onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
@@ -2660,7 +2660,7 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEd
       {property.base_service_price>0&&(
         <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>Base Service Price</span>
-          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)"}}>${parseFloat(property.base_service_price).toFixed(2)}</span>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4"}}>${parseFloat(property.base_service_price).toFixed(2)}</span>
         </div>
       )}
 
@@ -2686,7 +2686,7 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEd
         <div key={s.id} style={{background:"var(--bark)",border:`1px solid ${s.paused?"var(--warn)":"var(--moss)"}`,borderRadius:9,padding:"12px 14px",marginBottom:8}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
             <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:s.paused?"var(--warn)":"var(--cream)"}}>{s.service_type}{s.paused&&" (Paused)"}</span>
-            {s.price>0&&<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)"}}>${parseFloat(s.price).toFixed(2)}</span>}
+            {s.price>0&&<span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4"}}>${parseFloat(s.price).toFixed(2)}</span>}
           </div>
           <div style={{fontSize:12,color:"var(--stone)",marginBottom:10}}>
             {s.frequency.charAt(0).toUpperCase()+s.frequency.slice(1)} · {s.day_of_week} · {s.start_date}{s.end_date?` → ${s.end_date}`:""}
@@ -3337,7 +3337,7 @@ const skipJob = async (jobId) => {
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                           <div style={{fontSize:12,color:"var(--stone)"}}>{serviceType}</div>
                           {assignedTruck ? (
-                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
+                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
                           ) : (
                             <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--warn)",letterSpacing:1}}>Unassigned</span>
                           )}
@@ -3386,10 +3386,10 @@ function CompletedJobsSummary({ jobs, formatSecs }) {
         style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bark)",border:"1px solid rgba(74,109,32,0.3)",borderLeft:"4px solid var(--leaf)",borderRadius:10,padding:"12px 14px",cursor:"pointer",userSelect:"none"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase"}}>✓ Completed Jobs</span>
-          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>{jobs.length}</span>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"#92B4F4",letterSpacing:1}}>{jobs.length}</span>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          {totalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700,letterSpacing:1}}>{formatSecs(totalSecs)} total</span>}
+          {totalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#92B4F4",fontWeight:700,letterSpacing:1}}>{formatSecs(totalSecs)} total</span>}
           <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",transform:expanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▼</span>
         </div>
       </div>
@@ -3407,7 +3407,7 @@ function CompletedJobsSummary({ jobs, formatSecs }) {
                     <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>{job.truck?.name||"—"}</div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                    {jobTotalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700}}>{formatSecs(jobTotalSecs)}</span>}
+                    {jobTotalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#92B4F4",fontWeight:700}}>{formatSecs(jobTotalSecs)}</span>}
                     {job.timeLogs.length > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",transform:isExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▼</span>}
                   </div>
                 </div>
@@ -3416,7 +3416,7 @@ function CompletedJobsSummary({ jobs, formatSecs }) {
                     {job.timeLogs.map(log => (
                       <div key={log.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}>
                         <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{getServiceLabel(log.service_type,"en")}</span>
-                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700}}>{formatSecs(log.duration_seconds)}</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#92B4F4",fontWeight:700}}>{formatSecs(log.duration_seconds)}</span>
                       </div>
                     ))}
                   </div>
@@ -3511,7 +3511,7 @@ function ManagerJobsTab() {
         {[
           {key:"scheduled", label:"Scheduled", color:"var(--stone)"},
           {key:"unassigned", label:"Unassigned", color:"var(--warn)"},
-          {key:"in_progress", label:"Active", color:"var(--lime)"},
+          {key:"in_progress", label:"Active", color:"#92B4F4"},
           {key:"completed", label:"Done", color:"var(--leaf)"},
         ].map(({key, label, color})=>(
           <div key={key} style={{background:"var(--bark)",border:`1px solid ${filter===key?"var(--mgr)":"var(--moss)"}`,borderRadius:8,padding:"8px",textAlign:"center",cursor:"pointer"}} onClick={()=>setFilter(filter===key?"all":key)}>
@@ -3541,7 +3541,7 @@ function ManagerJobsTab() {
                 ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--mgr-lt)",letterSpacing:0.5}}>{job.service_types.map(id=>getServiceLabel(id,"en")).join(" · ")}</span>
                 : <span/>}
               {assignedTruck
-                ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
+                ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
                 : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--warn)",letterSpacing:1}}>Unassigned</span>}
             </div>
             {isAssigning && (
@@ -3724,16 +3724,16 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   const maxHours = truckData.length > 0 ? Math.max(...truckData.map(t => t.hours)) : 1;
 
   return (
-    <div className="screen" style={{background:"#0d1b2a",overflowY:"auto"}}>
+    <div className="screen" style={{background:"#061029",overflowY:"auto"}}>
       {/* Topbar */}
-      <div style={{background:"#162236",borderBottom:"1px solid rgba(42,90,149,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+      <div style={{background:"#0A369D",borderBottom:"1px solid rgba(68,114,202,0.4)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:40,height:40,objectFit:"contain"}}/>
           <div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--lime)",lineHeight:1}}>TotalFlo</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#92B4F4",lineHeight:1}}>TotalFlo</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",marginTop:2}}>Owner Dashboard</div>
             <div style={{display:"flex",gap:6,marginTop:6}}>
-              <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#7aabdd",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
+              <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#CFDEE7",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
               <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"rgba(255,255,255,0.5)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
             </div>
           </div>
@@ -3754,16 +3754,16 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                 {label:"Total Receipts", value:`$${stats.receiptsTotal.toFixed(0)}`, sub:"expenses this month"},
                 {label:"Active Clients", value:stats.clients, sub:"total properties"},
               ].map(({label,value,sub})=>(
-                <div key={label} style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:"14px"}}>
+                <div key={label} style={{background:"#0A369D",border:"1px solid rgba(68,114,202,0.4)",borderRadius:10,padding:"14px"}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.7)",textTransform:"uppercase",marginBottom:4}}>{label}</div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{value}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#92B4F4",letterSpacing:1,lineHeight:1}}>{value}</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:4}}>{sub}</div>
                 </div>
               ))}
             </div>
 
             {/* Revenue chart */}
-            <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:"#0A369D",border:"1px solid rgba(68,114,202,0.4)",borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:8}}>Revenue vs Expenses — 6 months</div>
               <div style={{display:"flex",gap:16,marginBottom:10}}>
                 <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.7)"}}>
@@ -3780,13 +3780,13 @@ function OwnerDashboard({ onLogout, onManagerView }) {
 
             {/* Service breakdown + client growth */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-              <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16}}>
+              <div style={{background:"#0A369D",border:"1px solid rgba(68,114,202,0.4)",borderRadius:10,padding:16}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
                 <div style={{position:"relative",height:160}}>
                   <canvas ref={chartRef2}></canvas>
                 </div>
               </div>
-              <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16}}>
+              <div style={{background:"#0A369D",border:"1px solid rgba(68,114,202,0.4)",borderRadius:10,padding:16}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
                 {(()=>{
                   const maxCount = Math.max(1,...clientGrowth.map(m=>m.count));
@@ -3794,9 +3794,9 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                     <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                       <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.7)",width:28}}>{m.label}</span>
                       <div style={{flex:1,height:6,background:"rgba(255,255,255,0.08)",borderRadius:3,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:`${Math.round((m.count/maxCount)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
+                        <div style={{height:"100%",width:`${Math.round((m.count/maxCount)*100)}%`,background:"#5E7CE2",borderRadius:3}}></div>
                       </div>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",width:28,textAlign:"right"}}>+{m.count}</span>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",width:28,textAlign:"right"}}>+{m.count}</span>
                     </div>
                   ));
                 })()}
@@ -3805,16 +3805,16 @@ function OwnerDashboard({ onLogout, onManagerView }) {
 
             {/* Truck performance */}
             {truckData.length > 0 && (
-              <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
+              <div style={{background:"#0A369D",border:"1px solid rgba(68,114,202,0.4)",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:12}}>Truck hours — this month</div>
                 {truckData.map((t,i)=>(
                   <div key={i} style={{marginBottom:10}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,marginBottom:4}}>
                       <span style={{color:"rgba(255,255,255,0.85)"}}>{t.name}</span>
-                      <span style={{color:"var(--lime)",fontWeight:700}}>{t.hours}h</span>
+                      <span style={{color:"#92B4F4",fontWeight:700}}>{t.hours}h</span>
                     </div>
                     <div style={{height:6,background:"rgba(255,255,255,0.08)",borderRadius:3}}>
-                      <div style={{height:"100%",width:`${Math.round((t.hours/maxHours)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
+                      <div style={{height:"100%",width:`${Math.round((t.hours/maxHours)*100)}%`,background:"#5E7CE2",borderRadius:3}}></div>
                     </div>
                   </div>
                 ))}
@@ -3897,7 +3897,7 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
       <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)}
         style={{background:"none",border:"none",color:"var(--cream)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,flex:1,outline:"none",cursor:"pointer"}}/>
       <button onClick={()=>setSelectedDate(new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"}))}
-        style={{background:"var(--lime)",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--earth)",cursor:"pointer",textTransform:"uppercase"}}>
+        style={{background:"#5E7CE2",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--earth)",cursor:"pointer",textTransform:"uppercase"}}>
         Today
       </button>
       <button onClick={fetchAll} disabled={loading}
@@ -3970,7 +3970,7 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
         {!jobsLoading && (
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
             {[
-              {label:"Active", value:sessions.length, color:"var(--lime)"},
+              {label:"Active", value:sessions.length, color:"#92B4F4"},
               {label:"In Progress", value:jobData.active.length, color:"var(--warn)"},
               {label:"Completed", value:jobData.completed.length, color:"var(--leaf)"},
               {label:"Labor Hrs", value:jobData.completed.reduce((sum,j)=>sum+j.timeLogs.reduce((s,l)=>s+(l.duration_seconds||0),0),0), color:"var(--mgr-lt)", isTime:true},
@@ -4006,8 +4006,8 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
           return (
             <div key={session.id} style={{background:"var(--bark)",border:`1px solid ${borderColor}`,borderLeft:`4px solid ${accentColor}`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
               <div style={{padding:"12px 14px",borderBottom:"1px solid var(--moss)",display:"flex",alignItems:"center",gap:10}}>
-                <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
-                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck?.name || "Unknown Truck"}</span>
+                <Ic n="truck" style={{width:14,height:14,color:"#92B4F4",flexShrink:0}}/>
+                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:1}}>{truck?.name || "Unknown Truck"}</span>
                 <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",marginLeft:4}}>{session.crew_name}</span>
                 {missingDot && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:4,padding:"2px 8px",color:"var(--danger)",letterSpacing:1,textTransform:"uppercase"}}>{dotFlagged?"DOT Flagged":"DOT Missing"}</span>}
                 {!missingDot && missingBriefing && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(160,96,16,0.12)",border:"1px solid var(--warn)",borderRadius:4,padding:"2px 8px",color:"var(--warn)",letterSpacing:1,textTransform:"uppercase"}}>Incomplete</span>}
@@ -4035,12 +4035,12 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
         {/* Active Jobs */}
         {!jobsLoading && jobData.active.length > 0 && (
           <div style={{marginTop:16}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--lime)",textTransform:"uppercase",marginBottom:8}}>⏱ Jobs In Progress</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#92B4F4",textTransform:"uppercase",marginBottom:8}}>⏱ Jobs In Progress</div>
             {jobData.active.map(job => (
               <div key={job.id} style={{background:"var(--bark)",border:"1px solid var(--lime)",borderLeft:"4px solid var(--lime)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.properties?.client_name||"Unknown"}</div>
-                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>🚛 {job.truck?.name||"Unassigned"}</span>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",letterSpacing:1}}>🚛 {job.truck?.name||"Unassigned"}</span>
                 </div>
                 <div style={{fontSize:12,color:"var(--stone)"}}>{job.properties?.address}</div>
               </div>
@@ -4067,7 +4067,7 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Daily Spend Summary</div>
           <div style={{display:"flex",gap:10}}>
             <div style={{flex:1,background:"var(--bark2)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",lineHeight:1}}>${totalSpend.toFixed(2)}</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#92B4F4",lineHeight:1}}>${totalSpend.toFixed(2)}</div>
               <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase",marginTop:2}}>Total</div>
             </div>
             <div style={{flex:1,background:"var(--bark2)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}>
@@ -4091,17 +4091,17 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
             <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{truck?.name||"General"}</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:1,lineHeight:1}}>{truck?.name||"General"}</span>
                   {session&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{session.crew_name}</span>}
                 </div>
-                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--lime)"}}>{r.amount>0?`$${parseFloat(r.amount).toFixed(2)}`:""}</span>
+                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#92B4F4"}}>{r.amount>0?`$${parseFloat(r.amount).toFixed(2)}`:""}</span>
               </div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{r.vendor||"—"}</div>
                   <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{new Date(r.created_at).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})}</div>
                 </div>
-                {r.photo_url&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>✓ Photo</span>}
+                {r.photo_url&&<span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",letterSpacing:1}}>✓ Photo</span>}
               </div>
             </div>
           );
@@ -4140,7 +4140,7 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
               </button>
-              {isOwner && <button onClick={onOwnerView} style={{background:"var(--lime)",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--earth)",cursor:"pointer",textTransform:"uppercase"}}>Owner View</button>}
+              {isOwner && <button onClick={onOwnerView} style={{background:"#5E7CE2",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--earth)",cursor:"pointer",textTransform:"uppercase"}}>Owner View</button>}
           <span className="mgr-badge">{isOwner?"Owner":"Admin"}</span>
           <button className="logout-btn" onClick={onLogout}>Out</button>
             </div>
@@ -4235,7 +4235,7 @@ const handleSelectTruck = truck => {
                       <div key={tr.id} className={`truck-dropdown-item ${selected?.id===tr.id?"selected":""}`} onClick={()=>{ setSel(tr); setDropOpen(false); setError(""); }}>
                         <Ic n="truck" style={{width:14,height:14}}/>
                         <span style={{flex:1}}>{tr.label}</span>
-                        {selected?.id===tr.id&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}
+                        {selected?.id===tr.id&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"#92B4F4"}}/>}
                       </div>
                     ))}
                   </div>
@@ -4246,8 +4246,8 @@ const handleSelectTruck = truck => {
           ):(
             <div style={{width:"100%",marginBottom:20,animation:"fadeUp 0.3s ease both"}}>
               <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"16px",marginBottom:12,display:"flex",alignItems:"center",gap:14}}>
-                <div style={{width:44,height:44,borderRadius:10,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="truck" style={{width:22,height:22,color:"var(--lime)"}}/></div>
-                <div style={{flex:1}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{rememberedTruck.label}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.truckToday}</div></div>
+                <div style={{width:44,height:44,borderRadius:10,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="truck" style={{width:22,height:22,color:"#92B4F4"}}/></div>
+                <div style={{flex:1}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{rememberedTruck.label}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:3}}>{t.truckToday}</div></div>
               </div>
               <button className="btn-select-truck" style={{marginBottom:8}} onClick={()=>handleSelectTruck(rememberedTruck)}>{t.signInAs(rememberedTruck.label)}</button>
               <div style={{textAlign:"center"}}><span onClick={handleChangeTruck} style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:3}}>{t.notYourTruck}</span></div>
@@ -4258,7 +4258,7 @@ const handleSelectTruck = truck => {
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--stone)",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>{t.submitReceipt}<span style={{flex:1,height:1,background:"var(--moss)",display:"block"}}/></div>
             {!receiptOpen?(
               <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--leaf)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setReceiptOpen(true)}>
-                <div style={{width:34,height:34,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="camera" style={{width:15,height:15,color:"var(--lime)"}}/></div>
+                <div style={{width:34,height:34,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="camera" style={{width:15,height:15,color:"#92B4F4"}}/></div>
                 <div style={{flex:1}}><div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)"}}>{t.receiptCard}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.receiptSub}</div></div>
                 <Ic n="chev" style={{width:16,height:16,color:"var(--moss)"}}/>
               </div>
