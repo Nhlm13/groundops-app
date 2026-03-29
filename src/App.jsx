@@ -3572,10 +3572,13 @@ function ManagerJobsTab() {
 
 function OwnerDashboard({ onLogout, onManagerView }) {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ revenue: 0, jobs: 0, laborHours: 0, clients: 0, receiptsTotal: 0 });
+  const [stats, setStats] = useState({ revenue: 0, jobs: 0, laborHours: 0, clients: 0, newClients: 0, receiptsTotal: 0 });
   const [revenueData, setRevenueData] = useState([]);
   const [serviceData, setServiceData] = useState([]);
   const [truckData, setTruckData] = useState([]);
+  const [unassignedCount, setUnassignedCount] = useState(0);
+  const [weather, setWeather] = useState(null);
+  const [quickAction, setQuickAction] = useState(null);
   const chartRef1 = useRef(null);
   const chartRef2 = useRef(null);
   const chartInst1 = useRef(null);
@@ -3645,6 +3648,19 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         });
         const truckArr = Object.entries(truckHours).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,secs]) => ({name, hours: Math.round(secs/3600)}));
         setTruckData(truckArr);
+
+        // Unassigned jobs today
+        const { data: todayJobs } = await supabase.from("jobs").select("id").eq("company_id", COMPANY_ID).eq("date", today).eq("status", "scheduled");
+        const { data: todayAssignments } = await supabase.from("job_assignments").select("job_id");
+        const assignedIds = new Set((todayAssignments||[]).map(a => a.job_id));
+        setUnassignedCount((todayJobs||[]).filter(j => !assignedIds.has(j.id)).length);
+
+        // Weather
+        fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&temperature_unit=fahrenheit&forecast_days=1")
+          .then(r => r.json())
+          .then(d => setWeather({ temp: Math.round(d.current.temperature_2m), code: d.current.weathercode }))
+          .catch(() => {});
+
       } catch(e){ console.warn(e); }
       setLoading(false);
     };
@@ -3707,8 +3723,42 @@ function OwnerDashboard({ onLogout, onManagerView }) {
     padding:"14px",
   };
 
+  const weatherIcon = (code) => {
+    if(code === 0) return "☀️";
+    if(code <= 2) return "🌤️";
+    if(code <= 3) return "☁️";
+    if(code <= 67) return "🌧️";
+    if(code <= 77) return "❄️";
+    return "🌩️";
+  };
+  const weatherDesc = (code) => {
+    if(code === 0) return "Clear";
+    if(code <= 2) return "Partly cloudy";
+    if(code <= 3) return "Overcast";
+    if(code <= 67) return "Rain";
+    if(code <= 77) return "Snow";
+    return "Storms";
+  };
+
   return (
     <div className="screen" style={{background:"#1e2d4a",overflowY:"auto"}}>
+
+      {/* Quick action overlays */}
+      {quickAction === "add-job" && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,overflowY:"auto",padding:"24px 16px"}}>
+          <div style={{background:"#fff",borderRadius:12,padding:16,maxWidth:480,margin:"0 auto"}}>
+            <AddOneTimeJobForm onBack={()=>setQuickAction(null)} onSaved={()=>setQuickAction(null)} preselectedDate={today}/>
+          </div>
+        </div>
+      )}
+      {quickAction === "add-property" && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,overflowY:"auto",padding:"24px 16px"}}>
+          <div style={{background:"#fff",borderRadius:12,padding:16,maxWidth:480,margin:"0 auto"}}>
+            <AddPropertyForm onBack={()=>setQuickAction(null)} onSaved={()=>setQuickAction(null)}/>
+          </div>
+        </div>
+      )}
+
       {/* Topbar */}
       <div style={{background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -3725,6 +3775,43 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       </div>
 
       <div style={{padding:"16px"}}>
+
+        {/* Alert — unassigned jobs */}
+        {unassignedCount > 0 && (
+          <div style={{background:"#fff0f0",border:"1px solid #f5c1c1",borderLeft:"4px solid #c0392b",borderRadius:10,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:18}}>⚠️</span>
+              <div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:1,color:"#c0392b"}}>{unassignedCount} Unassigned Job{unassignedCount!==1?"s":""} Today</div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#e57373",marginTop:1}}>Assign trucks before crews head out</div>
+              </div>
+            </div>
+            <button onClick={onManagerView} style={{background:"#c0392b",border:"none",borderRadius:6,padding:"6px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1,color:"#fff",cursor:"pointer",flexShrink:0}}>View Jobs</button>
+          </div>
+        )}
+
+        {/* Weather + Quick Actions */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+          <div style={{...cardStyle, borderLeft:"3px solid #5E7CE2"}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Southborough, MA</div>
+            {weather ? (
+              <>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:28,lineHeight:1}}>{weatherIcon(weather.code)}</span>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:"#0A369D",letterSpacing:1,lineHeight:1}}>{weather.temp}°F</div>
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#999",marginTop:6}}>{weatherDesc(weather.code)}</div>
+              </>
+            ) : (
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#999"}}>Loading...</div>
+            )}
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <button onClick={()=>setQuickAction("add-job")} style={{flex:1,background:"#0A369D",border:"none",borderRadius:10,padding:"12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ Add Job</button>
+            <button onClick={()=>setQuickAction("add-property")} style={{flex:1,background:"#4472CA",border:"none",borderRadius:10,padding:"12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ Add Property</button>
+          </div>
+        </div>
+
         {loading ? (
           <div style={{textAlign:"center",padding:"48px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"#92B4F4",textTransform:"uppercase"}}>Loading...</div>
         ) : (
@@ -3762,7 +3849,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
               </div>
             </div>
 
-            {/* Service breakdown + client growth */}
+            {/* Service breakdown */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div style={cardStyle}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
@@ -3795,7 +3882,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
     </div>
   );
 }
-
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout, isOwner, onOwnerView }) {
   const [tab, setTab] = useState("activity");
