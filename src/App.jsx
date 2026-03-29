@@ -2470,16 +2470,24 @@ function AddScheduleForm({ property, onBack, onSaved }) {
           <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{property.client_name}</div>
         </div>
       </div>
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
-        <label style={labelStyle}>Services * (select all that apply)</label>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
-          {SERVICE_TYPES.map(svc=>(
-            <button key={svc.id} onClick={()=>toggleService(svc.id)}
-              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-              {svc[lang] || svc.en}
-            </button>
-          ))}
-        </div>
+<div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12,overflow:"hidden"}}>        <label style={labelStyle}>Services * (select all that apply)</label>
+        {SERVICE_GROUPS.map(group=>(
+          <div key={group.label.en} style={{marginBottom:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {group.ids.map(id=>{
+                const svc = SERVICE_TYPES.find(s=>s.id===id);
+                if(!svc) return null;
+                return (
+                  <button key={svc.id} onClick={()=>toggleService(svc.id)}
+                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                    {svc[lang]||svc.en}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
 
         {SERVICE_TYPES.filter(s => s.hasDescription && selectedServices.includes(s.id)).map(svc=>(
           <div key={svc.id} style={{marginBottom:10}}>
@@ -2657,14 +2665,8 @@ function AddPropertyForm({ onBack, onSaved }) {
     billing_contact: "", billing_email: "", service_notes: "",
     special_instructions: "", base_service_price: "", property_type: "residential",
   });
-  const [serviceTypes, setServiceTypes] = useState([]);
   const [error, setError] = useState("");
-
-  const SERVICE_TYPE_OPTIONS = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
   const set = (k, v) => setFields(f => ({...f, [k]: v}));
-  const toggleServiceType = type => setServiceTypes(prev =>
-    prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-  );
 
   const handlePhoto = e => {
     const file = e.target.files?.[0];
@@ -2687,9 +2689,7 @@ function AddPropertyForm({ onBack, onSaved }) {
           .from("property-photos")
           .upload(fileName, photoFile, { contentType: photoFile.type || "image/jpeg" });
         if(!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("property-photos")
-            .getPublicUrl(fileName);
+          const { data: urlData } = supabase.storage.from("property-photos").getPublicUrl(fileName);
           photoUrl = urlData.publicUrl;
         }
       }
@@ -2704,7 +2704,6 @@ function AddPropertyForm({ onBack, onSaved }) {
         service_notes: fields.service_notes.trim() || null,
         special_instructions: fields.special_instructions.trim() || null,
         base_service_price: parseFloat(fields.base_service_price) || 0,
-        service_types: serviceTypes,
         photo_url: photoUrl,
         property_type: fields.property_type || "residential",
         active: true,
@@ -2715,7 +2714,7 @@ function AddPropertyForm({ onBack, onSaved }) {
     setSubmitting(false);
   };
 
-  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};
+  const inputStyle = {width:"100%",boxSizing:"border-box",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};
   const labelStyle = {fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4,display:"block"};
 
   return (
@@ -2739,8 +2738,6 @@ function AddPropertyForm({ onBack, onSaved }) {
         </div>
         <label style={labelStyle}>Property / Client Name *</label>
         <input style={inputStyle} type="text" placeholder="e.g. Smith Residence" value={fields.client_name} onChange={e=>set("client_name",e.target.value)}/>
-        <label style={labelStyle}>Property / Client Name *</label>
-        <input style={inputStyle} type="text" placeholder="e.g. Smith Residence" value={fields.client_name} onChange={e=>set("client_name",e.target.value)}/>
         <label style={labelStyle}>Address *</label>
         <input style={inputStyle} type="text" placeholder="123 Main St, City, MA" value={fields.address} onChange={e=>set("address",e.target.value)}/>
         <label style={labelStyle}>Client Phone</label>
@@ -2757,18 +2754,6 @@ function AddPropertyForm({ onBack, onSaved }) {
         <input style={inputStyle} type="email" placeholder="billing@email.com" value={fields.billing_email} onChange={e=>set("billing_email",e.target.value)}/>
         <label style={labelStyle}>Base Service Price ($)</label>
         <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.base_service_price} onChange={e=>set("base_service_price",e.target.value)}/>
-      </div>
-
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Service Types</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-          {SERVICE_TYPE_OPTIONS.map(type=>(
-            <button key={type} onClick={()=>toggleServiceType(type)}
-              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${serviceTypes.includes(type)?"var(--mgr)":"var(--moss)"}`,background:serviceTypes.includes(type)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:serviceTypes.includes(type)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-              {type}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
@@ -2796,7 +2781,6 @@ function AddPropertyForm({ onBack, onSaved }) {
       </div>
 
       {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
-
       <button disabled={submitting} onClick={handleSubmit}
         style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--mgr)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
         {submitting?"Saving...":"Save Property"}
