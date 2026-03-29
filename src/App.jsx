@@ -19,7 +19,6 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 @keyframes slideIn { from { opacity:0; transform:translateX(32px); } to { opacity:1; transform:translateX(0); } }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
 @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-`;
 
 .splash { flex:1; display:flex; flex-direction:column; align-items:center; padding:36px 24px 60px; padding-top:calc(36px + env(safe-area-inset-top)); position:relative; z-index:1; animation:fadeUp 0.4s ease both; overflow-y:auto; }
 .logo-wrap { display:flex; flex-direction:column; align-items:center; margin-bottom:32px; }
