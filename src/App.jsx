@@ -1876,6 +1876,62 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
   } catch(e) {}
 }
 
+// -- COMPLETED JOB NOTE EDITOR ------------------------------------------------
+function CompletedJobNoteEditor({ jobId }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = async () => {
+    if(!note.trim()) return;
+    setSaving(true);
+    await supabase.from("job_completions")
+      .update({ notes: note.trim() })
+      .eq("job_id", jobId);
+    setSaving(false);
+    setSaved(true);
+    setOpen(false);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  if(saved) return (
+    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1,marginTop:6}}>✓ Note saved</div>
+  );
+
+  return (
+    <div style={{marginTop:6}}>
+      {!open ? (
+        <button onClick={()=>setOpen(true)}
+          style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"8px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"var(--stone)",cursor:"pointer",textTransform:"uppercase",width:"100%"}}>
+          + Add Note
+        </button>
+      ) : (
+        <div style={{animation:"fadeUp 0.2s ease both"}}>
+          <textarea
+            style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:13,resize:"none",height:72,marginBottom:8,boxSizing:"border-box"}}
+            placeholder="Add a note about this job..."
+            value={note}
+            onChange={e=>setNote(e.target.value)}
+            autoFocus
+          />
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setOpen(false)}
+              style={{flex:1,padding:"10px",background:"none",border:"1px solid var(--moss)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
+              {t.cancel}
+            </button>
+            <button disabled={saving||!note.trim()} onClick={handleSave}
+              style={{flex:2,padding:"10px",background:saving?"var(--moss)":"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--earth)",cursor:saving?"not-allowed":"pointer"}}>
+              {saving?"Saving...":"Save Note"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // -- JOBS TAB -----------------------------------------------------------------
 const SERVICE_GROUPS = [
   { label: { en: "Lawn & Grounds", es: "Césped y Jardín", pt: "Gramado e Jardim" },
