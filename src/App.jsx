@@ -3523,7 +3523,12 @@ function OfficeView({ onLogout }) {
   const [properties, setProperties] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [expandedDays, setExpandedDays] = useState({});  // ← ADD THIS LINE
+  const [expandedDays, setExpandedDays] = useState({});
+  const [editingJob, setEditingJob] = useState(null);
+  const [editingJobServices, setEditingJobServices] = useState([]);
+  const [editingJobTruck, setEditingJobTruck] = useState("");
+  const [editingJobNotes, setEditingJobNotes] = useState("");
+  const [savingJob, setSavingJob] = useState(false);
   const [form, setForm] = useState({
     name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false
   });
@@ -3560,7 +3565,7 @@ function OfficeView({ onLogout }) {
       });
       const [{ data: jobData }, { data: propData }, { data: truckData }, { data: assignData }] = await Promise.all([
         supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).in("date", dates).order("date"),
-        supabase.from("properties").select("id, client_name").eq("company_id", COMPANY_ID),
+        supabase.from("properties").select("id, client_name, address").eq("company_id", COMPANY_ID),
         supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
         supabase.from("job_assignments").select("*"),
       ]);
@@ -3636,12 +3641,49 @@ function OfficeView({ onLogout }) {
   };
 
   const deleteJob = async (jobId) => {
-  if(!window.confirm("Remove this job from the schedule?")) return;
-  await supabase.from("job_assignments").delete().eq("job_id", jobId);
-  await supabase.from("jobs").delete().eq("id", jobId);
-  setSchedule(prev => prev.filter(j => j.id !== jobId));
-};
-  
+    if(!window.confirm("Remove this job from the schedule?")) return;
+    await supabase.from("job_assignments").delete().eq("job_id", jobId);
+    await supabase.from("jobs").delete().eq("id", jobId);
+    setSchedule(prev => prev.filter(j => j.id !== jobId));
+    setEditingJob(null);
+  };
+
+  const saveJob = async () => {
+    if(!editingJob) return;
+    setSavingJob(true);
+    try {
+      await supabase.from("jobs").update({
+        service_type: editingJobServices[0] || null,
+        service_types: editingJobServices,
+        notes: editingJobNotes || null,
+      }).eq("id", editingJob.id);
+
+      const existingAssignment = assignments.find(a => a.job_id === editingJob.id);
+      if(editingJobTruck) {
+        if(existingAssignment) {
+          await supabase.from("job_assignments").update({ truck_id: editingJobTruck }).eq("id", existingAssignment.id);
+          setAssignments(prev => prev.map(a => a.id === existingAssignment.id ? {...a, truck_id: editingJobTruck} : a));
+        } else {
+          const { data } = await supabase.from("job_assignments").insert({ job_id: editingJob.id, truck_id: editingJobTruck, crew_name: "" }).select().single();
+          if(data) setAssignments(prev => [...prev, data]);
+        }
+      } else if(existingAssignment) {
+        await supabase.from("job_assignments").delete().eq("id", existingAssignment.id);
+        setAssignments(prev => prev.filter(a => a.id !== existingAssignment.id));
+      }
+
+      setSchedule(prev => prev.map(j => j.id === editingJob.id ? {
+        ...j,
+        service_type: editingJobServices[0] || null,
+        service_types: editingJobServices,
+        notes: editingJobNotes || null,
+      } : j));
+
+      setEditingJob(null);
+    } catch(e){ console.warn(e); }
+    setSavingJob(false);
+  };
+
   const filtered = requests.filter(r => {
     const matchSearch = !searchQuery ||
       r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -3692,113 +3734,202 @@ function OfficeView({ onLogout }) {
     </div>
   );
 
-  // -- SCHEDULE SIDEBAR --
-  const ScheduleSidebar = () => {
-  const today = new Date();
-  const days = Array.from({length: 7}, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-    const dayJobs = schedule.filter(j => j.date === dateStr);
-    const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday:"short" });
-    const dateLabel = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
-    const count = dayJobs.length;
-    const countColor = count === 0 ? "#22a86e" : count <= 3 ? "#22a86e" : count <= 6 ? "#d4bc4a" : "#e05540";
-    const countBg = count === 0 ? "rgba(34,168,110,0.12)" : count <= 3 ? "rgba(34,168,110,0.12)" : count <= 6 ? "rgba(212,188,74,0.12)" : "rgba(224,85,64,0.12)";
-    return { dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday: i === 0 };
-  });
+  // -- JOB EDIT MODAL --
+  const JobEditModal = () => {
+    if(!editingJob) return null;
+    const prop = properties.find(p => p.id === editingJob.property_id);
+    return (
+      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}
+        onClick={()=>setEditingJob(null)}>
+        <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:480,maxHeight:"80vh",overflowY:"auto"}}
+          onClick={e=>e.stopPropagation()}>
 
-  return (
-    <div style={{width:220,minWidth:220,background:"#0d1635",borderRight:"1px solid rgba(68,114,202,0.2)",display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
-      <div style={{padding:"12px 14px 10px",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#CFDEE7",textTransform:"uppercase"}}>Schedule</div>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Next 7 days — click to expand</div>
-      </div>
-      <div style={{overflowY:"auto",flex:1}}>
-        {days.map(({dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday}) => {
-          const isExpanded = !!expandedDays[dateStr];
-          const visibleJobs = isExpanded ? dayJobs : dayJobs.slice(0, 2);
-          return (
-            <div key={dateStr} style={{borderBottom:"1px solid rgba(68,114,202,0.1)"}}>
-
-              {/* Day header — clickable */}
-              <div
-                onClick={() => setExpandedDays(prev => ({...prev, [dateStr]: !prev[dateStr]}))}
-                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:isToday?"rgba(68,114,202,0.12)":isExpanded?"rgba(68,114,202,0.07)":"transparent",cursor:"pointer",userSelect:"none"}}
-              >
-                <div>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#CFDEE7",letterSpacing:1}}>{dayName.toUpperCase()}</div>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:0.5}}>{dateLabel}</div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,padding:"1px 7px",borderRadius:8,background:countBg,color:countColor,letterSpacing:1}}>
-                    {count === 0 ? "Open" : `${count} jobs`}
-                  </div>
-                  {count > 0 && (
-                    <span style={{color:"#92B4F4",fontSize:10,transition:"transform 0.2s",display:"inline-block",transform:isExpanded?"rotate(90deg)":"rotate(0deg)"}}>▶</span>
-                  )}
-                </div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#0A369D",letterSpacing:2,lineHeight:1}}>{prop?.client_name||"Job"}</div>
+              <div style={{fontSize:12,color:"#888",marginTop:2}}>📍 {prop?.address}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#4472CA",letterSpacing:1,marginTop:2,textTransform:"uppercase"}}>
+                {new Date(editingJob.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}
               </div>
+            </div>
+            <button onClick={()=>setEditingJob(null)} style={{background:"none",border:"none",fontSize:20,color:"#aaa",cursor:"pointer",lineHeight:1}}>✕</button>
+          </div>
 
-              {/* Jobs list */}
-              {count === 0 ? (
-                <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#22a86e",letterSpacing:0.5}}>Open day</div>
-              ) : (
-                <>
-                  {visibleJobs.map(job => {
-                    const prop = properties.find(p => p.id === job.property_id);
-                    const assignment = assignments.find(a => a.job_id === job.id);
-                    const truck = trucks.find(t => t.id === assignment?.truck_id);
-                    const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
-                    const dotColor = TRUCK_COLORS[truckIdx % TRUCK_COLORS.length] || "#92B4F4";
+          <div style={{marginBottom:14}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Assigned Truck</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              <button onClick={()=>setEditingJobTruck("")}
+                style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${!editingJobTruck?"#e05540":"#dde5f5"}`,background:!editingJobTruck?"rgba(224,85,64,0.08)":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:!editingJobTruck?"#e05540":"#4472CA",cursor:"pointer",fontWeight:600}}>
+                Unassigned
+              </button>
+              {trucks.map(truck=>(
+                <button key={truck.id} onClick={()=>setEditingJobTruck(truck.id)}
+                  style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${editingJobTruck===truck.id?"#4472CA":"#dde5f5"}`,background:editingJobTruck===truck.id?"rgba(68,114,202,0.1)":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:editingJobTruck===truck.id?"#0A369D":"#4472CA",cursor:"pointer",fontWeight:600}}>
+                  {truck.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{marginBottom:14}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Services</div>
+            {SERVICE_GROUPS.map(group=>(
+              <div key={group.label.en} style={{marginBottom:10}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"#92B4F4",textTransform:"uppercase",marginBottom:5,borderBottom:"1px solid #dde5f5",paddingBottom:3}}>{group.label.en}</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {group.ids.map(id=>{
+                    const svc = SERVICE_TYPES.find(s=>s.id===id);
+                    if(!svc) return null;
+                    const isSelected = editingJobServices.includes(svc.id);
                     return (
-                      <div key={job.id}
-                        style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 20px",borderRadius:6,margin:"1px 6px"}}
-                        onMouseEnter={e=>e.currentTarget.style.background="rgba(68,114,202,0.1)"}
-                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}
-                      >
-                        <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}></div>
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#CFDEE7",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prop?.client_name||"Job"}</div>
-                        {truck && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",flexShrink:0,marginRight:2}}>{truck.name.replace("Truck ","T-")}</div>}
-                        {isExpanded && (
-                          <button
-                            onClick={e=>{e.stopPropagation();deleteJob(job.id);}}
-                            style={{background:"none",border:"none",color:"#e0554066",cursor:"pointer",fontSize:12,padding:"0 2px",lineHeight:1,flexShrink:0}}
-                            onMouseEnter={e=>e.target.style.color="#e05540"}
-                            onMouseLeave={e=>e.target.style.color="#e0554066"}
-                            title="Remove job"
-                          >✕</button>
-                        )}
-                      </div>
+                      <button key={svc.id}
+                        onClick={()=>setEditingJobServices(prev=>isSelected?prev.filter(s=>s!==svc.id):[...prev,svc.id])}
+                        style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${isSelected?"#4472CA":"#dde5f5"}`,background:isSelected?"rgba(68,114,202,0.1)":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:isSelected?"#0A369D":"#4472CA",cursor:"pointer",fontWeight:isSelected?700:400}}>
+                        {svc.en}
+                      </button>
                     );
                   })}
-                  {!isExpanded && count > 2 && (
-                    <div
-                      onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:true}))}
-                      style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA",letterSpacing:0.5,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
-                      +{count - 2} more
-                    </div>
-                  )}
-                  {isExpanded && (
-                    <div style={{padding:"4px 14px 6px",display:"flex",justifyContent:"flex-end"}}>
-                      <button
-                        onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:false}))}
-                        style={{background:"none",border:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA55",cursor:"pointer",letterSpacing:0.5,padding:0}}>
-                        collapse ▲
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+                </div>
+              </div>
+            ))}
+          </div>
 
-  // -- BOARD CONTENT (shared between board, add, detail) --
+          <div style={{marginBottom:16}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Notes</div>
+            <textarea
+              value={editingJobNotes}
+              onChange={e=>setEditingJobNotes(e.target.value)}
+              placeholder="Any notes for this job..."
+              style={{width:"100%",background:"#f0f4ff",border:"1px solid #dde5f5",borderRadius:8,padding:"10px 12px",color:"#0A369D",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:72,boxSizing:"border-box",outline:"none"}}
+            />
+          </div>
+
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>deleteJob(editingJob.id)}
+              style={{padding:"10px 16px",background:"none",border:"1px solid #e0554044",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"#e05540",cursor:"pointer"}}>
+              Remove Job
+            </button>
+            <button disabled={savingJob} onClick={saveJob}
+              style={{flex:1,padding:"10px",background:savingJob?"#92B4F4":"#0A369D",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:savingJob?"not-allowed":"pointer"}}>
+              {savingJob?"Saving...":"Save Changes"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // -- SCHEDULE SIDEBAR --
+  const ScheduleSidebar = () => {
+    const today = new Date();
+    const days = Array.from({length: 7}, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const dayJobs = schedule.filter(j => j.date === dateStr);
+      const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday:"short" });
+      const dateLabel = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+      const count = dayJobs.length;
+      const countColor = count === 0 ? "#22a86e" : count <= 3 ? "#22a86e" : count <= 6 ? "#d4bc4a" : "#e05540";
+      const countBg = count === 0 ? "rgba(34,168,110,0.12)" : count <= 3 ? "rgba(34,168,110,0.12)" : count <= 6 ? "rgba(212,188,74,0.12)" : "rgba(224,85,64,0.12)";
+      return { dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday: i === 0 };
+    });
+
+    return (
+      <div style={{width:220,minWidth:220,background:"#0d1635",borderRight:"1px solid rgba(68,114,202,0.2)",display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
+        <div style={{padding:"12px 14px 10px",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#CFDEE7",textTransform:"uppercase"}}>Schedule</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Next 7 days — click to expand</div>
+        </div>
+        <div style={{overflowY:"auto",flex:1}}>
+          {days.map(({dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday}) => {
+            const isExpanded = !!expandedDays[dateStr];
+            const visibleJobs = isExpanded ? dayJobs : dayJobs.slice(0, 2);
+            return (
+              <div key={dateStr} style={{borderBottom:"1px solid rgba(68,114,202,0.1)"}}>
+                <div
+                  onClick={() => setExpandedDays(prev => ({...prev, [dateStr]: !prev[dateStr]}))}
+                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:isToday?"rgba(68,114,202,0.12)":isExpanded?"rgba(68,114,202,0.07)":"transparent",cursor:"pointer",userSelect:"none"}}
+                >
+                  <div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#CFDEE7",letterSpacing:1}}>{dayName.toUpperCase()}</div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:0.5}}>{dateLabel}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,padding:"1px 7px",borderRadius:8,background:countBg,color:countColor,letterSpacing:1}}>
+                      {count === 0 ? "Open" : `${count} jobs`}
+                    </div>
+                    {count > 0 && (
+                      <span style={{color:"#92B4F4",fontSize:10,display:"inline-block",transform:isExpanded?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▶</span>
+                    )}
+                  </div>
+                </div>
+
+                {count === 0 ? (
+                  <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#22a86e",letterSpacing:0.5}}>Open day</div>
+                ) : (
+                  <>
+                    {visibleJobs.map(job => {
+                      const prop = properties.find(p => p.id === job.property_id);
+                      const assignment = assignments.find(a => a.job_id === job.id);
+                      const truck = trucks.find(t => t.id === assignment?.truck_id);
+                      const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
+                      const dotColor = TRUCK_COLORS[truckIdx % TRUCK_COLORS.length] || "#92B4F4";
+                      return (
+                        <div key={job.id}
+                          onClick={e=>{
+                            e.stopPropagation();
+                            setEditingJob(job);
+                            setEditingJobServices(job.service_types || (job.service_type ? [job.service_type] : []));
+                            setEditingJobTruck(assignment?.truck_id || "");
+                            setEditingJobNotes(job.notes || "");
+                          }}
+                          style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 20px",borderRadius:6,margin:"1px 6px",cursor:"pointer"}}
+                          onMouseEnter={e=>e.currentTarget.style.background="rgba(68,114,202,0.1)"}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                        >
+                          <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}></div>
+                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#CFDEE7",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prop?.client_name||"Job"}</div>
+                          {truck && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",flexShrink:0,marginRight:2}}>{truck.name.replace("Truck ","T-")}</div>}
+                          {isExpanded && (
+                            <button
+                              onClick={e=>{e.stopPropagation();deleteJob(job.id);}}
+                              style={{background:"none",border:"none",color:"#e0554066",cursor:"pointer",fontSize:12,padding:"0 2px",lineHeight:1,flexShrink:0}}
+                              onMouseEnter={e=>e.target.style.color="#e05540"}
+                              onMouseLeave={e=>e.target.style.color="#e0554066"}
+                              title="Remove job"
+                            >✕</button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {!isExpanded && count > 2 && (
+                      <div
+                        onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:true}))}
+                        style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA",letterSpacing:0.5,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                        +{count - 2} more
+                      </div>
+                    )}
+                    {isExpanded && (
+                      <div style={{padding:"4px 14px 6px",display:"flex",justifyContent:"flex-end"}}>
+                        <button
+                          onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:false}))}
+                          style={{background:"none",border:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA55",cursor:"pointer",letterSpacing:0.5,padding:0}}>
+                          collapse ▲
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // -- BOARD CONTENT --
   const BoardContent = () => (
     <>
       <div style={{padding:"12px 16px 8px",background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.2)"}}>
@@ -3831,7 +3962,7 @@ function OfficeView({ onLogout }) {
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#4472CA55",letterSpacing:1,padding:"4px 0"}}>No requests</div>
                 ) : group.map(r => (
                   <div key={r.id} onClick={()=>{setSelected(r);setView("detail");}}
-                    style={{...cardStyle, borderLeft:`4px solid ${status.color}`, marginBottom:8, cursor:"pointer"}}
+                    style={{background:"#fff",border:"1px solid #dde5f5",borderLeft:`4px solid ${status.color}`,borderRadius:10,padding:"14px",marginBottom:8,cursor:"pointer"}}
                     onMouseEnter={e=>e.currentTarget.style.background="#f0f4ff"}
                     onMouseLeave={e=>e.currentTarget.style.background="#fff"}
                   >
@@ -3865,6 +3996,7 @@ function OfficeView({ onLogout }) {
   // -- ADD FORM --
   if(view === "add") return (
     <div className="screen" style={{background:"#1e2d4a"}}>
+      <JobEditModal/>
       <Topbar title="New Request" right={
         <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Cancel</button>
       }/>
@@ -3923,6 +4055,7 @@ function OfficeView({ onLogout }) {
     const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
     return (
       <div className="screen" style={{background:"#1e2d4a"}}>
+        <JobEditModal/>
         <Topbar title={selected.name} right={
           <>
             <button onClick={()=>deleteRequest(selected.id)} style={{background:"none",border:"1px solid #e0554044",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#e05540",cursor:"pointer"}}>Delete</button>
@@ -3986,6 +4119,7 @@ function OfficeView({ onLogout }) {
   // -- KANBAN BOARD --
   return (
     <div className="screen" style={{background:"#1e2d4a"}}>
+      <JobEditModal/>
       <Topbar title="Spring 2026 Requests" right={
         <>
           <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
@@ -4001,7 +4135,7 @@ function OfficeView({ onLogout }) {
     </div>
   );
 }
-
+// -- OwnerDashboard ---------------------------------------------------------------
 function OwnerDashboard({ onLogout, onManagerView }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ revenue: 0, jobs: 0, laborHours: 0, clients: 0, newClients: 0, receiptsTotal: 0 });
