@@ -3509,6 +3509,334 @@ function ManagerJobsTab() {
   );
 }
 
+// -- OFFICE VIEW ---------------------------------------------------------------
+function OfficeView({ onLogout }) {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("board"); // "board" | "add" | "detail"
+  const [selected, setSelected] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [converting, setConverting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false
+  });
+
+  const STATUSES = [
+    { key:"",             label:"New",           color:"#6a6658", bg:"rgba(106,102,88,0.12)"  },
+    { key:"created ticket", label:"Ticket Created", color:"#a06010", bg:"rgba(160,96,16,0.12)"  },
+    { key:"estimate sent",  label:"Estimate Sent",  color:"#2a5a95", bg:"rgba(42,90,149,0.12)"  },
+    { key:"schedule",       label:"Scheduled",      color:"#3d6b10", bg:"rgba(61,107,16,0.12)"  },
+  ];
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("company_id", COMPANY_ID)
+      .order("created_at", { ascending: false });
+    setRequests(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchRequests(); }, []);
+
+  const updateStatus = async (id, status) => {
+    await supabase.from("requests").update({ status }).eq("id", id);
+    setRequests(prev => prev.map(r => r.id === id ? {...r, status} : r));
+    if(selected?.id === id) setSelected(s => ({...s, status}));
+  };
+
+  const deleteRequest = async (id) => {
+    if(!window.confirm("Delete this request?")) return;
+    await supabase.from("requests").delete().eq("id", id);
+    setRequests(prev => prev.filter(r => r.id !== id));
+    setView("board");
+    setSelected(null);
+  };
+
+  const saveNew = async () => {
+    if(!form.name.trim() || !form.task.trim()) return;
+    setSaving(true);
+    const { data } = await supabase.from("requests").insert({
+      ...form,
+      company_id: COMPANY_ID,
+    }).select().single();
+    if(data) setRequests(prev => [data, ...prev]);
+    setForm({ name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false });
+    setView("board");
+    setSaving(false);
+  };
+
+  const saveEdit = async () => {
+    if(!selected) return;
+    setSaving(true);
+    await supabase.from("requests").update({
+      name: selected.name,
+      address: selected.address,
+      task: selected.task,
+      priority: selected.priority,
+      awaiting_estimate: selected.awaiting_estimate,
+      status: selected.status,
+      notes: selected.notes,
+      is_great_lawns: selected.is_great_lawns,
+    }).eq("id", selected.id);
+    setRequests(prev => prev.map(r => r.id === selected.id ? selected : r));
+    setView("board");
+    setSaving(false);
+  };
+
+  const convertToProperty = async () => {
+    if(!selected) return;
+    setConverting(true);
+    const { error } = await supabase.from("properties").insert({
+      company_id: COMPANY_ID,
+      client_name: selected.name,
+      address: selected.address,
+      service_notes: selected.notes || null,
+      active: true,
+      property_type: "residential",
+    });
+    if(!error) {
+      await updateStatus(selected.id, "schedule");
+      alert(`${selected.name} has been added as a property!`);
+    }
+    setConverting(false);
+  };
+
+  const filtered = requests.filter(r => {
+    const matchSearch = !searchQuery ||
+      r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      r.task?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchPriority = filterPriority === "all" || r.priority === filterPriority;
+    return matchSearch && matchPriority;
+  });
+
+  const inputStyle = {
+    width:"100%", background:"var(--bark2)", border:"1px solid var(--moss)",
+    borderRadius:8, padding:"12px 14px", color:"var(--cream)",
+    fontFamily:"'Barlow',sans-serif", fontSize:15, boxSizing:"border-box",
+  };
+  const labelStyle = {
+    fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2,
+    color:"var(--stone)", textTransform:"uppercase", marginBottom:4, display:"block",
+  };
+
+  const PriorityBadge = ({priority}) => {
+    if(!priority) return null;
+    const colors = { High:"#e05540", Mid:"#f0a500" };
+    return (
+      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,textTransform:"uppercase",background:`${colors[priority]}22`,color:colors[priority],border:`1px solid ${colors[priority]}44`,flexShrink:0}}>
+        {priority}
+      </span>
+    );
+  };
+
+  const StatusBadge = ({status}) => {
+    const s = STATUSES.find(st => st.key === status) || STATUSES[0];
+    return (
+      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,textTransform:"uppercase",background:s.bg,color:s.color,border:`1px solid ${s.color}44`}}>
+        {s.label}
+      </span>
+    );
+  };
+
+  // -- ADD FORM --
+  if(view === "add") return (
+    <div className="screen" style={{background:"var(--earth)"}}>
+      <div style={{background:"var(--bark)",borderBottom:"3px solid var(--mgr)",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--mgr-lt)",letterSpacing:2}}>New Request</div>
+        <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",cursor:"pointer"}}>Cancel</button>
+      </div>
+      <div style={{padding:"16px",overflowY:"auto",flex:1}}>
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
+          <label style={labelStyle}>Client Name *</label>
+          <input style={{...inputStyle,marginBottom:10}} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="First & Last Name"/>
+          <label style={labelStyle}>Address</label>
+          <input style={{...inputStyle,marginBottom:10}} value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St, Southboro"/>
+          <label style={labelStyle}>Task / Service *</label>
+          <input style={{...inputStyle,marginBottom:10}} value={form.task} onChange={e=>setForm(f=>({...f,task:e.target.value}))} placeholder="e.g. Spring Clean-Up, Mulch Install"/>
+          <label style={labelStyle}>Priority</label>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {["","High","Mid"].map(p=>(
+              <button key={p} onClick={()=>setForm(f=>({...f,priority:p}))}
+                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.priority===p?"var(--mgr)":"var(--moss)"}`,background:form.priority===p?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.priority===p?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                {p||"None"}
+              </button>
+            ))}
+          </div>
+          <label style={labelStyle}>Status</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+            {STATUSES.map(s=>(
+              <button key={s.key} onClick={()=>setForm(f=>({...f,status:s.key}))}
+                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.status===s.key?s.color:"var(--moss)"}`,background:form.status===s.key?s.bg:"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.status===s.key?s.color:"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:12,marginBottom:10}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+              <input type="checkbox" checked={form.awaiting_estimate} onChange={e=>setForm(f=>({...f,awaiting_estimate:e.target.checked}))} style={{width:18,height:18}}/>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>Awaiting Estimate</span>
+            </label>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+              <input type="checkbox" checked={form.is_great_lawns} onChange={e=>setForm(f=>({...f,is_great_lawns:e.target.checked}))} style={{width:18,height:18}}/>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>Great Lawns Customer</span>
+            </label>
+          </div>
+          <label style={labelStyle}>Notes</label>
+          <textarea style={{...inputStyle,resize:"none",height:80}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Any details from the call..."/>
+        </div>
+        <button disabled={saving||!form.name.trim()||!form.task.trim()} onClick={saveNew}
+          style={{width:"100%",padding:"16px",background:saving?"var(--moss)":"var(--mgr)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:saving?"not-allowed":"pointer"}}>
+          {saving?"Saving...":"Save Request"}
+        </button>
+      </div>
+    </div>
+  );
+
+  // -- DETAIL / EDIT VIEW --
+  if(view === "detail" && selected) return (
+    <div className="screen" style={{background:"var(--earth)"}}>
+      <div style={{background:"var(--bark)",borderBottom:"3px solid var(--mgr)",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
+        <button onClick={()=>setView("board")} className="back-btn" style={{marginBottom:0}}><Ic n="back"/> Board</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>deleteRequest(selected.id)} style={{background:"none",border:"1px solid var(--danger)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--danger)",cursor:"pointer"}}>Delete</button>
+          <button disabled={saving} onClick={saveEdit} style={{background:"var(--mgr)",border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#fff",cursor:"pointer"}}>{saving?"Saving...":"Save"}</button>
+        </div>
+      </div>
+      <div style={{padding:"16px",overflowY:"auto",flex:1}}>
+        <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:14,marginBottom:12}}>
+          <label style={labelStyle}>Client Name</label>
+          <input style={{...inputStyle,marginBottom:10}} value={selected.name||""} onChange={e=>setSelected(s=>({...s,name:e.target.value}))}/>
+          <label style={labelStyle}>Address</label>
+          <input style={{...inputStyle,marginBottom:10}} value={selected.address||""} onChange={e=>setSelected(s=>({...s,address:e.target.value}))}/>
+          <label style={labelStyle}>Task / Service</label>
+          <input style={{...inputStyle,marginBottom:10}} value={selected.task||""} onChange={e=>setSelected(s=>({...s,task:e.target.value}))}/>
+          <label style={labelStyle}>Priority</label>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            {["","High","Mid"].map(p=>(
+              <button key={p} onClick={()=>setSelected(s=>({...s,priority:p}))}
+                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.priority===p?"var(--mgr)":"var(--moss)"}`,background:selected.priority===p?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.priority===p?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                {p||"None"}
+              </button>
+            ))}
+          </div>
+          <label style={labelStyle}>Status</label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
+            {STATUSES.map(s=>(
+              <button key={s.key} onClick={()=>setSelected(r=>({...r,status:s.key}))}
+                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.status===s.key?s.color:"var(--moss)"}`,background:selected.status===s.key?s.bg:"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.status===s.key?s.color:"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:12,marginBottom:10}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+              <input type="checkbox" checked={!!selected.awaiting_estimate} onChange={e=>setSelected(s=>({...s,awaiting_estimate:e.target.checked}))} style={{width:18,height:18}}/>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>Awaiting Estimate</span>
+            </label>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+              <input type="checkbox" checked={!!selected.is_great_lawns} onChange={e=>setSelected(s=>({...s,is_great_lawns:e.target.checked}))} style={{width:18,height:18}}/>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>Great Lawns Customer</span>
+            </label>
+          </div>
+          <label style={labelStyle}>Notes</label>
+          <textarea style={{...inputStyle,resize:"none",height:100}} value={selected.notes||""} onChange={e=>setSelected(s=>({...s,notes:e.target.value}))}/>
+        </div>
+
+        {selected.status === "schedule" && (
+          <button disabled={converting} onClick={convertToProperty}
+            style={{width:"100%",padding:"14px",background:converting?"var(--moss)":"var(--leaf)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--earth)",cursor:converting?"not-allowed":"pointer",marginBottom:8}}>
+            {converting?"Converting...":"✓ Convert to Property"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // -- KANBAN BOARD --
+  return (
+    <div className="screen" style={{background:"var(--earth)"}}>
+      <div style={{background:"var(--bark)",borderBottom:"3px solid var(--mgr)",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:28,height:28,objectFit:"contain"}}/>
+            <div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>Office View</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"var(--stone)",letterSpacing:1,textTransform:"uppercase"}}>Spring 2026 Requests</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setView("add")} style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
+            <button onClick={onLogout} style={{background:"none",border:"1px solid var(--moss)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",cursor:"pointer"}}>Out</button>
+          </div>
+        </div>
+        <input type="text" placeholder="Search name, address, task..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
+          style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"9px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none"}}/>
+        <div style={{display:"flex",gap:6}}>
+          {["all","High","Mid"].map(p=>(
+            <button key={p} onClick={()=>setFilterPriority(p)}
+              style={{padding:"5px 12px",borderRadius:6,border:`1.5px solid ${filterPriority===p?"var(--mgr)":"var(--moss)"}`,background:filterPriority===p?"rgba(42,90,149,0.15)":"transparent",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:filterPriority===p?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",letterSpacing:1}}>
+              {p==="all"?"All Priority":p}
+            </button>
+          ))}
+          <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",alignSelf:"center"}}>{filtered.length} requests</span>
+        </div>
+      </div>
+
+      <div style={{overflowY:"auto",flex:1,padding:"12px 16px 100px"}}>
+        {loading ? (
+          <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+        ) : (
+          STATUSES.map(status => {
+            const group = filtered.filter(r => r.status === status.key);
+            return (
+              <div key={status.key} style={{marginBottom:20}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:status.color,textTransform:"uppercase"}}>{status.label}</div>
+                  <div style={{background:status.bg,border:`1px solid ${status.color}44`,borderRadius:10,padding:"1px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:status.color}}>{group.length}</div>
+                  <div style={{flex:1,height:1,background:"var(--moss)"}}></div>
+                </div>
+                {group.length === 0 ? (
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--moss)",letterSpacing:1,padding:"8px 0"}}>No requests</div>
+                ) : group.map(r => (
+                  <div key={r.id} onClick={()=>{setSelected(r);setView("detail");}}
+                    style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:`4px solid ${status.color}`,borderRadius:9,padding:"12px 14px",marginBottom:8,cursor:"pointer",transition:"background 0.15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.background="var(--bark2)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="var(--bark)"}
+                  >
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",flex:1}}>{r.name}</div>
+                      <PriorityBadge priority={r.priority}/>
+                      {r.is_great_lawns && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,background:"rgba(61,107,16,0.12)",color:"var(--leaf)",border:"1px solid rgba(61,107,16,0.3)"}}>GL</span>}
+                      {r.awaiting_estimate && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,background:"rgba(42,90,149,0.12)",color:"var(--mgr-lt)",border:"1px solid rgba(42,90,149,0.3)"}}>EST</span>}
+                    </div>
+                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"var(--lime)",letterSpacing:1,marginBottom:2}}>{r.task}</div>
+                    <div style={{fontSize:12,color:"var(--stone)",marginBottom:r.notes?4:0}}>📍 {r.address}</div>
+                    {r.notes && <div style={{fontSize:12,color:"var(--stone)",fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.notes}</div>}
+                    <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                      {STATUSES.filter(s=>s.key!==r.status).map(s=>(
+                        <button key={s.key} onClick={e=>{e.stopPropagation();updateStatus(r.id,s.key);}}
+                          style={{padding:"4px 10px",borderRadius:6,border:`1px solid ${s.color}44`,background:s.bg,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:s.color,cursor:"pointer",letterSpacing:0.5}}>
+                          → {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OwnerDashboard({ onLogout, onManagerView }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ revenue: 0, jobs: 0, laborHours: 0, clients: 0, newClients: 0, receiptsTotal: 0 });
@@ -4278,7 +4606,7 @@ export default function App() {
   const[lang,setLang]=useState(detectLang);
   const[ownerMode,setOwnerMode]=useState("dashboard"); // "dashboard" or "manager"
 
-  const OWNER_EMAIL = "justin@jandjandsonlawncare.com"; // change to owner email
+  const OWNER_EMAIL = "justin@jandjandsonlawncare.com"; 
 
   const postSignIn = async (tr) => {
     try {
@@ -4317,10 +4645,14 @@ export default function App() {
   const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
   const handleLogout = () => { if(truck) postSignOut(truck); setTruck(null); setTruckDiv(""); setScreen("login"); };
 
+const OFFICE_EMAIL = "katie@jandjandsonlawncare.com";
+
   const handleMgrLogin = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if(user?.email === OWNER_EMAIL) {
       setScreen("owner");
+    } else if(user?.email === OFFICE_EMAIL) {
+      setScreen("office");
     } else {
       setScreen("manager");
     }
@@ -4333,6 +4665,7 @@ export default function App() {
         {screen==="login" && <LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={handleMgrLogin} lang={lang} setLang={setLang}/>}
         {screen==="truck" && truck && <TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout}/>}
         {screen==="manager" && <ManagerZone onLogout={()=>setScreen("login")}/>}
+        {screen==="office" && <OfficeView onLogout={()=>setScreen("login")}/>}
         {screen==="owner" && ownerMode==="dashboard" && <OwnerDashboard onLogout={()=>setScreen("login")} onManagerView={()=>setOwnerMode("manager")}/>}
         {screen==="owner" && ownerMode==="manager" && <ManagerZone onLogout={()=>setScreen("login")} isOwner={true} onOwnerView={()=>setOwnerMode("dashboard")}/>}
       </div>
