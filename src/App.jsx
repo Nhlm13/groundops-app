@@ -2246,7 +2246,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
                 {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>{t.jobComplete}</span>}
                 {isInProgress && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--lime)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>⏱ In Progress</span>}
               </div>
-              <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>📍 {property?.address}</div>
+              <a href={`https://maps.apple.com/?q=${encodeURIComponent(property?.address||"")}`} target="_blank" rel="noopener noreferrer" style={{fontSize:13,color:"var(--mgr-lt)",marginBottom:4,display:"block",textDecoration:"none"}}>📍 {property?.address}</a>
               {job.service_types?.length > 0 && <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,color:"var(--lime)",letterSpacing:1,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
               {property?.service_notes && (
                 <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
