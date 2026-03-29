@@ -1936,8 +1936,7 @@ const SERVICE_GROUPS = [
     ids: ["lighting_install","lighting_takedown"] },
 ];
 
-function JobsTab({ truck }) {
-  const lang = useLang();
+function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
   const t = useT();
   const [jobs, setJobs] = useState([]);
   const [properties, setProperties] = useState([]);
@@ -1973,6 +1972,15 @@ function JobsTab({ truck }) {
         supabase.from("properties").select("id, client_name, address, service_notes, special_instructions, photo_url, service_types").in("id", propIds),
         supabase.from("job_completions").select("job_id").in("job_id", jobIds),
       ]);
+      const completedJobIds = new Set((completionData || []).map(c => c.job_id));
+      const jobsWithStatus = jobData.map(j => ({...j, status: completedJobIds.has(j.id) ? "completed" : j.status}));
+      setJobs(jobsWithStatus);
+      if(onJobCountChange) onJobCountChange(jobsWithStatus.filter(j => j.status !== "completed").length);
+      setProperties(propData || []);
+      setLoading(false);
+    };
+    if(truck.supabaseId) fetchJobs();
+  }, [truck.supabaseId, today]);
       const completedJobIds = new Set((completionData || []).map(c => c.job_id));
       setJobs(jobData.map(j => ({...j, status: completedJobIds.has(j.id) ? "completed" : j.status})));
       setProperties(propData || []);
@@ -2280,6 +2288,7 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   const [propInspectCount, setPropInspectCount]= useState(saved?.propInspectCount || 0);
   const [eodComplete,      setEodComplete]     = useState(saved?.eodComplete      || false);
   const [division]                             = useState(initialDivision||"");
+  const [assignedJobCount, setAssignedJobCount]= useState(0);
 
   useEffect(() => {
     saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
@@ -2329,22 +2338,23 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
           <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
           <EndOfDayForm truck={truck} onBack={()=>setActiveForm(null)} onDone={()=>{setActiveForm(null);setEodComplete(true);setTab("home");}}/></div>
         )}
-        {tab==="jobs"   &&<JobsTab truck={truck}/>}
+        {tab==="jobs"   &&<JobsTab truck={truck} onJobCountChange={setAssignedJobCount}/>}
         {tab==="receipt"&&<ReceiptTab truck={truck} division={division} onGoHome={()=>setTab("home")}/>}
-        {tab==="tools"  &&<ToolsTab truck={truck} checkouts={checkouts} setCheckouts={setCheckouts}/>}
         {tab==="hr"     &&<HRTab/>}
       </div>
 
-    <nav className="bottom-nav">
-  <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
-  <button className={`bnav-btn ${tab==="jobs"?"active":""}`}    onClick={()=>setTab("jobs")}><Ic n="clip"/>Jobs</button>
-  <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
-  <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
-</nav>
+      <nav className="bottom-nav">
+        <button className={`bnav-btn ${tab==="home"?"active":""}`} onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
+        <button className={`bnav-btn ${tab==="jobs"?"active":""}`} onClick={()=>setTab("jobs")} style={{position:"relative"}}>
+          <Ic n="clip"/>Jobs
+          {assignedJobCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--lime)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{assignedJobCount}</span>}
+        </button>
+        <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
+        <button className={`bnav-btn ${tab==="hr"?"active":""}`} onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
+      </nav>
     </div>
   );
 }
-
 // -- EDIT SCHEDULE FORM -------------------------------------------------------
 function EditScheduleForm({ schedule, onBack, onSaved }) {
   const [submitting, setSubmitting] = useState(false);
