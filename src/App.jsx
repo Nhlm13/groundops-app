@@ -1925,7 +1925,7 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
 // -- JOBS TAB -----------------------------------------------------------------
 const SERVICE_GROUPS = [
   { label: { en: "Lawn & Grounds", es: "Césped y Jardín", pt: "Gramado e Jardim" },
-  ids: ["mowing","lawn_maintenance","edging","trimming","weeding"] },
+    ids: ["mowing","lawn_maintenance","edging","trimming","weeding"] },
   { label: { en: "Planting & Beds", es: "Plantación y Arriates", pt: "Plantio e Canteiros" },
     ids: ["pruning","mulching","planting"] },
   { label: { en: "Irrigation", es: "Irrigación", pt: "Irrigação" },
@@ -1955,6 +1955,7 @@ function JobsTab({ truck }) {
   const [descriptions, setDescriptions] = useState({});
   const photoRef = useRef();
   const timerRef = useRef(null);
+  const finalLogsRef = useRef({});
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
   useEffect(() => {
@@ -1990,7 +1991,6 @@ function JobsTab({ truck }) {
     return () => clearInterval(timerRef.current);
   }, [activeServiceId, activeStart, timeLogs]);
 
-  // Update job status to in_progress when started
   const startJob = async (job) => {
     await supabase.from("jobs").update({ status: "in_progress" }).eq("id", job.id);
     setJobs(prev => prev.map(j => j.id === job.id ? {...j, status: "in_progress"} : j));
@@ -2000,6 +2000,7 @@ function JobsTab({ truck }) {
     setTimeLogs({});
     setElapsed({});
     setDescriptions({});
+    finalLogsRef.current = {};
   };
 
   const formatTime = (secs) => {
@@ -2025,13 +2026,8 @@ function JobsTab({ truck }) {
   };
 
   const handleComplete = async () => {
-    console.log("handleComplete called, activeJob:", activeJob?.id, "elapsed:", JSON.stringify(elapsed), "timeLogs:", JSON.stringify(timeLogs));
     if(!activeJob) return;
-    let finalLogs = {...timeLogs};
-    if(activeServiceId && activeStart) {
-      const secs = Math.floor((Date.now() - activeStart) / 1000);
-      finalLogs[activeServiceId] = (finalLogs[activeServiceId] || 0) + secs;
-    }
+    const finalLogs = finalLogsRef.current;
     setSubmitting(true);
     try {
       let photoUrl = null;
@@ -2061,10 +2057,8 @@ function JobsTab({ truck }) {
           });
         }
         const timeEntries = Object.entries(finalLogs).filter(([,secs]) => secs > 0);
-console.log("Time entries to save:", JSON.stringify(timeEntries));
-console.log("truck.sessionId:", truck.sessionId);
-if(timeEntries.length > 0) {
-  const { error: timeLogError } = await supabase.from("job_time_logs").insert(
+        if(timeEntries.length > 0) {
+          await supabase.from("job_time_logs").insert(
             timeEntries.map(([serviceId, secs]) => ({
               job_id: activeJob.id,
               session_id: truck.sessionId || null,
@@ -2075,7 +2069,6 @@ if(timeEntries.length > 0) {
               duration_seconds: secs,
             }))
           );
-  console.log("Time log insert error:", JSON.stringify(timeLogError));
         }
       }
       await supabase.from("jobs").update({ status: "completed" }).eq("id", activeJob.id);
@@ -2083,6 +2076,7 @@ if(timeEntries.length > 0) {
       setActiveJob(null); setActiveServiceId(null); setActiveStart(null);
       setTimeLogs({}); setElapsed({}); setCompleting(null);
       setCompletionNote(""); setCompletionPhoto(null); setCompletionPhotoFile(null);
+      finalLogsRef.current = {};
     } catch(e){ console.warn(e); }
     setSubmitting(false);
   };
@@ -2131,7 +2125,8 @@ if(timeEntries.length > 0) {
 
         {SERVICE_GROUPS.map(group => (
           <div key={group.label.en} style={{marginBottom:12}}>
-<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--lime)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{group.label[lang]||group.label.en}</div>            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--lime)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{group.label[lang]||group.label.en}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {group.ids.map(id => {
                 const svc = SERVICE_TYPES.find(s => s.id === id);
                 if(!svc) return null;
@@ -2159,7 +2154,16 @@ if(timeEntries.length > 0) {
           </div>
         ))}
 
-        <button onClick={()=>setCompleting(activeJob)}
+        <button onClick={()=>{
+          let logs = {...timeLogs};
+          if(activeServiceId && activeStart) {
+            const secs = Math.floor((Date.now() - activeStart) / 1000);
+            logs[activeServiceId] = (logs[activeServiceId] || 0) + secs;
+          }
+          clearInterval(timerRef.current);
+          finalLogsRef.current = logs;
+          setCompleting(activeJob);
+        }}
           style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
           {t.completeJob}
         </button>
@@ -2188,13 +2192,13 @@ if(timeEntries.length > 0) {
             <button onClick={()=>{setCompletionPhoto(null);setCompletionPhotoFile(null);}} style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",border:"none",borderRadius:"50%",width:28,height:28,color:"#fff",cursor:"pointer",fontSize:14}}>✕</button>
           </div>
         )}
-        {Object.keys(elapsed).length > 0 && (
+        {Object.keys(finalLogsRef.current).length > 0 && (
           <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:12,marginBottom:12}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.timeSummary}</div>
-            {SERVICE_TYPES.filter(s => elapsed[s.id] > 0).map(svc => (
+            {SERVICE_TYPES.filter(s => finalLogsRef.current[s.id] > 0).map(svc => (
               <div key={svc.id} style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                 <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>{svc[lang]||svc.en}</span>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--lime)",fontWeight:700}}>{formatTime(elapsed[svc.id])}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--lime)",fontWeight:700}}>{formatTime(finalLogsRef.current[svc.id])}</span>
               </div>
             ))}
           </div>
