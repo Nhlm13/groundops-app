@@ -2336,14 +2336,10 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
         {tab==="hr"     &&<HRTab/>}
       </div>
 
-     <nav className="bottom-nav">
+    <nav className="bottom-nav">
   <button className={`bnav-btn ${tab==="home"?"active":""}`}    onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
   <button className={`bnav-btn ${tab==="jobs"?"active":""}`}    onClick={()=>setTab("jobs")}><Ic n="clip"/>Jobs</button>
   <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
-  <button className={`bnav-btn ${tab==="tools"?"active":""}`}   onClick={()=>setTab("tools")} style={{position:"relative"}}>
-    <Ic n="wrench"/>{t.tools}
-    {myCheckoutCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{myCheckoutCount}</span>}
-  </button>
   <button className={`bnav-btn ${tab==="hr"?"active":""}`}      onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
 </nav>
     </div>
@@ -3399,12 +3395,208 @@ function CompletedJobsSummary({ jobs, formatSecs }) {
   );
 }
 
+//// -- COMPLETED JOBS SUMMARY ---------------------------------------------------
+function CompletedJobsSummary({ jobs, formatSecs }) {
+  const [expanded, setExpanded] = useState(false);
+  const [expandedJob, setExpandedJob] = useState(null);
+  const totalSecs = jobs.reduce((sum, job) =>
+    sum + job.timeLogs.reduce((s, l) => s + (l.duration_seconds || 0), 0), 0);
+  return (
+    <div style={{marginTop:16}}>
+      <div onClick={()=>setExpanded(e=>!e)}
+        style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bark)",border:"1px solid rgba(74,109,32,0.3)",borderLeft:"4px solid var(--leaf)",borderRadius:10,padding:"12px 14px",cursor:"pointer",userSelect:"none"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase"}}>✓ Completed Jobs</span>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>{jobs.length}</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {totalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700,letterSpacing:1}}>{formatSecs(totalSecs)} total</span>}
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",transform:expanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▼</span>
+        </div>
+      </div>
+      {expanded && (
+        <div style={{background:"var(--bark)",border:"1px solid rgba(74,109,32,0.2)",borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
+          {jobs.map((job, i) => {
+            const jobTotalSecs = job.timeLogs.reduce((s, l) => s + (l.duration_seconds || 0), 0);
+            const isExpanded = expandedJob === job.id;
+            return (
+              <div key={job.id}>
+                <div onClick={()=>setExpandedJob(isExpanded ? null : job.id)}
+                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderTop:i>0?"1px solid rgba(196,191,176,0.3)":"none",cursor:"pointer",background:isExpanded?"rgba(74,109,32,0.05)":"transparent"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.properties?.client_name||"Unknown"}</div>
+                    <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>{job.truck?.name||"—"}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    {jobTotalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700}}>{formatSecs(jobTotalSecs)}</span>}
+                    {job.timeLogs.length > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",transform:isExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▼</span>}
+                  </div>
+                </div>
+                {isExpanded && job.timeLogs.length > 0 && (
+                  <div style={{padding:"6px 14px 10px",background:"rgba(74,109,32,0.04)",borderTop:"1px solid rgba(196,191,176,0.2)"}}>
+                    {job.timeLogs.map(log => (
+                      <div key={log.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{getServiceLabel(log.service_type,"en")}</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700}}>{formatSecs(log.duration_seconds)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// -- MANAGER JOBS TAB ---------------------------------------------------------
+function ManagerJobsTab() {
+  const [jobs, setJobs] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [assignments, setAssignments] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [assigningJob, setAssigningJob] = useState(null);
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const [{ data: jobData }, { data: propData }, { data: truckData }] = await Promise.all([
+        supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", today).order("sort_order"),
+        supabase.from("properties").select("id, client_name, address, service_types").eq("company_id", COMPANY_ID),
+        supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
+      ]);
+      const jobIds = (jobData||[]).map(j => j.id);
+      let assignmentMap = {};
+      if(jobIds.length > 0) {
+        const { data: assignData } = await supabase.from("job_assignments").select("*").in("job_id", jobIds);
+        (assignData||[]).forEach(a => { assignmentMap[a.job_id] = a; });
+      }
+      setJobs(jobData || []);
+      setProperties(propData || []);
+      setTrucks(truckData || []);
+      setAssignments(assignmentMap);
+      setLoading(false);
+    };
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [today]);
+
+  const assignJobToTruck = async (jobId, truckId) => {
+    const existing = assignments[jobId];
+    if(existing) {
+      await supabase.from("job_assignments").update({ truck_id: truckId }).eq("id", existing.id);
+      setAssignments(prev => ({...prev, [jobId]: {...existing, truck_id: truckId}}));
+    } else {
+      const { data } = await supabase.from("job_assignments").insert({ job_id: jobId, truck_id: truckId, crew_name: "" }).select().single();
+      if(data) setAssignments(prev => ({...prev, [jobId]: data}));
+    }
+    setAssigningJob(null);
+  };
+
+  const unassignJob = async (jobId) => {
+    const existing = assignments[jobId];
+    if(existing) {
+      await supabase.from("job_assignments").delete().eq("id", existing.id);
+      setAssignments(prev => { const next = {...prev}; delete next[jobId]; return next; });
+    }
+    setAssigningJob(null);
+  };
+
+  const filteredJobs = jobs.filter(j => {
+    if(filter === "unassigned") return !assignments[j.id];
+    if(filter === "scheduled") return j.status === "scheduled";
+    if(filter === "in_progress") return j.status === "in_progress";
+    if(filter === "completed") return j.status === "completed";
+    return true;
+  });
+
+  const counts = {
+    unassigned: jobs.filter(j => !assignments[j.id]).length,
+    scheduled: jobs.filter(j => j.status === "scheduled").length,
+    in_progress: jobs.filter(j => j.status === "in_progress").length,
+    completed: jobs.filter(j => j.status === "completed").length,
+  };
+
+  if(loading) return (
+    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+  );
+
+  return (
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+        {[
+          {key:"scheduled", label:"Scheduled", color:"var(--stone)"},
+          {key:"unassigned", label:"Unassigned", color:"var(--warn)"},
+          {key:"in_progress", label:"Active", color:"var(--lime)"},
+          {key:"completed", label:"Done", color:"var(--leaf)"},
+        ].map(({key, label, color})=>(
+          <div key={key} style={{background:"var(--bark)",border:`1px solid ${filter===key?"var(--mgr)":"var(--moss)"}`,borderRadius:8,padding:"8px",textAlign:"center",cursor:"pointer"}} onClick={()=>setFilter(filter===key?"all":key)}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color,lineHeight:1}}>{counts[key]}</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase",marginTop:2}}>{label}</div>
+          </div>
+        ))}
+      </div>
+      {filteredJobs.length === 0 ? (
+        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>No jobs</div>
+      ) : filteredJobs.map(job => {
+        const prop = properties.find(p => p.id === job.property_id);
+        const assignment = assignments[job.id];
+        const assignedTruck = trucks.find(t => t.id === assignment?.truck_id);
+        const isAssigning = assigningJob === job.id;
+        const statusColor = job.status==="completed"?"var(--leaf)":job.status==="in_progress"?"var(--lime)":"var(--stone)";
+        return (
+          <div key={job.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:`4px solid ${statusColor}`,borderRadius:9,padding:"12px 14px",marginBottom:8,cursor:"pointer"}}
+            onClick={()=>setAssigningJob(isAssigning ? null : job.id)}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{prop?.client_name||"Unknown"}</div>
+              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:"rgba(196,191,176,0.15)",color:statusColor}}>{job.status.replace("_"," ")}</span>
+            </div>
+            <div style={{fontSize:12,color:"var(--stone)",marginBottom:4}}>{prop?.address}</div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              {job.service_types?.length > 0
+                ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--mgr-lt)",letterSpacing:0.5}}>{job.service_types.map(id=>getServiceLabel(id,"en")).join(" · ")}</span>
+                : <span/>}
+              {assignedTruck
+                ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
+                : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--warn)",letterSpacing:1}}>Unassigned</span>}
+            </div>
+            {isAssigning && (
+              <div style={{marginTop:10,borderTop:"1px solid var(--moss)",paddingTop:10,animation:"fadeUp 0.2s ease both"}}>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Assign to Truck</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {trucks.map(truck=>(
+                    <button key={truck.id} onClick={e=>{e.stopPropagation();assignJobToTruck(job.id,truck.id);}}
+                      style={{padding:"6px 12px",borderRadius:6,border:`1.5px solid ${assignment?.truck_id===truck.id?"var(--lime)":"var(--moss)"}`,background:assignment?.truck_id===truck.id?"rgba(74,109,32,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:assignment?.truck_id===truck.id?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                      {truck.name}
+                    </button>
+                  ))}
+                  {assignment && (
+                    <button onClick={e=>{e.stopPropagation();unassignJob(job.id);}}
+                      style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid var(--danger)",background:"rgba(192,68,42,0.08)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--danger)",cursor:"pointer",fontWeight:600}}>
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
   const [tab, setTab] = useState("activity");
   const [loading, setLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(() => 
+  const [selectedDate, setSelectedDate] = useState(() =>
     new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" })
   );
   const [sessions, setSessions] = useState([]);
@@ -3414,6 +3606,9 @@ function ManagerZone({ onLogout }) {
   const [propInspections, setPropInspections] = useState([]);
   const [receipts, setReceipts] = useState([]);
   const [trucks, setTrucks] = useState([]);
+  const [todayJobCounts, setTodayJobCounts] = useState({ unassigned: 0 });
+  const [isPulling, setIsPulling] = useState(false);
+  const pullStartY = useRef(0);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -3442,15 +3637,21 @@ function ManagerZone({ onLogout }) {
       setEods(eodData || []);
       setPropInspections(propData || []);
       setReceipts(receiptData || []);
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const { data: allJobs } = await supabase.from("jobs").select("id").eq("company_id", COMPANY_ID).eq("date", today).eq("status", "scheduled");
+      const { data: allAssignments } = await supabase.from("job_assignments").select("job_id");
+      const assignedIds = new Set((allAssignments||[]).map(a => a.job_id));
+      const unassigned = (allJobs||[]).filter(j => !assignedIds.has(j.id)).length;
+      setTodayJobCounts({ unassigned });
       setLastRefresh(new Date().toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit" }));
     } catch(e) { console.warn("Manager fetch failed", e); }
     setLoading(false);
   };
 
-// eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchAll(); }, [selectedDate]);
-  
   useEffect(() => { generateJobsFromSchedules(); }, []);
+
   const todayLabel = new Date().toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
 
   const DateBar = () => (
@@ -3469,7 +3670,7 @@ function ManagerZone({ onLogout }) {
     </div>
   );
 
-const ActivityTab = () => {
+  const ActivityTab = () => {
     const [jobData, setJobData] = useState({ active: [], completed: [] });
     const [jobsLoading, setJobsLoading] = useState(true);
 
@@ -3478,17 +3679,12 @@ const ActivityTab = () => {
         setJobsLoading(true);
         const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
         if(selectedDate !== today) { setJobsLoading(false); return; }
-
         const { data: activeJobs } = await supabase
           .from("jobs").select("*, properties(client_name, address)")
-          .eq("company_id", COMPANY_ID).eq("date", selectedDate)
-          .eq("status", "in_progress");
-
+          .eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "in_progress");
         const { data: completedJobs } = await supabase
           .from("jobs").select("*, properties(client_name, address)")
-          .eq("company_id", COMPANY_ID).eq("date", selectedDate)
-          .eq("status", "completed");
-
+          .eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "completed");
         const allJobIds = [...(activeJobs||[]), ...(completedJobs||[])].map(j => j.id);
         let timeLogs = [];
         let jobAssignments = [];
@@ -3500,13 +3696,11 @@ const ActivityTab = () => {
           timeLogs = tl || [];
           jobAssignments = ja || [];
         }
-
         const enrich = (jobs) => jobs.map(job => ({
           ...job,
           timeLogs: timeLogs.filter(l => l.job_id === job.id),
           truck: trucks.find(t => t.id === jobAssignments.find(a => a.job_id === job.id)?.truck_id),
         }));
-
         setJobData({ active: enrich(activeJobs||[]), completed: enrich(completedJobs||[]) });
         setJobsLoading(false);
       };
@@ -3537,6 +3731,23 @@ const ActivityTab = () => {
           {lastRefresh && `Updated ${lastRefresh} · `}{sessions.length} truck{sessions.length!==1?"s":""} active
         </div>
 
+        {/* Daily Summary Card */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+          {[
+            {label:"Active", value:sessions.length, color:"var(--lime)"},
+            {label:"In Progress", value:jobData.active.length, color:"var(--warn)"},
+            {label:"Completed", value:jobData.completed.length, color:"var(--leaf)"},
+            {label:"Labor Hrs", value:jobData.completed.reduce((sum,j)=>sum+j.timeLogs.reduce((s,l)=>s+(l.duration_seconds||0),0),0), color:"var(--mgr-lt)", isTime:true},
+          ].map(({label,value,color,isTime})=>(
+            <div key={label} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:"8px",textAlign:"center"}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color,lineHeight:1}}>
+                {isTime ? `${Math.floor(value/3600)}h ${Math.floor((value%3600)/60)}m` : value}
+              </div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase",marginTop:2}}>{label}</div>
+            </div>
+          ))}
+        </div>
+
         {sessions.map(session => {
           const hasBriefing = briefings.some(b => b.session_id === session.id);
           const dotRecord = dots.find(d => d.session_id === session.id);
@@ -3546,16 +3757,23 @@ const ActivityTab = () => {
           const propCount = propInspections.filter(p => p.session_id === session.id).length;
           const hasEod = eods.some(e => e.session_id === session.id);
           const truck = trucks.find(t => t.id === session.truck_id);
-          const missingRequired = !hasBriefing || !hasDot;
+          const missingDot = !hasDot || dotFlagged;
+          const missingBriefing = !hasBriefing;
+          const allDone = hasBriefing && hasDot && !dotFlagged && hasEod;
+          const inProgress = hasBriefing && hasDot && !dotFlagged && !hasEod;
+          const borderColor = missingDot ? "var(--danger)" : missingBriefing ? "var(--warn)" : allDone ? "rgba(74,109,32,0.4)" : inProgress ? "var(--mgr)" : "var(--moss)";
+          const accentColor = missingDot ? "var(--danger)" : missingBriefing ? "var(--warn)" : allDone ? "var(--leaf)" : inProgress ? "var(--mgr-lt)" : "var(--moss)";
+          const allForms = [...briefings, ...dots, ...propInspections, ...eods].filter(f => f.session_id === session.id);
+          const lastActivity = allForms.length > 0 ? Math.max(...allForms.map(f => new Date(f.created_at || 0).getTime())) : null;
 
           return (
-            <div key={session.id} style={{background:"var(--bark)",border:`1px solid ${dotFlagged?"var(--danger)":missingRequired?"var(--warn)":"var(--moss)"}`,borderLeft:`4px solid ${dotFlagged?"var(--danger)":missingRequired?"var(--warn)":"var(--leaf)"}`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
+            <div key={session.id} style={{background:"var(--bark)",border:`1px solid ${borderColor}`,borderLeft:`4px solid ${accentColor}`,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
               <div style={{padding:"12px 14px",borderBottom:"1px solid var(--moss)",display:"flex",alignItems:"center",gap:10}}>
                 <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
                 <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck?.name || "Unknown Truck"}</span>
                 <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",marginLeft:4}}>{session.crew_name}</span>
-                {dotFlagged && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:4,padding:"2px 8px",color:"var(--danger)",letterSpacing:1,textTransform:"uppercase"}}>DOT Flagged</span>}
-                {!dotFlagged && missingRequired && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(160,96,16,0.12)",border:"1px solid var(--warn)",borderRadius:4,padding:"2px 8px",color:"var(--warn)",letterSpacing:1,textTransform:"uppercase"}}>Incomplete</span>}
+                {missingDot && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:4,padding:"2px 8px",color:"var(--danger)",letterSpacing:1,textTransform:"uppercase"}}>{dotFlagged?"DOT Flagged":"DOT Missing"}</span>}
+                {!missingDot && missingBriefing && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(160,96,16,0.12)",border:"1px solid var(--warn)",borderRadius:4,padding:"2px 8px",color:"var(--warn)",letterSpacing:1,textTransform:"uppercase"}}>Incomplete</span>}
               </div>
               <div style={{padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
                 {[
@@ -3569,8 +3787,9 @@ const ActivityTab = () => {
                   </span>
                 ))}
               </div>
-              <div style={{padding:"4px 14px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5}}>
-                Started {new Date(session.started_at).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})}
+              <div style={{padding:"4px 14px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5,display:"flex",justifyContent:"space-between"}}>
+                <span>Started {new Date(session.started_at).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})}</span>
+                {lastActivity && <span>Last activity: {new Date(lastActivity).toLocaleTimeString("en-US",{timeZone:"America/New_York",hour:"2-digit",minute:"2-digit"})}</span>}
               </div>
             </div>
           );
@@ -3586,21 +3805,13 @@ const ActivityTab = () => {
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.properties?.client_name||"Unknown"}</div>
                   <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>🚛 {job.truck?.name||"Unassigned"}</span>
                 </div>
-                <div style={{fontSize:12,color:"var(--stone)",marginBottom:job.timeLogs.length>0?6:0}}>{job.properties?.address}</div>
-                {job.timeLogs.length > 0 && (
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {job.timeLogs.map(log => (
-                      <span key={log.id} style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(74,109,32,0.1)",border:"1px solid var(--leaf)",color:"var(--lime)"}}>
-                        {getServiceLabel(log.service_type,"en")} · {formatSecs(log.duration_seconds)}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <div style={{fontSize:12,color:"var(--stone)"}}>{job.properties?.address}</div>
               </div>
             ))}
           </div>
         )}
-{/* Completed Jobs */}
+
+        {/* Completed Jobs */}
         {!jobsLoading && jobData.completed.length > 0 && (
           <CompletedJobsSummary jobs={jobData.completed} formatSecs={formatSecs}/>
         )}
@@ -3612,7 +3823,6 @@ const ActivityTab = () => {
     const totalSpend = receipts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
     const fuelTotal = receipts.filter(r=>r.vendor==="Fuel").reduce((sum,r)=>sum+(parseFloat(r.amount)||0),0);
     const otherTotal = totalSpend - fuelTotal;
-
     return (
       <div>
         <DateBar/>
@@ -3633,7 +3843,6 @@ const ActivityTab = () => {
             </div>
           </div>
         </div>
-
         {receipts.length===0?(
           <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>
             {loading?"Loading...":"No receipts for this date"}
@@ -3664,8 +3873,10 @@ const ActivityTab = () => {
     );
   };
 
- return (
-    <div className="screen" style={{background:"#ddd9d0"}}>
+  return (
+    <div className="screen" style={{background:"#ddd9d0"}}
+      onTouchStart={e=>{ pullStartY.current = e.touches[0].clientY; }}
+      onTouchEnd={e=>{ if(e.changedTouches[0].clientY - pullStartY.current > 80 && !isPulling){ setIsPulling(true); fetchAll().then(()=>setIsPulling(false)); } }}>
       <div className="mgr-topbar">
         <div style={{display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -3675,24 +3886,30 @@ const ActivityTab = () => {
           <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginTop:1}}>{todayLabel}</div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {isPulling && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1}}>Refreshing...</span>}
           <span className="mgr-badge">Admin</span>
           <button className="logout-btn" onClick={onLogout}>Out</button>
         </div>
       </div>
 
-     <div className="content" style={{background:"#ddd9d0"}}>
-  {tab==="activity" && <ActivityTab/>}
-  {tab==="receipts" && <ReceiptsTab/>}
-  {tab==="properties" && <PropertiesTab/>}
-  {tab==="calendar" && <CalendarTab/>}
-</div>
+      <div className="content" style={{background:"#ddd9d0"}}>
+        {tab==="activity" && <ActivityTab/>}
+        {tab==="receipts" && <ReceiptsTab/>}
+        {tab==="properties" && <PropertiesTab/>}
+        {tab==="calendar" && <CalendarTab/>}
+        {tab==="jobs" && <ManagerJobsTab/>}
+      </div>
 
-     <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
-  <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
-  <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
-  <button className={`bnav-btn ${tab==="properties"?"active":""}`} style={tab==="properties"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("properties")}><Ic n="map"/>Properties</button>
-  <button className={`bnav-btn ${tab==="calendar"?"active":""}`} style={tab==="calendar"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("calendar")}><Ic n="clock"/>Calendar</button>
-</nav>
+      <nav className="bottom-nav" style={{background:"#d0ccc2",borderTopColor:"#b0aa9a"}}>
+        <button className={`bnav-btn ${tab==="activity"?"active":""}`} style={tab==="activity"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("activity")}><Ic n="clip"/>Activity</button>
+        <button className={`bnav-btn ${tab==="receipts"?"active":""}`} style={tab==="receipts"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("receipts")}><Ic n="camera"/>Receipts</button>
+        <button className={`bnav-btn ${tab==="properties"?"active":""}`} style={tab==="properties"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("properties")}><Ic n="map"/>Properties</button>
+        <button className={`bnav-btn ${tab==="calendar"?"active":""}`} style={{...(tab==="calendar"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}),position:"relative"}} onClick={()=>setTab("calendar")}>
+          <Ic n="clock"/>Calendar
+          {todayJobCounts.unassigned > 0 && <span style={{position:"absolute",top:6,right:"50%",transform:"translateX(12px)",background:"var(--warn)",borderRadius:"50%",width:15,height:15,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"#fff"}}>{todayJobCounts.unassigned}</span>}
+        </button>
+        <button className={`bnav-btn ${tab==="jobs"?"active":""}`} style={tab==="jobs"?{color:"var(--mgr-lt)",borderBottomColor:"var(--mgr)"}:{}} onClick={()=>setTab("jobs")}><Ic n="clip"/>Jobs</button>
+      </nav>
     </div>
   );
 }
