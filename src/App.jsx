@@ -3612,6 +3612,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
           jobs: thisMonthJobs.length,
           laborHours: Math.round(totalLaborSecs / 3600),
           clients: (properties||[]).length,
+          newClients: (properties||[]).filter(p => p.created_at?.startsWith(thisMonth)).length,
           receiptsTotal: totalReceipts,
           revenue: thisMonthJobs.length * 185,
         });
@@ -3748,7 +3749,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                 {label:"Jobs Completed", value:stats.jobs, sub:"this month", accent:"#4472CA"},
                 {label:"Labor Hours", value:`${stats.laborHours}h`, sub:"this month", accent:"#5E7CE2"},
                 {label:"Total Receipts", value:`$${stats.receiptsTotal.toFixed(0)}`, sub:"expenses this month", accent:"#4472CA"},
-                {label:"Active Clients", value:stats.clients, sub:"total properties", accent:"#0A369D"},
+                {label:"New Clients This Month", value:stats.newClients, sub:`${stats.clients} total properties`, accent:"#0A369D"},
               ].map(({label,value,sub,accent})=>(
                 <div key={label} style={{...cardStyle, borderLeft:`3px solid ${accent}`}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"#4472CA",textTransform:"uppercase",marginBottom:4}}>{label}</div>
@@ -3781,21 +3782,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                 <div style={{position:"relative",height:160}}>
                   <canvas ref={chartRef2}></canvas>
                 </div>
-              </div>
-              <div style={cardStyle}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
-                {(()=>{
-                  const maxCount = Math.max(1,...clientGrowth.map(m=>m.count));
-                  return clientGrowth.map((m,i)=>(
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#4472CA",width:28}}>{m.label}</span>
-                      <div style={{flex:1,height:6,background:"#CFDEE7",borderRadius:3,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:`${Math.round((m.count/maxCount)*100)}%`,background:"#4472CA",borderRadius:3}}></div>
-                      </div>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#0A369D",fontWeight:700,width:28,textAlign:"right"}}>+{m.count}</span>
-                    </div>
-                  ));
-                })()}
               </div>
             </div>
 
