@@ -3728,9 +3728,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       {/* Topbar */}
       <div style={{background:"#162236",borderBottom:"1px solid rgba(42,90,149,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:36,height:36,background:"var(--lime)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d1b2a" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-          </div>
+          <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:40,height:40,objectFit:"contain"}}/>
           <div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--lime)",lineHeight:1}}>TotalFlo</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",marginTop:2}}>Owner Dashboard</div>
