@@ -4051,24 +4051,19 @@ function OfficeView({ onLogout }) {
     </div>
   </>
   );
-
-  // -- DETAIL / EDIT VIEW --
+// -- DETAIL / EDIT VIEW --
   if(view === "detail" && selected) {
     const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
     return (
-  <>
-    <JobEditModal/>
-    <div className="screen" style={{background:"#1e2d4a"}}>
-      <Topbar title={selected.name} right={
-          <>
-            <button onClick={()=>deleteRequest(selected.id)} style={{background:"none",border:"1px solid #e0554044",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#e05540",cursor:"pointer"}}>Delete</button>
-            <button disabled={saving} onClick={saveEdit} style={{background:"#4472CA",border:"none",borderRadius:6,padding:"5px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#fff",cursor:"pointer",letterSpacing:1}}>{saving?"Saving...":"Save"}</button>
-            <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>← Back</button>
-          </>
+    <>
+      <JobEditModal/>
+      <div className="screen" style={{background:"#1e2d4a"}}>
+        <Topbar title={selected.name} right={
+          <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>← Back</button>
         }/>
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
           <ScheduleSidebar/>
-          <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column"}}>
             <div style={{...cardStyle, borderLeft:`4px solid ${statusColor}`, marginBottom:12}}>
               <label style={labelStyle}>Client Name</label>
               <input style={{...inputStyle,marginBottom:10}} value={selected.name||""} onChange={e=>setSelected(s=>({...s,name:e.target.value}))}/>
@@ -4113,6 +4108,17 @@ function OfficeView({ onLogout }) {
                 {converting?"Converting...":"✓ Convert to Property"}
               </button>
             )}
+            {/* Sticky action bar */}
+            <div style={{position:"sticky",bottom:0,background:"#1e2d4a",borderTop:"1px solid rgba(68,114,202,0.2)",padding:"12px 16px",display:"flex",gap:8,marginTop:"auto"}}>
+              <button onClick={()=>deleteRequest(selected.id)}
+                style={{padding:"12px 16px",background:"none",border:"1px solid #e0554044",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"#e05540",cursor:"pointer"}}>
+                Delete
+              </button>
+              <button disabled={saving} onClick={saveEdit}
+                style={{flex:1,padding:"12px",background:saving?"#92B4F4":"#4472CA",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:saving?"not-allowed":"pointer"}}>
+                {saving?"Saving...":"Save Changes"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
