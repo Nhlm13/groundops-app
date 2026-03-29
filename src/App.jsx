@@ -1981,10 +1981,6 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
     };
     if(truck.supabaseId) fetchJobs();
   }, [truck.supabaseId, today]);
-      setLoading(false);
-    };
-    if(truck.supabaseId) fetchJobs();
-  }, [truck.supabaseId, today]);
 
   useEffect(() => {
     if(activeServiceId && activeStart) {
