@@ -437,6 +437,31 @@ function detectLang() { try { const s=localStorage.getItem(LANG_KEY); if(s&&LANG
 function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 
 // -- TRANSLATIONS --------------------------------------------------------------
+const SERVICE_TYPES = [
+  { id: "mowing",           en: "Mowing & Lawn Maintenance", es: "Corte y Mantenimiento", pt: "Corte e Manutenção" },
+  { id: "edging",           en: "Edging",                    es: "Bordeado",              pt: "Bordeamento" },
+  { id: "trimming",         en: "Trimming",                  es: "Recorte",               pt: "Aparação" },
+  { id: "weeding",          en: "Weeding",                   es: "Deshierbe",             pt: "Capina" },
+  { id: "pruning",          en: "Pruning",                   es: "Poda",                  pt: "Poda" },
+  { id: "mulching",         en: "Mulching",                  es: "Mantillo",              pt: "Cobertura" },
+  { id: "planting",         en: "Planting",                  es: "Plantación",            pt: "Plantio" },
+  { id: "construction",     en: "Construction",              es: "Construcción",          pt: "Construção",     hasDescription: true },
+  { id: "landscape_install",en: "Landscape Install",         es: "Instalación Paisajismo",pt: "Instalação Paisagismo" },
+  { id: "irrigation_startup",en: "Irrigation — Start-Up",   es: "Irrigación — Apertura", pt: "Irrigação — Abertura" },
+  { id: "irrigation_blowout",en: "Irrigation — Blow-Out",   es: "Irrigación — Cierre",   pt: "Irrigação — Fechamento" },
+  { id: "irrigation_install",en: "Irrigation — Installation",es: "Irrigación — Instalación",pt: "Irrigação — Instalação" },
+  { id: "seasonal_cleanup", en: "Seasonal Cleanup",          es: "Limpieza Estacional",   pt: "Limpeza Sazonal",   hasDescription: true },
+  { id: "special_project",  en: "Special Project",           es: "Proyecto Especial",     pt: "Projeto Especial",  hasDescription: true },
+  { id: "lighting_install", en: "Lighting — Installation",   es: "Iluminación — Instalación", pt: "Iluminação — Instalação" },
+  { id: "lighting_takedown",en: "Lighting — Takedown",       es: "Iluminación — Desmontaje",  pt: "Iluminação — Desmontagem" },
+];
+
+function getServiceLabel(id, lang) {
+  const s = SERVICE_TYPES.find(t => t.id === id);
+  if(!s) return id;
+  return s[lang] || s.en;
+}
+
 const T = {
   en: {
     appSub:"Operations Center", selectTruck:"Select Your Truck", chooseTruck:"Choose a truck...",
@@ -583,6 +608,14 @@ const T = {
     eodItems1:["Put away all additional tools used today in their proper place","Clean trailers of debris and organize for the next day","Wash and clean mowers and other equipment","Refuel and store all equipment properly","Record any maintenance issues for your supervisor"],
     eodItems2:["Clock out using the company system","Check out with your supervisor for feedback or updates","Leave the reporting location clean and organized","Drop off keys for any vehicles in the key box"],
     endOfDay:"End of Day", endOfDayDesc:"End of shift sign-off checklist",
+    jobsTab:"Jobs", todayJobs:"Today's Jobs", noJobsToday:"No jobs assigned for today",
+    startJob:"Start Job", markComplete:"Mark Complete", jobComplete:"✓ Complete",
+    selectService:"What are you working on?", activeService:"Active", switchService:"Switch Task",
+    timerRunning:"Timer Running", stopTimer:"Pause", resumeTimer:"Resume",
+    completeJob:"Complete Job", submitJob:"Submit", projectDescription:"Describe the project",
+    projectDescPlaceholder:"What work is being done...",
+    timeSummary:"Time Summary", totalTime:"Total Time",
+    hrs:"h", mins:"m",
   },
 
   es: {
@@ -730,6 +763,14 @@ const T = {
     eodItems1:["Guarda todas las herramientas adicionales usadas hoy en su lugar","Limpia los remolques de residuos y organízalos para el día siguiente","Lava y limpia cortadoras y otros equipos","Recarga y almacena correctamente todos los equipos","Registra cualquier problema de mantenimiento para tu supervisor"],
     eodItems2:["Registra la salida usando el sistema de la empresa","Consulta con tu supervisor para comentarios o actualizaciones","Deja el lugar de presentación limpio y organizado","Devuelve las llaves de cualquier vehículo en la caja de llaves"],
     endOfDay:"Fin del Día", endOfDayDesc:"Lista de cierre de turno",
+    jobsTab:"Trabajos", todayJobs:"Trabajos de Hoy", noJobsToday:"No hay trabajos asignados para hoy",
+    startJob:"Iniciar Trabajo", markComplete:"Marcar Completo", jobComplete:"✓ Completo",
+    selectService:"¿En qué estás trabajando?", activeService:"Activo", switchService:"Cambiar Tarea",
+    timerRunning:"Temporizador Activo", stopTimer:"Pausar", resumeTimer:"Reanudar",
+    completeJob:"Completar Trabajo", submitJob:"Enviar", projectDescription:"Describe el proyecto",
+    projectDescPlaceholder:"¿Qué trabajo se está realizando...",
+    timeSummary:"Resumen de Tiempo", totalTime:"Tiempo Total",
+    hrs:"h", mins:"m",
   },
 
   pt: {
@@ -877,6 +918,14 @@ const T = {
     eodItems1:["Guarde todas as ferramentas adicionais usadas hoje em seu lugar","Limpe os reboques de detritos e organize-os para o dia seguinte","Lave e limpe cortadores e outros equipamentos","Abasteça e armazene todos os equipamentos adequadamente","Registre quaisquer problemas de manutenção para seu supervisor"],
     eodItems2:["Registre a saída usando o sistema da empresa","Converse com seu supervisor para feedback ou atualizações","Deixe o local de apresentação limpo e organizado","Devolva as chaves de quaisquer veículos na caixa de chaves"],
     endOfDay:"Fim do Dia", endOfDayDesc:"Lista de encerramento do turno",
+    jobsTab:"Trabalhos", todayJobs:"Trabalhos de Hoje", noJobsToday:"Nenhum trabalho atribuído para hoje",
+    startJob:"Iniciar Trabalho", markComplete:"Marcar Completo", jobComplete:"✓ Completo",
+    selectService:"No que você está trabalhando?", activeService:"Ativo", switchService:"Trocar Tarefa",
+    timerRunning:"Cronômetro Ativo", stopTimer:"Pausar", resumeTimer:"Retomar",
+    completeJob:"Completar Trabalho", submitJob:"Enviar", projectDescription:"Descreva o projeto",
+    projectDescPlaceholder:"Que trabalho está sendo feito...",
+    timeSummary:"Resumo de Tempo", totalTime:"Tempo Total",
+    hrs:"h", mins:"m",
   },
 };
 
