@@ -1,6 +1,6 @@
 # GroundOps — Landscape Operations Hub
 
-## Deploy to Vercel (Step-by-Step)
+## Deploy to Vercel (Step-by-Step) 
 
 ### What you need
 - A free Vercel account → https://vercel.com/signup
