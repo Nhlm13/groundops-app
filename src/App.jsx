@@ -2999,7 +2999,7 @@ const inputStyle = {width:"100%",boxSizing:"border-box",background:"var(--bark2)
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
       <button className="back-btn" style={{marginBottom:14}} onClick={onBack}><Ic n="back"/> Back</button>
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
+      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12,overflow:"hidden"}}>
         <div style={{width:38,height:38,borderRadius:8,background:"rgba(74,122,181,0.15)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="map" style={{width:17,height:17,color:"var(--mgr-lt)"}}/></div>
         <div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2,lineHeight:1}}>Add One-Time Job</div>
@@ -3038,14 +3038,23 @@ const inputStyle = {width:"100%",boxSizing:"border-box",background:"var(--bark2)
         <input style={{...inputStyle,boxSizing:"border-box"}} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
 
         <label style={labelStyle}>Services * (select all that apply)</label>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
-          {SERVICE_TYPES.map(svc=>(
-            <button key={svc.id} onClick={()=>toggleService(svc.id)}
-              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-              {svc[lang] || svc.en}
-            </button>
-          ))}
-        </div>
+        {SERVICE_GROUPS.map(group=>(
+          <div key={group.label.en} style={{marginBottom:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {group.ids.map(id=>{
+                const svc = SERVICE_TYPES.find(s=>s.id===id);
+                if(!svc) return null;
+                return (
+                  <button key={svc.id} onClick={()=>toggleService(svc.id)}
+                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                    {svc[lang]||svc.en}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
         {SERVICE_TYPES.filter(s => s.hasDescription && selectedServices.includes(s.id)).map(svc=>(
           <div key={svc.id} style={{marginBottom:10}}>
             <label style={labelStyle}>{svc[lang] || svc.en} — Description</label>
