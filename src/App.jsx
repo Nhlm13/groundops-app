@@ -3010,8 +3010,7 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
     setSubmitting(false);
   };
 
-  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};
-  const labelStyle = {fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4,display:"block"};
+const inputStyle = {width:"100%",boxSizing:"border-box",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15,marginBottom:10};  const labelStyle = {fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4,display:"block"};
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
