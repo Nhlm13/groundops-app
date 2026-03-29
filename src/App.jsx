@@ -2025,6 +2025,7 @@ function JobsTab({ truck }) {
   };
 
   const handleComplete = async () => {
+    console.log("handleComplete called, activeJob:", activeJob?.id, "elapsed:", JSON.stringify(elapsed), "timeLogs:", JSON.stringify(timeLogs));
     if(!activeJob) return;
     let finalLogs = {...timeLogs};
     if(activeServiceId && activeStart) {
