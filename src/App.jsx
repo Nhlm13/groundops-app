@@ -1746,11 +1746,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{c.name}</div>
                   <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{c.role}</div>
                 </div>
-               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>
-                  {c.phone.replace("tel:+1","")}
-                </div>
-              </div>
-            ))}
     </div>
   );
 }
