@@ -1712,8 +1712,8 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
 
       {/* Floating contact button */}
       <button onClick={()=>setShowContacts(true)}
-        style={{position:"fixed",bottom:80,right:20,width:52,height:52,borderRadius:"50%",background:"var(--lime)",border:"none",boxShadow:"0 4px 12px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:100}}>
-        <Ic n="phone" style={{width:22,height:22,color:"var(--earth)"}}/>
+        style={{position:"fixed",bottom:80,right:20,width:52,height:52,borderRadius:"50%",background:"var(--lime)",border:"none",boxShadow:"0 4px 12px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:100,fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"var(--earth)",letterSpacing:1}}>
+        📞
       </button>
 
       {/* Contact modal */}
@@ -1733,15 +1733,10 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
                 </div>
                 <div style={{flex:1}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{c.name}</div>
-                  <div style={{fontSize:12,color:"var(--stone)"}}>{c.role}</div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{c.role}</div>
                 </div>
-                <div style={{display:"flex",gap:8}}>
-                  <a href={c.phone} style={{width:36,height:36,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"1px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none"}}>
-                    <Ic n="phone" style={{width:16,height:16,color:"var(--lime)"}}/>
-                  </a>
-                  <a href={c.phone.replace("tel:","sms:")} style={{width:36,height:36,borderRadius:"50%",background:"rgba(42,90,149,0.15)",border:"1px solid var(--mgr)",display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none"}}>
-                    <Ic n="chat" style={{width:16,height:16,color:"var(--mgr-lt)"}}/>
-                  </a>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>
+                  {c.phone.replace("tel:+1","")}
                 </div>
               </div>
             ))}
