@@ -976,7 +976,6 @@ const COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 const HR_LINKS = [
   {name:"Time Off Request",  desc:"Submit Time Off Request",      url:"https://docs.google.com/forms/d/e/1FAIpQLSedVzxq3XCkB4TXwqvIGRtUVM6DRtaWmgYZtfcVZUoaAXVWeg/viewform?embedded=true"},
   {name:"Job Application",   desc:"Refer someone to the team",    url:"https://tiny-faun-271fa9.netlify.app"},
-  {name:"Contact a Manager", desc:"Send a message to management", url:"https://docs.google.com/forms/d/e/1FAIpQLSfYI2b_yAxYk--McTBaVnToWfJjkWocWpaS6ZdJy98QaRtIIA/viewform?embedded=true"},
   {name:"Employee Handbook", desc:"Company policies & procedures",url:"https://drive.google.com/file/d/1UPIOc2q7rs7h-VQcT6Cvv4eaG_-vePGs/preview"},
   {name:"Uniform Guidelines",desc:"Dress code & uniform standards",url:"inline"},
   {name:"Vehicle Guidelines",desc:"Fleet use & driving policies", url:"inline-vehicle"},
@@ -1653,14 +1652,15 @@ function UniformGuideInline() {
 function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
   const t   = useT();
   const day = getTodayStr();
+  const [showContacts, setShowContacts] = useState(false);
+
   return (
-    <div>
+    <div style={{position:"relative"}}>
       <div className="greeting">
         <div className="greeting-icon"><Ic n="truck"/></div>
         <div><div className="greet-name">{truck.label}</div><div className="greet-sub">{day}</div></div>
       </div>
       <div className="section-hd">{t.dailyForms}</div>
-
       <div className="action-cards-grid">
         <div className="action-card" onClick={briefingComplete?undefined:onOpenBriefing} style={{opacity:briefingComplete?0.75:1,cursor:briefingComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:briefingComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
@@ -1673,7 +1673,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           </div>
           {!briefingComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
-
         <div className="action-card" onClick={dotComplete?undefined:onOpenDOT} style={{opacity:dotComplete?0.75:1,cursor:dotComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:dotComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1685,7 +1684,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           </div>
           {!dotComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
         </div>
-
         <div className="action-card" onClick={onOpenPropInspect}>
           <div className="action-card-icon" style={{background:propInspectCount>0?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n="map" style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1699,7 +1697,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
           </div>
           <div className="action-card-arrow"><Ic n="chev"/></div>
         </div>
-
         <div className="action-card" onClick={eodComplete?undefined:onOpenEOD} style={{opacity:eodComplete?0.75:1,cursor:eodComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:eodComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n={eodComplete?"check":"sun"} style={{width:18,height:18,color:"var(--lime)"}}/>
@@ -1713,7 +1710,44 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
         </div>
       </div>
 
-      <div className="section-hd" style={{marginTop:8}}>{t.contactMgr}</div>
+      {/* Floating contact button */}
+      <button onClick={()=>setShowContacts(true)}
+        style={{position:"fixed",bottom:80,right:20,width:52,height:52,borderRadius:"50%",background:"var(--lime)",border:"none",boxShadow:"0 4px 12px rgba(0,0,0,0.2)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",zIndex:100}}>
+        <Ic n="phone" style={{width:22,height:22,color:"var(--earth)"}}/>
+      </button>
+
+      {/* Contact modal */}
+      {showContacts && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"flex-end"}}
+          onClick={()=>setShowContacts(false)}>
+          <div style={{background:"var(--bark)",borderRadius:"16px 16px 0 0",width:"100%",padding:"20px 16px 40px",animation:"fadeUp 0.25s ease both"}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"var(--lime)"}}>{t.contactMgr}</div>
+              <button onClick={()=>setShowContacts(false)} style={{background:"none",border:"none",color:"var(--stone)",fontSize:20,cursor:"pointer",lineHeight:1}}>✕</button>
+            </div>
+            {CONTACTS.map(c=>(
+              <div key={c.name} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid var(--moss)"}}>
+                <div style={{width:40,height:40,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"var(--lime)",letterSpacing:1}}>
+                  {c.initials}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{c.name}</div>
+                  <div style={{fontSize:12,color:"var(--stone)"}}>{c.role}</div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <a href={c.phone} style={{width:36,height:36,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"1px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none"}}>
+                    <Ic n="phone" style={{width:16,height:16,color:"var(--lime)"}}/>
+                  </a>
+                  <a href={c.phone.replace("tel:","sms:")} style={{width:36,height:36,borderRadius:"50%",background:"rgba(42,90,149,0.15)",border:"1px solid var(--mgr)",display:"flex",alignItems:"center",justifyContent:"center",textDecoration:"none"}}>
+                    <Ic n="chat" style={{width:16,height:16,color:"var(--mgr-lt)"}}/>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
