@@ -3617,8 +3617,6 @@ function ManagerZone({ onLogout }) {
     useEffect(() => {
       const fetchJobData = async () => {
         setJobsLoading(true);
-        const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-        if(selectedDate !== today) { setJobsLoading(false); return; }
         const { data: activeJobs } = await supabase
           .from("jobs").select("*, properties(client_name, address)")
           .eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "in_progress");
