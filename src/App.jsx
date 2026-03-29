@@ -3790,15 +3790,18 @@ function OwnerDashboard({ onLogout, onManagerView }) {
               </div>
               <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
-                {clientGrowth.map((m,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",width:28}}>{m.label}</span>
-                    <div style={{flex:1,height:6,background:"rgba(255,255,255,0.08)",borderRadius:3}}>
-                      <div style={{height:"100%",width:`${Math.max(4,(m.count/10)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
+                {(()=>{
+                  const maxCount = Math.max(1,...clientGrowth.map(m=>m.count));
+                  return clientGrowth.map((m,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",width:28}}>{m.label}</span>
+                      <div style={{flex:1,height:6,background:"rgba(255,255,255,0.08)",borderRadius:3,overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${Math.round((m.count/maxCount)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
+                      </div>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",width:28,textAlign:"right"}}>+{m.count}</span>
                     </div>
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",width:20,textAlign:"right"}}>+{m.count}</span>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
 
@@ -4319,7 +4322,7 @@ export default function App() {
   const[lang,setLang]=useState(detectLang);
   const[ownerMode,setOwnerMode]=useState("dashboard"); // "dashboard" or "manager"
 
-  const OWNER_EMAIL = "nikki@salernicreative.com"; // change to owner email
+  const OWNER_EMAIL = "justin@jandjandsonlawncare.com"; // change to owner email
 
   const postSignIn = async (tr) => {
     try {
