@@ -2553,8 +2553,17 @@ function PropertyDetail({ property, onBack, onAddSchedule, onAddOneTimeJob, onEd
 
   return (
     <div style={{animation:"fadeUp 0.3s ease both"}}>
-      <button className="back-btn" style={{marginBottom:14}} onClick={onBack}><Ic n="back"/> Properties</button>
-
+<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+        <button className="back-btn" onClick={onBack}><Ic n="back"/> Properties</button>
+        <button onClick={async()=>{
+          if(!window.confirm("Remove this property? It will be deactivated and hidden from the list.")) return;
+          await supabase.from("properties").update({active:false}).eq("id",property.id);
+          if(onRefresh) onRefresh();
+          onBack();
+        }} style={{background:"none",border:"1px solid var(--danger)",borderRadius:8,padding:"6px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"var(--danger)",cursor:"pointer",textTransform:"uppercase"}}>
+          Remove Property
+        </button>
+      </div>
       {property.photo_url && <img src={property.photo_url} alt="property" style={{width:"100%",borderRadius:10,border:"1px solid var(--moss)",marginBottom:12,display:"block"}}/>}
 
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:10,padding:14,marginBottom:10}}>
