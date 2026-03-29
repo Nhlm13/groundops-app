@@ -3340,6 +3340,65 @@ const skipJob = async (jobId) => {
   );
 }
 
+// -- COMPLETED JOBS SUMMARY ---------------------------------------------------
+function CompletedJobsSummary({ jobs, formatSecs }) {
+  const [expanded, setExpanded] = useState(false);
+  const [expandedJob, setExpandedJob] = useState(null);
+
+  const totalSecs = jobs.reduce((sum, job) =>
+    sum + job.timeLogs.reduce((s, l) => s + (l.duration_seconds || 0), 0), 0);
+
+  return (
+    <div style={{marginTop:16}}>
+      <div onClick={()=>setExpanded(e=>!e)}
+        style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bark)",border:"1px solid rgba(74,109,32,0.3)",borderLeft:"4px solid var(--leaf)",borderRadius:10,padding:"12px 14px",cursor:"pointer",userSelect:"none"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase"}}>✓ Completed Jobs</span>
+          <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>{jobs.length}</span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {totalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700,letterSpacing:1}}>{formatSecs(totalSecs)} total</span>}
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,color:"var(--stone)",transform:expanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▼</span>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{background:"var(--bark)",border:"1px solid rgba(74,109,32,0.2)",borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
+          {jobs.map((job, i) => {
+            const jobTotalSecs = job.timeLogs.reduce((s, l) => s + (l.duration_seconds || 0), 0);
+            const isExpanded = expandedJob === job.id;
+            return (
+              <div key={job.id}>
+                <div onClick={()=>setExpandedJob(isExpanded ? null : job.id)}
+                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderTop:i>0?"1px solid rgba(196,191,176,0.3)":"none",cursor:"pointer",background:isExpanded?"rgba(74,109,32,0.05)":"transparent"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{job.properties?.client_name||"Unknown"}</div>
+                    <div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>{job.truck?.name||"—"}</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    {jobTotalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700}}>{formatSecs(jobTotalSecs)}</span>}
+                    {job.timeLogs.length > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",transform:isExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",display:"inline-block"}}>▼</span>}
+                  </div>
+                </div>
+                {isExpanded && job.timeLogs.length > 0 && (
+                  <div style={{padding:"6px 14px 10px",background:"rgba(74,109,32,0.04)",borderTop:"1px solid rgba(196,191,176,0.2)"}}>
+                    {job.timeLogs.map(log => (
+                      <div key={log.id} style={{display:"flex",justifyContent:"space-between",padding:"3px 0"}}>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)"}}>{getServiceLabel(log.service_type,"en")}</span>
+                        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--lime)",fontWeight:700}}>{formatSecs(log.duration_seconds)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // -- MANAGER -------------------------------------------------------------------
 function ManagerZone({ onLogout }) {
   const [tab, setTab] = useState("activity");
@@ -3541,36 +3600,9 @@ const ActivityTab = () => {
             ))}
           </div>
         )}
-
-        {/* Completed Jobs */}
+{/* Completed Jobs */}
         {!jobsLoading && jobData.completed.length > 0 && (
-          <div style={{marginTop:16}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>✓ Completed Jobs</div>
-            {jobData.completed.map(job => {
-              const totalSecs = job.timeLogs.reduce((sum,l) => sum+(l.duration_seconds||0), 0);
-              return (
-                <div key={job.id} style={{background:"var(--bark)",border:"1px solid rgba(74,109,32,0.3)",borderLeft:"4px solid var(--leaf)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.properties?.client_name||"Unknown"}</div>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      {totalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",fontWeight:700}}>{formatSecs(totalSecs)}</span>}
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1}}>🚛 {job.truck?.name||"—"}</span>
-                    </div>
-                  </div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginBottom:job.timeLogs.length>0?6:0}}>{job.properties?.address}</div>
-                  {job.timeLogs.length > 0 && (
-                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                      {job.timeLogs.map(log => (
-                        <span key={log.id} style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(74,109,32,0.08)",border:"1px solid rgba(74,109,32,0.3)",color:"var(--stone)"}}>
-                          {getServiceLabel(log.service_type,"en")} · {formatSecs(log.duration_seconds)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <CompletedJobsSummary jobs={jobData.completed} formatSecs={formatSecs}/>
         )}
       </div>
     );
