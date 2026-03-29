@@ -2074,6 +2074,7 @@ if(timeEntries.length > 0) {
               duration_seconds: secs,
             }))
           );
+  console.log("Time log insert error:", JSON.stringify(timeLogError));
         }
       }
       await supabase.from("jobs").update({ status: "completed" }).eq("id", activeJob.id);
