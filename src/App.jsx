@@ -4066,8 +4066,8 @@ function OfficeView({ onLogout }) {
   return (
     <>
       <JobEditModal/>
-      <div className="screen" style={{background:"#1e2d4a"}}>
-        <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column",height:"100dvh",background:"#1e2d4a",overflow:"hidden",animation:"fadeUp 0.35s ease both"}}>
+        <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:28,height:28,objectFit:"contain"}}/>
             <div>
@@ -4083,7 +4083,7 @@ function OfficeView({ onLogout }) {
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
           <ScheduleSidebar/>
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{padding:"12px 16px 8px",background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.2)"}}>
+            <div style={{padding:"12px 16px 8px",background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
               <input type="text" placeholder="Search name, address, task..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
                 style={{width:"100%",background:"#0d1635",border:"1px solid #4472CA44",borderRadius:8,padding:"9px 12px",color:"#CFDEE7",fontFamily:"'Barlow',sans-serif",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none"}}/>
               <div style={{display:"flex",gap:6,alignItems:"center"}}>
