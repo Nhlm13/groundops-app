@@ -7,14 +7,13 @@ const css = `
 ${FONT}
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --earth:  #edeae2; --bark:   #f5f2eb; --bark2:  #e8e4db; --moss:   #c4bfb0;
-  --leaf:   #4a6d20; --lime:   #3d6b10; --dirt:   #7a6845; --sand:   #8a6e30;
-  --stone:  #6a6658; --cream:  #1a1814; --danger: #c0442a; --warn:   #a06010;
-  --mgr:    #2a5a95; --mgr-lt: #1a4a80;
+  --earth:  #141a0e; --bark:   #1c2414; --bark2:  #243018; --moss:   #3a4a2a;
+  --leaf:   #5a9e18; --lime:   #6ab820; --dirt:   #7a6845; --sand:   #a89060;
+  --stone:  #8aaa70; --cream:  #e8f0d8; --danger: #e05540; --warn:   #d4840a;
+  --mgr:    #2a5a95; --mgr-lt: #5a9adf;
 }
 body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(--cream); -webkit-tap-highlight-color: transparent; }
 .app { max-width: 430px; min-height: 100dvh; margin: 0 auto; background: var(--earth); display: flex; flex-direction: column; position: relative; }
-.app::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); opacity: 0.5; }
 @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
 @keyframes slideIn { from { opacity:0; transform:translateX(32px); } to { opacity:1; transform:translateX(0); } }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
@@ -35,17 +34,17 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .truck-dropdown-value { flex:1; font-weight:500; }
 .truck-dropdown-chevron { margin-left:auto; color:var(--stone); transition:transform 0.2s; }
 .truck-dropdown-chevron.open { transform:rotate(180deg); }
-.truck-dropdown-list { position:absolute; top:100%; left:0; right:0; z-index:200; background:var(--bark); border:1.5px solid var(--lime); border-top:none; border-bottom-left-radius:10px; border-bottom-right-radius:10px; max-height:320px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.15); -webkit-overflow-scrolling:touch; }
-.truck-dropdown-item { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; transition:background 0.12s; border-bottom:1px solid rgba(196,191,176,0.4); font-family:'Barlow',sans-serif; font-size:15px; color:var(--cream); }
+.truck-dropdown-list { position:absolute; top:100%; left:0; right:0; z-index:200; background:var(--bark); border:1.5px solid var(--lime); border-top:none; border-bottom-left-radius:10px; border-bottom-right-radius:10px; max-height:320px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,0.4); -webkit-overflow-scrolling:touch; }
+.truck-dropdown-item { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; transition:background 0.12s; border-bottom:1px solid var(--moss); font-family:'Barlow',sans-serif; font-size:15px; color:var(--cream); }
 .truck-dropdown-item:last-child { border-bottom:none; }
 .truck-dropdown-item:hover { background:var(--bark2); }
-.truck-dropdown-item.selected { background:rgba(74,109,32,0.08); color:var(--lime); }
+.truck-dropdown-item.selected { background:rgba(106,184,32,0.12); color:var(--lime); }
 
 .btn-select-truck { width:100%; padding:14px; background:var(--lime); border:none; border-radius:10px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:var(--earth); cursor:pointer; transition:opacity 0.2s, transform 0.1s; margin-bottom:20px; }
 .btn-select-truck:active { opacity:0.85; transform:scale(0.98); }
 .back-btn { display:flex; align-items:center; gap:6px; background:none; border:none; font-family:'Barlow Condensed',sans-serif; font-size:13px; letter-spacing:1px; color:var(--stone); cursor:pointer; text-transform:uppercase; margin-bottom:16px; padding:0; }
 .back-btn svg { width:14px; height:14px; }
-.error-msg { background:rgba(192,68,42,0.12); border:1px solid var(--danger); border-radius:8px; padding:10px 14px; margin-top:12px; font-size:14px; color:var(--danger); text-align:center; animation:shake 0.3s ease; }
+.error-msg { background:rgba(224,85,64,0.12); border:1px solid var(--danger); border-radius:8px; padding:10px 14px; margin-top:12px; font-size:14px; color:var(--danger); text-align:center; animation:shake 0.3s ease; }
 .mgr-toggle { margin-top:24px; text-align:center; font-family:'Barlow Condensed',sans-serif; font-size:13px; color:var(--mgr-lt); cursor:pointer; letter-spacing:1px; text-decoration:underline; text-underline-offset:3px; }
 .mgr-box { width:100%; background:var(--bark); border:1.5px solid var(--mgr); border-radius:12px; padding:20px; }
 .mgr-box-header { display:flex; align-items:center; gap:8px; margin-bottom:18px; }
@@ -55,12 +54,13 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .btn-mgr { width:100%; padding:14px; background:var(--mgr); border:none; border-radius:10px; font-family:'Bebas Neue',sans-serif; font-size:19px; letter-spacing:3px; color:#fff; cursor:pointer; transition:opacity 0.2s; }
 
 .screen { flex:1; display:flex; flex-direction:column; position:relative; z-index:1; animation:fadeUp 0.35s ease both; height:100dvh; }
-.topbar { background:var(--bark); border-bottom:3px solid var(--leaf); padding:12px 16px 10px; padding-top:calc(12px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
-.topbar-left { display:flex; align-items:center; gap:10px; }
+.topbar { background:var(--bark); border-bottom:3px solid var(--lime); padding:10px 16px 8px; padding-top:calc(10px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.topbar-left { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
 .topbar-title { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--lime); letter-spacing:2px; }
 .truck-pill { display:flex; align-items:center; gap:5px; background:var(--moss); border-radius:20px; padding:4px 10px; font-family:'Barlow Condensed',sans-serif; font-size:13px; color:var(--lime); letter-spacing:1px; }
 .truck-pill svg { width:12px; height:12px; }
-.logout-btn { background:none; border:1px solid var(--moss); border-radius:6px; padding:5px 10px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:12px; color:var(--stone); letter-spacing:1px; text-transform:uppercase; }
+.logout-btn { background:none; border:1px solid var(--moss); border-radius:6px; padding:5px 10px; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-size:12px; color:var(--stone); letter-spacing:1px; text-transform:uppercase; flex-shrink:0; }
+.weather-pill { display:flex; align-items:center; gap:4px; font-family:'Barlow Condensed',sans-serif; font-size:13px; color:var(--cream); letter-spacing:0.5px; white-space:nowrap; flex-shrink:0; }
 .content { padding:16px 16px 100px; overflow-y:auto; flex:1; height:0; }
 .section-hd { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px; color:var(--stone); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
 .section-hd::after { content:''; flex:1; height:1px; background:var(--moss); }
@@ -81,8 +81,8 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .action-card-arrow { color:var(--moss); }
 .action-card-arrow svg { width:16px; height:16px; }
 .status-chip { font-family:'Barlow Condensed',sans-serif; font-size:11px; letter-spacing:1px; text-transform:uppercase; padding:3px 8px; border-radius:4px; margin-top:4px; display:inline-block; }
-.chip-done { background:rgba(74,109,32,0.12); color:var(--lime); }
-.chip-pending { background:rgba(160,96,16,0.12); color:var(--warn); }
+.chip-done { background:rgba(106,184,32,0.15); color:var(--lime); }
+.chip-pending { background:rgba(212,132,10,0.15); color:var(--warn); }
 
 .contact-card { background:var(--bark); border:1px solid var(--moss); border-radius:9px; padding:13px 15px; margin-bottom:8px; display:flex; align-items:center; gap:12px; }
 .contact-avatar { width:40px; height:40px; border-radius:50%; background:var(--moss); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:'Bebas Neue',sans-serif; font-size:16px; color:var(--lime); letter-spacing:1px; }
@@ -94,7 +94,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 
 .receipt-upload { width:100%; background:var(--bark2); border:1.5px dashed var(--moss); border-radius:8px; padding:20px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:border-color 0.15s; }
 .receipt-upload:hover { border-color:var(--lime); }
-.success-banner { background:rgba(74,109,32,0.12); border:1px solid var(--leaf); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-family:'Barlow Condensed',sans-serif; font-size:14px; color:var(--lime); display:flex; align-items:center; gap:8px; letter-spacing:0.5px; }
+.success-banner { background:rgba(106,184,32,0.12); border:1px solid var(--leaf); border-radius:8px; padding:12px 16px; margin-bottom:16px; font-family:'Barlow Condensed',sans-serif; font-size:14px; color:var(--lime); display:flex; align-items:center; gap:8px; letter-spacing:0.5px; }
 
 .tool-cat-header { padding:12px 14px; display:flex; align-items:center; gap:10px; cursor:pointer; background:var(--bark); border:1px solid var(--moss); border-radius:10px; margin-bottom:8px; }
 .tool-cat-label { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--cream); flex:1; }
@@ -112,11 +112,11 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .qty-num { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--lime); min-width:22px; text-align:center; }
 .checkout-btn { padding:7px 12px; background:var(--lime); border:none; border-radius:8px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:var(--earth); cursor:pointer; white-space:nowrap; }
 .checkout-btn:disabled { background:var(--moss); color:var(--stone); cursor:not-allowed; }
-.checked-out-row { background:rgba(74,109,32,0.07); border:1px solid rgba(74,109,32,0.25); border-radius:9px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+.checked-out-row { background:rgba(106,184,32,0.07); border:1px solid rgba(106,184,32,0.25); border-radius:9px; padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
 .return-btn { padding:7px 11px; background:none; border:1px solid var(--leaf); border-radius:8px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:var(--lime); cursor:pointer; white-space:nowrap; }
 .co-qty-badge { background:var(--moss); border-radius:6px; padding:2px 7px; font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--lime); }
 
-.mgr-topbar { background:#d8d4ca; border-bottom:3px solid var(--mgr); padding:12px 16px 10px; padding-top:calc(12px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.mgr-topbar { background:#1a2030; border-bottom:3px solid var(--mgr); padding:12px 16px 10px; padding-top:calc(12px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
 .mgr-topbar-title { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--mgr-lt); letter-spacing:2px; }
 .mgr-badge { font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--mgr-lt); background:rgba(74,122,181,0.2); border:1px solid var(--mgr); border-radius:20px; padding:4px 10px; }
 .fleet-row { background:var(--bark); border:1px solid var(--moss); border-radius:9px; padding:13px 15px; margin-bottom:8px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:background 0.15s; }
@@ -135,9 +135,9 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .mgr-tool-name { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--cream); }
 .mgr-tool-nums { display:flex; gap:6px; }
 .num-chip { font-family:'Barlow Condensed',sans-serif; font-size:12px; padding:2px 7px; border-radius:4px; letter-spacing:0.5px; }
-.nc-total { background:rgba(122,122,106,0.2); color:var(--stone); }
-.nc-out { background:rgba(160,96,16,0.2); color:var(--warn); }
-.nc-avail { background:rgba(74,109,32,0.2); color:var(--leaf); }
+.nc-total { background:rgba(138,170,112,0.2); color:var(--stone); }
+.nc-out { background:rgba(212,132,10,0.2); color:var(--warn); }
+.nc-avail { background:rgba(106,184,32,0.2); color:var(--leaf); }
 .truck-tag { background:var(--moss); border-radius:4px; padding:2px 6px; font-family:'Barlow Condensed',sans-serif; font-size:12px; color:var(--sand); }
 
 /* -- BOTTOM NAV (phone) -- */
@@ -154,22 +154,22 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 
 /* -- DOT checklist -- */
 .dot-cat-header { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background 0.15s; -webkit-tap-highlight-color:transparent; }
-.dot-cat-header.all-checked { background:rgba(74,109,32,0.1); border:1px solid rgba(74,109,32,0.3); }
+.dot-cat-header.all-checked { background:rgba(106,184,32,0.1); border:1px solid rgba(106,184,32,0.3); }
 .dot-cat-header.partial { background:var(--bark2); border:1px solid var(--moss); }
 .dot-cat-header.none-checked { background:var(--bark2); border:1px solid var(--moss); }
 .dot-cat-label { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; color:var(--stone); letter-spacing:1px; text-transform:uppercase; flex:1; }
 .dot-cat-header.all-checked .dot-cat-label { color:var(--lime); }
 .dot-item { display:flex; align-items:center; gap:12px; padding:11px 14px; background:var(--bark); border:1px solid var(--moss); border-radius:8px; margin-bottom:5px; cursor:pointer; transition:background 0.12s; -webkit-tap-highlight-color:transparent; }
-.dot-item.checked { background:rgba(74,109,32,0.06); border-color:rgba(74,109,32,0.3); }
-.dot-item.flagged { background:rgba(192,68,42,0.06); border-color:rgba(192,68,42,0.3); }
+.dot-item.checked { background:rgba(106,184,32,0.06); border-color:rgba(106,184,32,0.3); }
+.dot-item.flagged { background:rgba(224,85,64,0.06); border-color:rgba(224,85,64,0.3); }
 .dot-checkbox { width:22px; height:22px; border-radius:6px; border:2px solid var(--moss); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
 .dot-checkbox.checked { background:var(--lime); border-color:var(--lime); }
 .dot-checkbox svg { width:12px; height:12px; color:var(--earth); }
 .dot-item-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; color:var(--cream); flex:1; line-height:1.3; }
 .dot-priority { font-family:'Barlow Condensed',sans-serif; font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:2px 6px; border-radius:4px; flex-shrink:0; }
-.dot-priority.high { background:rgba(192,68,42,0.12); color:var(--danger); }
-.dot-priority.medium { background:rgba(160,96,16,0.12); color:var(--warn); }
-.dot-priority.low { background:rgba(74,109,32,0.12); color:var(--leaf); }
+.dot-priority.high { background:rgba(224,85,64,0.15); color:var(--danger); }
+.dot-priority.medium { background:rgba(212,132,10,0.15); color:var(--warn); }
+.dot-priority.low { background:rgba(106,184,32,0.15); color:var(--leaf); }
 
 /* -- Daily Briefing -- */
 .briefing-section { background:var(--bark); border:1px solid var(--moss); border-radius:9px; margin-bottom:8px; overflow:hidden; }
@@ -179,7 +179,7 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .briefing-item { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--stone); line-height:1.5; margin-top:8px; }
 .briefing-item::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--moss); flex-shrink:0; margin-top:5px; }
 .briefing-ack { display:flex; align-items:center; gap:14px; background:var(--bark); border:1.5px solid var(--moss); border-radius:10px; padding:14px 16px; margin-top:14px; cursor:pointer; transition:border-color 0.15s; -webkit-tap-highlight-color:transparent; }
-.briefing-ack.checked { border-color:var(--lime); background:rgba(74,109,32,0.06); }
+.briefing-ack.checked { border-color:var(--lime); background:rgba(106,184,32,0.06); }
 .briefing-ack-box { width:24px; height:24px; border-radius:6px; border:2px solid var(--moss); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
 .briefing-ack-box.checked { background:var(--lime); border-color:var(--lime); }
 .briefing-ack-box svg { width:13px; height:13px; color:var(--earth); }
@@ -188,8 +188,8 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 
 /* -- Property Inspection -- */
 .pi-check-row { display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--bark); border:1px solid var(--moss); border-radius:8px; margin-bottom:6px; cursor:pointer; transition:background 0.12s; -webkit-tap-highlight-color:transparent; }
-.pi-check-row.checked { background:rgba(74,109,32,0.06); border-color:rgba(74,109,32,0.3); }
-.pi-check-row.flagged { background:rgba(192,68,42,0.06); border-color:rgba(192,68,42,0.3); }
+.pi-check-row.checked { background:rgba(106,184,32,0.06); border-color:rgba(106,184,32,0.3); }
+.pi-check-row.flagged { background:rgba(224,85,64,0.06); border-color:rgba(224,85,64,0.3); }
 .pi-checkbox { width:22px; height:22px; border-radius:6px; border:2px solid var(--moss); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
 .pi-checkbox.checked { background:var(--lime); border-color:var(--lime); }
 .pi-checkbox svg { width:12px; height:12px; color:var(--earth); }
@@ -199,99 +199,33 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
    iPad RESPONSIVE OVERRIDES  (≥ 768px)
    ============================================ */
 @media (min-width: 768px) {
-
-  /* App container fills full width on iPad */
   .app { max-width: 100%; }
-
-  /* Login / splash gets a centered max-width column */
-  .splash {
-    max-width: 560px;
-    margin: 0 auto;
-    padding: 52px 48px 80px;
-    padding-top: calc(52px + env(safe-area-inset-top));
-  }
+  .splash { max-width: 560px; margin: 0 auto; padding: 52px 48px 80px; padding-top: calc(52px + env(safe-area-inset-top)); }
   .logo-img { width: 90px; height: 90px; }
   .app-title { font-size: 56px; letter-spacing: 7px; }
   .app-sub { font-size: 15px; letter-spacing: 5px; }
-
-  /* Screen: row layout — sidebar nav + scrollable content */
-  .screen {
-    flex-direction: row;
-    height: 100dvh;
-    overflow: hidden;
-  }
-
-  /* Hide the top bar — sidebar replaces it */
+  .screen { flex-direction: row; height: 100dvh; overflow: hidden; }
   .topbar { display: none; }
-
-  /* Side nav */
   .bottom-nav {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    right: auto !important;
-    transform: none !important;
-    width: 96px !important;
-    max-width: 96px !important;
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-    border-top: none !important;
-    border-right: 2px solid var(--moss) !important;
-    background: var(--bark) !important;
-    padding-top: calc(20px + env(safe-area-inset-top)) !important;
+    position: fixed !important; left: 0 !important; top: 0 !important; bottom: 0 !important; right: auto !important;
+    transform: none !important; width: 96px !important; max-width: 96px !important;
+    height: 100dvh !important; min-height: 100dvh !important; flex-direction: column !important;
+    justify-content: flex-start !important; align-items: stretch !important;
+    border-top: none !important; border-right: 2px solid var(--moss) !important;
+    background: var(--bark) !important; padding-top: calc(20px + env(safe-area-inset-top)) !important;
     padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
-    z-index: 100 !important;
-    overflow: hidden !important;
-    box-shadow: 2px 0 8px rgba(0,0,0,0.06) !important;
+    z-index: 100 !important; overflow: hidden !important; box-shadow: 2px 0 8px rgba(0,0,0,0.3) !important;
   }
-
-  /* Nav buttons in sidebar */
-  .bnav-btn {
-    flex: unset !important;
-    width: 100% !important;
-    padding: 16px 8px !important;
-    font-size: 11px !important;
-    border-bottom: none !important;
-    border-left: 3px solid transparent !important;
-    border-right: none !important;
-  }
-  .bnav-btn.active {
-    border-left-color: var(--lime) !important;
-    border-bottom-color: transparent !important;
-  }
+  .bnav-btn { flex: unset !important; width: 100% !important; padding: 16px 8px !important; font-size: 11px !important; border-bottom: none !important; border-left: 3px solid transparent !important; border-right: none !important; }
+  .bnav-btn.active { border-left-color: var(--lime) !important; border-bottom-color: transparent !important; }
   .bnav-btn svg { width: 26px !important; height: 26px !important; }
-
-  /* App title in sidebar top */
   .bottom-nav::before {
-    content: 'J&J';
-    display: block;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 3px;
-    color: var(--lime);
-    text-align: center;
-    padding: 0 8px 20px;
-    border-bottom: 1px solid var(--moss);
-    margin-bottom: 8px;
-    width: 100%;
+    content: 'TotalFlo';
+    display: block; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px;
+    color: var(--lime); text-align: center; padding: 0 8px 20px;
+    border-bottom: 1px solid var(--moss); margin-bottom: 8px; width: 100%;
   }
-
-  /* Content area shifted right to clear sidebar + top bar */
-  .content {
-    padding-top: calc(88px + env(safe-area-inset-top)) !important;
-    padding-right: 36px !important;
-    padding-bottom: 48px !important;
-    padding-left: 128px !important;
-    overflow-y: auto !important;
-    flex: 1 !important;
-    height: 100dvh !important;
-  }
-
-  /* Larger text throughout */
+  .content { padding-top: calc(88px + env(safe-area-inset-top)) !important; padding-right: 36px !important; padding-bottom: 48px !important; padding-left: 128px !important; overflow-y: auto !important; flex: 1 !important; height: 100dvh !important; }
   .section-hd { font-size: 18px; }
   .greet-name { font-size: 30px; }
   .greet-sub { font-size: 14px; }
@@ -300,60 +234,26 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
   .tool-name { font-size: 15px; }
   .dot-item-label { font-size: 14px; }
   .briefing-item { font-size: 14px; }
-
-  /* Action cards in 2-column grid on home tab */
-  .action-cards-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .action-cards-grid .action-card {
-    margin-bottom: 0;
-  }
-
-  /* Greeting card wider */
+  .action-cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .action-cards-grid .action-card { margin-bottom: 0; }
   .greeting { padding: 18px 20px; margin-bottom: 22px; }
   .greeting-icon { width: 52px; height: 52px; }
-
-  /* Larger tap targets */
   .action-card { padding: 18px 20px; }
   .action-card-icon { width: 46px; height: 46px; }
   .qty-btn { width: 38px; height: 38px; }
   .dot-checkbox { width: 28px; height: 28px; }
   .pi-checkbox { width: 28px; height: 28px; }
-
-  /* Tool rows in 2-col on iPad */
-  .tools-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
+  .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .tools-grid .tool-row { margin-bottom: 0; }
-
-  /* DOT items in 2-col */
-  .dot-items-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
+  .dot-items-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .dot-items-grid .dot-item { margin-bottom: 0; }
-
-  /* Manager zone: side-by-side panels */
-  .mgr-topbar {
-    padding-left: 112px;
-  }
-
-  /* Input sizing */
+  .mgr-topbar { padding-left: 112px; }
   .mgr-input { font-size: 18px; padding: 16px; }
   .btn-mgr { font-size: 22px; padding: 16px; }
   .btn-select-truck { font-size: 20px; padding: 16px; }
   .truck-dropdown-btn { font-size: 17px; padding: 16px; }
   .truck-dropdown-item { font-size: 17px; padding: 14px 18px; }
-
-  /* Back btn larger */
   .back-btn { font-size: 15px; }
-
-  /* Logout btn */
   .logout-btn { font-size: 13px; padding: 7px 14px; }
 }
 
@@ -363,13 +263,13 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
   .content { padding-top: calc(88px + env(safe-area-inset-top)) !important; padding-right: 48px !important; padding-bottom: 48px !important; padding-left: 144px !important; }
   .mgr-topbar { padding-left: 130px; }
   .bnav-btn { font-size: 12px !important; padding: 18px 8px !important; }
-  .bottom-nav::before { font-size: 24px; }
+  .bottom-nav::before { font-size: 18px; }
 }
 
 /* -- Desktop (≥ 1280px) -- */
 @media (min-width: 1280px) {
   .bottom-nav { width: 200px !important; max-width: 200px !important; }
-  .bottom-nav::before { font-size: 26px; padding: 0 16px 24px; }
+  .bottom-nav::before { font-size: 20px; padding: 0 16px 24px; }
   .bnav-btn { font-size: 13px !important; padding: 18px 16px !important; flex-direction: row !important; justify-content: flex-start !important; gap: 12px !important; }
   .bnav-btn svg { width: 18px !important; height: 18px !important; }
   .content { padding-left: 234px !important; padding-right: 64px !important; max-width: 100% !important; }
@@ -1001,13 +901,14 @@ function useIsIPad() {
 }
 
 // -- iPad top bar (replaces hidden .topbar on iPad) ----------------------------
-function IPadTopBar({ truck, onLogout, currentTab }) {
+function IPadTopBar({ truck, onLogout, currentTab, weather }) {
   const t = useT();
   const tabLabels = { home: t.home, receipt: t.receipts, tools: t.tools, hr: t.hr };
+  const rainIcon = weather?.rain > 50 ? "🌧️" : weather?.rain > 20 ? "🌦️" : "☀️";
   return (
     <div style={{
       position:"fixed", top:0, left:96, right:0,
-      background:"var(--bark)", borderBottom:"3px solid var(--leaf)",
+      background:"var(--bark)", borderBottom:"3px solid var(--lime)",
       paddingLeft:24, paddingRight:24,
       paddingTop:"calc(20px + env(safe-area-inset-top))",
       paddingBottom:14,
@@ -1015,12 +916,21 @@ function IPadTopBar({ truck, onLogout, currentTab }) {
       zIndex:49,
     }}>
       <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0,overflow:"hidden"}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4",letterSpacing:2,flexShrink:0}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,flexShrink:0}}>
           {tabLabels[currentTab] || t.home}
         </div>
         <div className="truck-pill" style={{flexShrink:0,whiteSpace:"nowrap"}}><Ic n="truck" style={{width:12,height:12,flexShrink:0}}/>{truck.label}</div>
       </div>
-      <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        {weather && (
+          <div className="weather-pill">
+            <span style={{fontSize:14}}>{rainIcon}</span>
+            <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>{weather.temp}°</span>
+            <span style={{color:"var(--stone)",fontSize:12}}>{weather.rain}%</span>
+          </div>
+        )}
+        <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
+      </div>
     </div>
   );
 }
@@ -2282,7 +2192,8 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
 }
 
 // -- TRUCK HOME ----------------------------------------------------------------
-function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
+function TruckHome({ truck, initialDivision, onLogout }) {
+  const t = useT();
   const isIPad = useIsIPad();
   const saved = loadFormState(truck.id);
   const [tab,              setTab]             = useState("home");
@@ -2293,19 +2204,47 @@ function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
   const [eodComplete,      setEodComplete]     = useState(saved?.eodComplete      || false);
   const [division]                             = useState(initialDivision||"");
   const [assignedJobCount, setAssignedJobCount]= useState(0);
+  const [weather,          setWeather]         = useState(null);
 
   useEffect(() => {
     saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
   }, [dotComplete, briefingComplete, propInspectCount, eodComplete, truck.id]);
 
+  useEffect(() => {
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&daily=precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1")
+      .then(r => r.json())
+      .then(d => setWeather({
+        temp: Math.round(d.current.temperature_2m),
+        rain: d.daily?.precipitation_probability_max?.[0] ?? 0,
+        code: d.current.weathercode,
+      }))
+      .catch(() => {});
+  }, []);
+
+  const rainIcon = weather
+    ? weather.rain > 50 ? "🌧️" : weather.rain > 20 ? "🌦️" : "☀️"
+    : null;
+
   return (
     <div className="screen">
       <div className="topbar">
-        <div className="topbar-left"><div className="topbar-title">J&amp;J &amp; Son</div><div className="truck-pill"><Ic n="truck"/>{truck.label}</div></div>
-        <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
+        <div className="topbar-left">
+          <div className="topbar-title">TotalFlo</div>
+          <div className="truck-pill"><Ic n="truck"/>{truck.label}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {weather && (
+            <div className="weather-pill">
+              <span style={{fontSize:14}}>{rainIcon}</span>
+              <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"var(--lime)",letterSpacing:1}}>{weather.temp}°</span>
+              <span style={{color:"var(--stone)",fontSize:12}}>{weather.rain}%</span>
+            </div>
+          )}
+          <button className="logout-btn" onClick={onLogout}>{t.signOut}</button>
+        </div>
       </div>
 
-      {isIPad && <IPadTopBar truck={truck} onLogout={onLogout} currentTab={tab}/>}
+      {isIPad && <IPadTopBar truck={truck} onLogout={onLogout} currentTab={tab} weather={weather}/>}
 
       <div className="content" style={isIPad ? {maxWidth:760, marginLeft:"auto", marginRight:"auto", width:"100%"} : {}}>
         {tab==="home"&&!activeForm&&
@@ -2352,7 +2291,7 @@ function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
         <button className={`bnav-btn ${tab==="home"?"active":""}`} onClick={()=>{setTab("home");setActiveForm(null);}}><Ic n="home"/>{t.home}</button>
         <button className={`bnav-btn ${tab==="jobs"?"active":""}`} onClick={()=>setTab("jobs")} style={{position:"relative"}}>
           <Ic n="clip"/>Jobs
-          {assignedJobCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"#5E7CE2",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{assignedJobCount}</span>}
+          {assignedJobCount>0&&<span style={{position:"absolute",top:6,right:"50%",transform:"translateX(8px)",background:"var(--lime)",borderRadius:"50%",width:15,height:15,fontSize:10,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Bebas Neue',sans-serif",color:"var(--earth)"}}>{assignedJobCount}</span>}
         </button>
         <button className={`bnav-btn ${tab==="receipt"?"active":""}`} onClick={()=>setTab("receipt")}><Ic n="camera"/>{t.receipts}</button>
         <button className={`bnav-btn ${tab==="hr"?"active":""}`} onClick={()=>setTab("hr")}><Ic n="shield"/>{t.hr}</button>
@@ -3612,7 +3551,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         const totalLaborSecs = (timeLogs||[]).filter(l => l.started_at?.startsWith(thisMonth)).reduce((s,l) => s+(l.duration_seconds||0), 0);
         const totalReceipts = (receipts||[]).filter(r => r.date?.startsWith(thisMonth)).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
 
-        // New clients: only those whose created_at is in this calendar month
         const newThisMonth = (properties||[]).filter(p => {
           if(!p.created_at) return false;
           const d = new Date(p.created_at);
@@ -3659,7 +3597,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         const truckArr = Object.entries(truckHours).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,secs]) => ({name, hours: Math.round(secs/3600)}));
         setTruckData(truckArr);
 
-        // Unassigned jobs today
         const { data: todayJobs } = await supabase.from("jobs").select("id").eq("company_id", COMPANY_ID).eq("date", today).eq("status", "scheduled");
         const { data: todayAssignments } = await supabase.from("job_assignments").select("job_id");
         const assignedIds = new Set((todayAssignments||[]).map(a => a.job_id));
@@ -3686,60 +3623,64 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       .catch(e => console.warn("Weather fetch failed", e));
   }, []);
 
+  // Single combined chart useEffect — waits for loading to be false so canvases are in the DOM
   useEffect(() => {
-    if(revenueData.length === 0 || !chartRef1.current || !window.Chart) return;
+    if(loading) return;
+    if(!window.Chart) return;
+
     if(chartInst1.current) chartInst1.current.destroy();
-    chartInst1.current = new window.Chart(chartRef1.current, {
-      type: 'bar',
-      data: {
-        labels: revenueData.map(m => m.label),
-        datasets: [
-          { label: 'Est. Revenue', data: revenueData.map(m => m.revenue), backgroundColor: '#0A369D', borderRadius: 4, barPercentage: 0.5 },
-          { label: 'Receipts', data: revenueData.map(m => m.receipts), backgroundColor: '#92B4F4', borderRadius: 4, barPercentage: 0.5 },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: '#4472CA', font: { size: 11 } } },
-          y: { grid: { color: 'rgba(68,114,202,0.1)' }, ticks: { color: '#4472CA', font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
-        }
-      }
-    });
-  }, [revenueData]);
-
-  useEffect(() => {
-    if(serviceData.length === 0 || !chartRef2.current || !window.Chart) return;
     if(chartInst2.current) chartInst2.current.destroy();
-    chartInst2.current = new window.Chart(chartRef2.current, {
-      type: 'doughnut',
-      data: {
-        labels: serviceData.map(([id]) => getServiceLabel(id, "en")),
-        datasets: [{ data: serviceData.map(([,c]) => c), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7'], borderWidth: 0 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#4472CA', boxWidth: 10, padding: 8 } } }
-      }
-    });
-  }, [serviceData]);
-
-  useEffect(() => {
-    if(truckData.length === 0 || !chartRef3.current || !window.Chart) return;
     if(chartInst3.current) chartInst3.current.destroy();
-    chartInst3.current = new window.Chart(chartRef3.current, {
-      type: 'doughnut',
-      data: {
-        labels: truckData.map(t => t.name),
-        datasets: [{ data: truckData.map(t => t.hours), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7','#162238'], borderWidth: 0 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#4472CA', boxWidth: 10, padding: 8 } } }
-      }
-    });
-  }, [truckData]);
+
+    if(revenueData.length > 0 && chartRef1.current) {
+      chartInst1.current = new window.Chart(chartRef1.current, {
+        type: 'bar',
+        data: {
+          labels: revenueData.map(m => m.label),
+          datasets: [
+            { label: 'Est. Revenue', data: revenueData.map(m => m.revenue), backgroundColor: '#0A369D', borderRadius: 4, barPercentage: 0.5 },
+            { label: 'Receipts', data: revenueData.map(m => m.receipts), backgroundColor: '#92B4F4', borderRadius: 4, barPercentage: 0.5 },
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#4472CA', font: { size: 11 } } },
+            y: { grid: { color: 'rgba(68,114,202,0.1)' }, ticks: { color: '#4472CA', font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+          }
+        }
+      });
+    }
+
+    if(serviceData.length > 0 && chartRef2.current) {
+      chartInst2.current = new window.Chart(chartRef2.current, {
+        type: 'doughnut',
+        data: {
+          labels: serviceData.map(([id]) => getServiceLabel(id, "en")),
+          datasets: [{ data: serviceData.map(([,c]) => c), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7'], borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#4472CA', boxWidth: 10, padding: 8 } } }
+        }
+      });
+    }
+
+    if(truckData.length > 0 && chartRef3.current) {
+      chartInst3.current = new window.Chart(chartRef3.current, {
+        type: 'doughnut',
+        data: {
+          labels: truckData.map(t => t.name),
+          datasets: [{ data: truckData.map(t => t.hours), backgroundColor: ['#0A369D','#4472CA','#5E7CE2','#92B4F4','#CFDEE7','#162238'], borderWidth: 0 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: '#4472CA', boxWidth: 10, padding: 8 } } }
+        }
+      });
+    }
+  }, [loading, revenueData, serviceData, truckData]);
 
   const cardStyle = {
     background:"#fff",
@@ -3768,7 +3709,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   return (
     <div className="screen" style={{background:"#1e2d4a",overflowY:"auto"}}>
 
-      {/* Quick action overlays */}
       {quickAction === "add-job" && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,overflowY:"auto",padding:"24px 16px"}}>
           <div style={{background:"#fff",borderRadius:12,padding:16,maxWidth:480,margin:"0 auto"}}>
@@ -3784,7 +3724,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         </div>
       )}
 
-      {/* Topbar */}
       <div style={{background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:40,height:40,objectFit:"contain"}}/>
@@ -3801,7 +3740,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
 
       <div style={{padding:"16px"}}>
 
-        {/* Alert — unassigned jobs */}
         {unassignedCount > 0 && (
           <div style={{background:"#fff0f0",border:"1px solid #f5c1c1",borderLeft:"4px solid #c0392b",borderRadius:10,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -3815,7 +3753,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
           </div>
         )}
 
-        {/* Weather + Quick Actions */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
           <div style={{...cardStyle, borderLeft:"3px solid #5E7CE2"}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Southborough, MA</div>
@@ -3841,7 +3778,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
           <div style={{textAlign:"center",padding:"48px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"#92B4F4",textTransform:"uppercase"}}>Loading...</div>
         ) : (
           <>
-            {/* Summary cards */}
             <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
               {[
                 {label:"Est. Monthly Revenue", value:`$${(stats.revenue).toLocaleString()}`, sub:"based on completed jobs", accent:"#0A369D"},
@@ -3858,7 +3794,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
               ))}
             </div>
 
-            {/* Revenue chart */}
             <div style={{...cardStyle, marginBottom:12}}>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Revenue vs Expenses — 6 months</div>
               <div style={{display:"flex",gap:16,marginBottom:10}}>
@@ -3874,7 +3809,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
               </div>
             </div>
 
-            {/* Service breakdown + Truck hours side by side */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div style={cardStyle}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#0A369D",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
