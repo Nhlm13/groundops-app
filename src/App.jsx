@@ -2806,7 +2806,7 @@ function AddPropertyForm({ onBack, onSaved }) {
 }
 
 // -- PROPERTIES TAB -----------------------------------------------------------
-function PropertiesTab() {
+function PropertiesTab({ searchQuery = "" }) {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list");
@@ -2834,8 +2834,9 @@ function PropertiesTab() {
   if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}} preselectedDate={null}/>;
   if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
 if(view === "detail" && selected) return <PropertyDetail property={properties.find(p=>p.id===selected.id)||selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}} onRefresh={fetchProperties}/>;
-  const filteredProperties = typeFilter === "all" ? properties : properties.filter(p => p.property_type === typeFilter);
-
+const filteredProperties = properties
+    .filter(p => typeFilter === "all" || p.property_type === typeFilter)
+    .filter(p => !searchQuery || p.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.address?.toLowerCase().includes(searchQuery.toLowerCase()));
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
@@ -3517,6 +3518,8 @@ function ManagerZone({ onLogout }) {
   const [todayJobCounts, setTodayJobCounts] = useState({ unassigned: 0 });
   const [isPulling, setIsPulling] = useState(false);
   const pullStartY = useRef(0);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchAll = async () => {
     setLoading(true);
@@ -3786,24 +3789,42 @@ function ManagerZone({ onLogout }) {
       onTouchStart={e=>{ pullStartY.current = e.touches[0].clientY; }}
       onTouchEnd={e=>{ if(e.changedTouches[0].clientY - pullStartY.current > 80 && !isPulling){ setIsPulling(true); fetchAll().then(()=>setIsPulling(false)); } }}>
       <div className="mgr-topbar">
-        <div style={{display:"flex",flexDirection:"column"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
-            <div className="mgr-topbar-title">Manager Zone</div>
+        {searchOpen ? (
+          <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+            <input autoFocus type="text" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
+              placeholder="Search properties..."
+              style={{flex:1,background:"var(--bark2)",border:"1px solid var(--mgr)",borderRadius:8,padding:"8px 12px",color:"var(--cream)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,outline:"none"}}/>
+            <button onClick={()=>{setSearchOpen(false);setSearchQuery("");}}
+              style={{background:"none",border:"none",color:"var(--stone)",fontSize:18,cursor:"pointer",padding:"4px",lineHeight:1}}>✕</button>
           </div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginTop:1}}>{todayLabel}</div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {isPulling && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1}}>Refreshing...</span>}
-          <span className="mgr-badge">Admin</span>
-          <button className="logout-btn" onClick={onLogout}>Out</button>
-        </div>
+        ) : (
+          <>
+            <div style={{display:"flex",flexDirection:"column"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <Ic n="shield" style={{width:15,height:15,color:"var(--mgr-lt)"}}/>
+                <div className="mgr-topbar-title">Manager Zone</div>
+              </div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1,marginTop:1}}>{todayLabel}</div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              {isPulling && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1}}>Refreshing...</span>}
+              <button onClick={()=>{setSearchOpen(true);setTab("properties");}}
+                style={{background:"none",border:"none",cursor:"pointer",padding:4,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--mgr-lt)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </button>
+              <span className="mgr-badge">Admin</span>
+              <button className="logout-btn" onClick={onLogout}>Out</button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="content" style={{background:"#ddd9d0"}}>
         {tab==="activity" && <ActivityTab/>}
         {tab==="receipts" && <ReceiptsTab/>}
-        {tab==="properties" && <PropertiesTab/>}
+        {tab==="properties" && <PropertiesTab searchQuery={searchQuery}/>}
         {tab==="calendar" && <CalendarTab/>}
         {tab==="jobs" && <ManagerJobsTab/>}
       </div>
