@@ -3728,17 +3728,17 @@ function OwnerDashboard({ onLogout, onManagerView }) {
       {/* Topbar */}
       <div style={{background:"#232918",borderBottom:"1px solid rgba(61,107,16,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:28,height:28,background:"var(--lime)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1e14" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <div style={{width:36,height:36,background:"var(--lime)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1e14" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
           </div>
           <div>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--lime)"}}>TotalFlo</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.7)",textTransform:"uppercase"}}>Owner Dashboard</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--lime)",lineHeight:1}}>TotalFlo</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",marginTop:2}}>Owner Dashboard</div>
+            <div style={{display:"flex",gap:6,marginTop:6}}>
+              <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#7aabdd",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
+              <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"rgba(255,255,255,0.5)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
+            </div>
           </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"#7aabdd",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
-          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"rgba(255,255,255,0.7)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
         </div>
       </div>
 
