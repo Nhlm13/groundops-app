@@ -3523,6 +3523,7 @@ function OfficeView({ onLogout }) {
   const [properties, setProperties] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [expandedDays, setExpandedDays] = useState({});  // ← ADD THIS LINE
   const [form, setForm] = useState({
     name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false
   });
@@ -3634,6 +3635,13 @@ function OfficeView({ onLogout }) {
     setConverting(false);
   };
 
+  const deleteJob = async (jobId) => {
+  if(!window.confirm("Remove this job from the schedule?")) return;
+  await supabase.from("job_assignments").delete().eq("job_id", jobId);
+  await supabase.from("jobs").delete().eq("id", jobId);
+  setSchedule(prev => prev.filter(j => j.id !== jobId));
+};
+  
   const filtered = requests.filter(r => {
     const matchSearch = !searchQuery ||
       r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -3686,64 +3694,109 @@ function OfficeView({ onLogout }) {
 
   // -- SCHEDULE SIDEBAR --
   const ScheduleSidebar = () => {
-    const today = new Date();
-    const days = Array.from({length: 7}, (_, i) => {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-      const dayJobs = schedule.filter(j => j.date === dateStr);
-      const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday:"short" });
-      const dateLabel = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
-      const count = dayJobs.length;
-      const countColor = count === 0 ? "#22a86e" : count <= 3 ? "#22a86e" : count <= 6 ? "#d4bc4a" : "#e05540";
-      const countBg = count === 0 ? "rgba(34,168,110,0.12)" : count <= 3 ? "rgba(34,168,110,0.12)" : count <= 6 ? "rgba(212,188,74,0.12)" : "rgba(224,85,64,0.12)";
-      return { dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday: i === 0 };
-    });
+  const today = new Date();
+  const days = Array.from({length: 7}, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const dayJobs = schedule.filter(j => j.date === dateStr);
+    const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday:"short" });
+    const dateLabel = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+    const count = dayJobs.length;
+    const countColor = count === 0 ? "#22a86e" : count <= 3 ? "#22a86e" : count <= 6 ? "#d4bc4a" : "#e05540";
+    const countBg = count === 0 ? "rgba(34,168,110,0.12)" : count <= 3 ? "rgba(34,168,110,0.12)" : count <= 6 ? "rgba(212,188,74,0.12)" : "rgba(224,85,64,0.12)";
+    return { dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday: i === 0 };
+  });
 
-    return (
-      <div style={{width:200,minWidth:200,background:"#0d1635",borderRight:"1px solid rgba(68,114,202,0.2)",display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
-        <div style={{padding:"12px 14px 10px",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#CFDEE7",textTransform:"uppercase"}}>Schedule</div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Next 7 days</div>
-        </div>
-        <div style={{overflowY:"auto",flex:1}}>
-          {days.map(({dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday}) => (
+  return (
+    <div style={{width:220,minWidth:220,background:"#0d1635",borderRight:"1px solid rgba(68,114,202,0.2)",display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
+      <div style={{padding:"12px 14px 10px",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#CFDEE7",textTransform:"uppercase"}}>Schedule</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Next 7 days — click to expand</div>
+      </div>
+      <div style={{overflowY:"auto",flex:1}}>
+        {days.map(({dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday}) => {
+          const isExpanded = !!expandedDays[dateStr];
+          const visibleJobs = isExpanded ? dayJobs : dayJobs.slice(0, 2);
+          return (
             <div key={dateStr} style={{borderBottom:"1px solid rgba(68,114,202,0.1)"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:isToday?"rgba(68,114,202,0.12)":"transparent"}}>
+
+              {/* Day header — clickable */}
+              <div
+                onClick={() => setExpandedDays(prev => ({...prev, [dateStr]: !prev[dateStr]}))}
+                style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:isToday?"rgba(68,114,202,0.12)":isExpanded?"rgba(68,114,202,0.07)":"transparent",cursor:"pointer",userSelect:"none"}}
+              >
                 <div>
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#CFDEE7",letterSpacing:1}}>{dayName.toUpperCase()}</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:0.5}}>{dateLabel}</div>
                 </div>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,padding:"1px 7px",borderRadius:8,background:countBg,color:countColor,letterSpacing:1}}>
-                  {count === 0 ? "Open" : `${count} jobs`}
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,padding:"1px 7px",borderRadius:8,background:countBg,color:countColor,letterSpacing:1}}>
+                    {count === 0 ? "Open" : `${count} jobs`}
+                  </div>
+                  {count > 0 && (
+                    <span style={{color:"#92B4F4",fontSize:10,transition:"transform 0.2s",display:"inline-block",transform:isExpanded?"rotate(90deg)":"rotate(0deg)"}}>▶</span>
+                  )}
                 </div>
               </div>
-              {dayJobs.slice(0,3).map(job => {
-                const prop = properties.find(p => p.id === job.property_id);
-                const assignment = assignments.find(a => a.job_id === job.id);
-                const truck = trucks.find(t => t.id === assignment?.truck_id);
-                const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
-                const dotColor = TRUCK_COLORS[truckIdx % TRUCK_COLORS.length] || "#92B4F4";
-                return (
-                  <div key={job.id} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 14px 4px 20px"}}>
-                    <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}></div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#CFDEE7",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prop?.client_name||"Job"}</div>
-                    {truck && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",flexShrink:0}}>{truck.name.replace("Truck ","T-")}</div>}
-                  </div>
-                );
-              })}
-              {count > 3 && (
-                <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA55",letterSpacing:0.5}}>+{count - 3} more</div>
-              )}
-              {count === 0 && (
+
+              {/* Jobs list */}
+              {count === 0 ? (
                 <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#22a86e",letterSpacing:0.5}}>Open day</div>
+              ) : (
+                <>
+                  {visibleJobs.map(job => {
+                    const prop = properties.find(p => p.id === job.property_id);
+                    const assignment = assignments.find(a => a.job_id === job.id);
+                    const truck = trucks.find(t => t.id === assignment?.truck_id);
+                    const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
+                    const dotColor = TRUCK_COLORS[truckIdx % TRUCK_COLORS.length] || "#92B4F4";
+                    return (
+                      <div key={job.id}
+                        style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 20px",borderRadius:6,margin:"1px 6px"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="rgba(68,114,202,0.1)"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                      >
+                        <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}></div>
+                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#CFDEE7",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prop?.client_name||"Job"}</div>
+                        {truck && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",flexShrink:0,marginRight:2}}>{truck.name.replace("Truck ","T-")}</div>}
+                        {isExpanded && (
+                          <button
+                            onClick={e=>{e.stopPropagation();deleteJob(job.id);}}
+                            style={{background:"none",border:"none",color:"#e0554066",cursor:"pointer",fontSize:12,padding:"0 2px",lineHeight:1,flexShrink:0}}
+                            onMouseEnter={e=>e.target.style.color="#e05540"}
+                            onMouseLeave={e=>e.target.style.color="#e0554066"}
+                            title="Remove job"
+                          >✕</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {!isExpanded && count > 2 && (
+                    <div
+                      onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:true}))}
+                      style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA",letterSpacing:0.5,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                      +{count - 2} more
+                    </div>
+                  )}
+                  {isExpanded && (
+                    <div style={{padding:"4px 14px 6px",display:"flex",justifyContent:"flex-end"}}>
+                      <button
+                        onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:false}))}
+                        style={{background:"none",border:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA55",cursor:"pointer",letterSpacing:0.5,padding:0}}>
+                        collapse ▲
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // -- BOARD CONTENT (shared between board, add, detail) --
   const BoardContent = () => (
