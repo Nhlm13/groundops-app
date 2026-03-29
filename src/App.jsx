@@ -3682,7 +3682,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
     if(chartInst1.current) chartInst1.current.destroy();
     const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
     const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-    const textColor = isDark ? '#888' : '#999';
+    const textColor = isDark ? '#aaa' : '#666';
     chartInst1.current = new window.Chart(chartRef1.current, {
       type: 'bar',
       data: {
@@ -3707,7 +3707,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
     if(serviceData.length === 0 || !chartRef2.current) return;
     if(chartInst2.current) chartInst2.current.destroy();
     const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-    const textColor = isDark ? '#888' : '#999';
+    const textColor = isDark ? '#aaa' : '#666';
     chartInst2.current = new window.Chart(chartRef2.current, {
       type: 'doughnut',
       data: {
@@ -3733,18 +3733,18 @@ function OwnerDashboard({ onLogout, onManagerView }) {
           </div>
           <div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--lime)"}}>TotalFlo</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.4)",textTransform:"uppercase"}}>Owner Dashboard</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.7)",textTransform:"uppercase"}}>Owner Dashboard</div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"#7aabdd",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
-          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"rgba(255,255,255,0.4)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
+          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"rgba(255,255,255,0.7)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
         </div>
       </div>
 
       <div style={{padding:"16px"}}>
         {loading ? (
-          <div style={{textAlign:"center",padding:"48px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"rgba(255,255,255,0.3)",textTransform:"uppercase"}}>Loading...</div>
+          <div style={{textAlign:"center",padding:"48px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"rgba(255,255,255,0.5)",textTransform:"uppercase"}}>Loading...</div>
         ) : (
           <>
             {/* Summary cards */}
@@ -3757,21 +3757,21 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                 {label:"Active Clients", value:stats.clients, sub:"total properties"},
               ].map(({label,value,sub})=>(
                 <div key={label} style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:"14px"}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",marginBottom:4}}>{label}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.7)",textTransform:"uppercase",marginBottom:4}}>{label}</div>
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{value}</div>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:4}}>{sub}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:4}}>{sub}</div>
                 </div>
               ))}
             </div>
 
             {/* Revenue chart */}
             <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:8}}>Revenue vs Expenses — 6 months</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:8}}>Revenue vs Expenses — 6 months</div>
               <div style={{display:"flex",gap:16,marginBottom:10}}>
-                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.7)"}}>
                   <span style={{width:10,height:10,borderRadius:2,background:"#3d6b10",display:"inline-block"}}></span>Est. Revenue
                 </span>
-                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.7)"}}>
                   <span style={{width:10,height:10,borderRadius:2,background:"#b5d4f4",display:"inline-block"}}></span>Receipts
                 </span>
               </div>
@@ -3783,18 +3783,18 @@ function OwnerDashboard({ onLogout, onManagerView }) {
             {/* Service breakdown + client growth */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
                 <div style={{position:"relative",height:160}}>
                   <canvas ref={chartRef2}></canvas>
                 </div>
               </div>
               <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
                 {(()=>{
                   const maxCount = Math.max(1,...clientGrowth.map(m=>m.count));
                   return clientGrowth.map((m,i)=>(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",width:28}}>{m.label}</span>
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.7)",width:28}}>{m.label}</span>
                       <div style={{flex:1,height:6,background:"rgba(255,255,255,0.08)",borderRadius:3,overflow:"hidden"}}>
                         <div style={{height:"100%",width:`${Math.round((m.count/maxCount)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
                       </div>
@@ -3808,11 +3808,11 @@ function OwnerDashboard({ onLogout, onManagerView }) {
             {/* Truck performance */}
             {truckData.length > 0 && (
               <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:12}}>Truck hours — this month</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:12}}>Truck hours — this month</div>
                 {truckData.map((t,i)=>(
                   <div key={i} style={{marginBottom:10}}>
                     <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,marginBottom:4}}>
-                      <span style={{color:"rgba(255,255,255,0.6)"}}>{t.name}</span>
+                      <span style={{color:"rgba(255,255,255,0.85)"}}>{t.name}</span>
                       <span style={{color:"var(--lime)",fontWeight:700}}>{t.hours}h</span>
                     </div>
                     <div style={{height:6,background:"rgba(255,255,255,0.08)",borderRadius:3}}>
