@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabaseClient";
-import { ReactComponent as TotalFloLogo } from './TotalFlo.svg';
 
 const FONT = `@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@400;500;600;700&display=swap');`;
 
@@ -3733,8 +3732,8 @@ function OwnerDashboard({ onLogout, onManagerView }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d1b2a" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
           </div>
           <div>
-            <TotalFloLogo width="100" style={{ display: 'block', marginBottom: 4 }} />
-<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.5)",textTransform:"uppercase"}}>Owner Dashboard</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--lime)",lineHeight:1}}>TotalFlo</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",marginTop:2}}>Owner Dashboard</div>
             <div style={{display:"flex",gap:6,marginTop:6}}>
               <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#7aabdd",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
               <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"rgba(255,255,255,0.5)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
@@ -4217,7 +4216,8 @@ const handleSelectTruck = truck => {
     <div className="splash">
       <FlagSelector lang={lang} setLang={setLang}/>
       <div className="logo-wrap">
-        <TotalFloLogo width="220" style={{ display: 'block', margin: '0 auto 12px' }} />
+        <img className="logo-img" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgMjAwMCAyMDAwIiB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHhtbDpzcGFjZT0icHJlc2VydmUiIHhtbG5zOnNlcmlmPSJodHRwOi8vd3d3LnNlcmlmLmNvbS8iIHN0eWxlPSJmaWxsOiMzZDZiMTA7ZmlsbC1ydWxlOmV2ZW5vZGQ7Y2xpcC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kO3N0cm9rZS1taXRlcmxpbWl0OjI7Ij48cmVjdCB3aWR0aD0iMjAwMCIgaGVpZ2h0PSIyMDAwIiBmaWxsPSJub25lIi8+PC9zdmc+" alt="J&J & Son"/>
+        <div className="app-title">J&amp;J &amp; Son</div>
         <div className="app-sub">{t.appSub}</div>
       </div>
       {mode==="truck"&&(
