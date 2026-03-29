@@ -4120,24 +4120,25 @@ function OfficeView({ onLogout }) {
     );
   }
 
-  // -- KANBAN BOARD --
- return (
-  <>
-    <JobEditModal/>
-    <div className="screen" style={{background:"#1e2d4a"}}>
-      <Topbar title="Spring 2026 Requests" right={
-        <>
-          <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
-          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Out</button>
-        </>
-      }/>
-      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-        <ScheduleSidebar/>
-        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <BoardContent/>
+ // -- KANBAN BOARD --
+  return (
+    <>
+      <JobEditModal/>
+      <div className="screen" style={{background:"#1e2d4a"}}>
+        <Topbar title="Spring 2026 Requests" right={
+          <>
+            <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
+            <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Out</button>
+          </>
+        }/>
+        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+          <ScheduleSidebar/>
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <BoardContent/>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 // -- OwnerDashboard ---------------------------------------------------------------
