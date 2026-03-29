@@ -1660,58 +1660,6 @@ function UniformGuideInline() {
   );
 }
 
-// eslint-disable-next-line no-unused-vars
-function ToolsTab({
-
-// -- TOOLS TAB -----------------------------------------------------------------
-function ToolsTab({ truck, checkouts, setCheckouts }) {
-  const t = useT();
-  const [openCats,setOpenCats] = useState({"Hand Tools":true});
-  const [pending,setPending]   = useState({});
-  const totalOut  = id => Object.values(checkouts).flat().filter(c=>c.toolId===id).reduce((s,c)=>s+c.qty,0);
-  const available = (id,total) => total-totalOut(id);
-  const myCheckouts = checkouts[truck.id]||[];
-  const checkout = (toolId,toolName,qty) => { if(qty<1)return; setCheckouts(prev=>({...prev,[truck.id]:[...(prev[truck.id]||[]),{toolId,toolName,qty,time:getTimeStr(),id:Date.now()}]})); setPending(p=>({...p,[toolId]:0})); };
-  const returnTool = id => setCheckouts(prev=>({...prev,[truck.id]:(prev[truck.id]||[]).filter(c=>c.id!==id)}));
-  return (
-    <div>
-      {myCheckouts.length>0&&(<><div className="section-hd">{t.checkedOut}</div>{myCheckouts.map(co=>(<div key={co.id} className="checked-out-row"><Ic n="check" style={{width:13,height:13,color:"var(--lime)",flexShrink:0}}/><div style={{flex:1}}><div className="tool-name">{co.toolName}</div><div style={{fontSize:11,color:"var(--stone)",marginTop:1}}>{t.since(co.time)}</div></div><span className="co-qty-badge">×{co.qty}</span><button className="return-btn" onClick={()=>returnTool(co.id)}>{t.return_}</button></div>))}<div style={{height:12}}/></>)}
-      <div className="section-hd">{t.toolInventory}</div>
-      {TOOL_INVENTORY.map(cat=>{
-        const avail=cat.tools.reduce((s,tool)=>s+available(tool.id,tool.total),0);const isOpen=openCats[cat.category];
-        return (<div key={cat.category}><div className="tool-cat-header" onClick={()=>setOpenCats(o=>({...o,[cat.category]:!o[cat.category]}))}>
-          <Ic n="box" style={{width:15,height:15,color:"var(--leaf)",flexShrink:0}}/><span className="tool-cat-label">{cat.category}</span><span className="tool-cat-count">{t.avail(avail)}</span><Ic n="chev" className={`chevron ${isOpen?"open":""}`} style={{marginLeft:4}}/>
-        </div>
-        {isOpen&&(
-          <div className="tools-grid">
-            {cat.tools.map(tool=>{const avl=available(tool.id,tool.total);const qty=pending[tool.id]??0;return(<div key={tool.id} className="tool-row"><div className="tool-info"><div className="tool-name">{tool.name}</div><div className={`tool-avail ${avl===0?"none":avl<=2?"low":"ok"}`}>{avl===0?t.noneAvail:t.of(avl,tool.total)}</div></div>{avl>0&&(<div className="qty-row"><button className="qty-btn" disabled={qty<=0} onClick={()=>setPending(p=>({...p,[tool.id]:Math.max(0,(p[tool.id]??0)-1)}))}> − </button><span className="qty-num">{qty}</span><button className="qty-btn" disabled={qty>=avl} onClick={()=>setPending(p=>({...p,[tool.id]:Math.min(avl,(p[tool.id]??0)+1)}))}> + </button><button className="checkout-btn" disabled={qty<1} onClick={()=>checkout(tool.id,tool.name,qty)}>{t.checkOut}</button></div>)}{avl===0&&<span style={{fontSize:11,color:"var(--danger)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{t.allOut}</span>}</div>);})}
-          </div>
-        )}
-        </div>);
-      })}
-    </div>
-  );
-}
-
-function ContactDropdown() {
-  const t = useT();
-  const [open,setOpen]=useState(false);
-  const [selected,setSelected]=useState(null);
-  return (
-    <div>
-      <div className="truck-dropdown-wrap">
-        <div className={`truck-dropdown-btn ${open?"open":""}`} onClick={()=>setOpen(o=>!o)}>
-          <Ic n="phone" style={{width:16,height:16,color:selected?"var(--lime)":"var(--stone)"}}/>
-          {selected?<span className="truck-dropdown-value">{selected.name} — {selected.role}</span>:<span className="truck-dropdown-placeholder">{t.chooseMgr}</span>}
-          <Ic n="chevD" className={`truck-dropdown-chevron ${open?"open":""}`} style={{width:16,height:16}}/>
-        </div>
-        {open&&(<div className="truck-dropdown-list">{CONTACTS.map(c=>(<div key={c.name} className={`truck-dropdown-item ${selected?.name===c.name?"selected":""}`} onClick={()=>{setSelected(c);setOpen(false);}}><div style={{width:28,height:28,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,color:"var(--lime)",letterSpacing:1}}>{c.initials}</div><div><div style={{fontWeight:500,fontSize:14,color:"var(--cream)"}}>{c.name}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:1}}>{c.role}</div></div>{selected?.name===c.name&&<Ic n="check" style={{width:14,height:14,marginLeft:"auto",color:"var(--lime)"}}/>}</div>))}</div>)}
-      </div>
-      {selected&&(<div className="contact-card" style={{marginTop:10}}><div className="contact-avatar">{selected.initials}</div><div className="contact-info"><div className="contact-name">{selected.name}</div><div className="contact-role">{selected.role}</div></div><a href={selected.phone} className="call-btn"><Ic n="phone"/></a></div>)}
-    </div>
-  );
-}
-
 // -- HOME TAB ------------------------------------------------------------------
 function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
   const t   = useT();
@@ -2274,8 +2222,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
 }
 
 // -- TRUCK HOME ----------------------------------------------------------------
-function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }) {
-  const t = useT();
+function TruckHome({ truck, initialDivision, onLogout }) {  const t = useT();
   const isIPad = useIsIPad();
   const saved = loadFormState(truck.id);
   const [tab,              setTab]             = useState("home");
@@ -4008,7 +3955,6 @@ export default function App() {
   const[screen,setScreen]=useState("login");
   const[truck,setTruck]=useState(null);
   const[truckDiv,setTruckDiv]=useState("");
-  const[checkouts,setCheckouts]=useState({});
   const[lang,setLang]=useState(detectLang);
 
  const postSignIn = async (tr) => {
@@ -4066,8 +4012,7 @@ if(sessionData) tr.sessionId = sessionData.id;
       <style>{css}</style>
       <div className="app">
         {screen==="login"   &&<LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={()=>setScreen("manager")} lang={lang} setLang={setLang}/>}
-        {screen==="truck"   &&truck&&<TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout} checkouts={checkouts} setCheckouts={setCheckouts}/>}
-        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")}/>}
+{screen==="truck"&&truck&&<TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout}/>}        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")}/>}
       </div>
     </LangContext.Provider>
   );
