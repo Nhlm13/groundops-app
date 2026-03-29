@@ -3724,12 +3724,12 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   const maxHours = truckData.length > 0 ? Math.max(...truckData.map(t => t.hours)) : 1;
 
   return (
-    <div className="screen" style={{background:"#1a1e14",overflowY:"auto"}}>
+    <div className="screen" style={{background:"#0d1b2a",overflowY:"auto"}}>
       {/* Topbar */}
-      <div style={{background:"#232918",borderBottom:"1px solid rgba(61,107,16,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+      <div style={{background:"#162236",borderBottom:"1px solid rgba(42,90,149,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:36,height:36,background:"var(--lime)",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1e14" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d1b2a" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
           </div>
           <div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"var(--lime)",lineHeight:1}}>TotalFlo</div>
@@ -3756,7 +3756,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
                 {label:"Total Receipts", value:`$${stats.receiptsTotal.toFixed(0)}`, sub:"expenses this month"},
                 {label:"Active Clients", value:stats.clients, sub:"total properties"},
               ].map(({label,value,sub})=>(
-                <div key={label} style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:"14px"}}>
+                <div key={label} style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:"14px"}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.7)",textTransform:"uppercase",marginBottom:4}}>{label}</div>
                   <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{value}</div>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:4}}>{sub}</div>
@@ -3765,7 +3765,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
             </div>
 
             {/* Revenue chart */}
-            <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:8}}>Revenue vs Expenses — 6 months</div>
               <div style={{display:"flex",gap:16,marginBottom:10}}>
                 <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.7)"}}>
@@ -3782,13 +3782,13 @@ function OwnerDashboard({ onLogout, onManagerView }) {
 
             {/* Service breakdown + client growth */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-              <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
+              <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
                 <div style={{position:"relative",height:160}}>
                   <canvas ref={chartRef2}></canvas>
                 </div>
               </div>
-              <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
+              <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
                 {(()=>{
                   const maxCount = Math.max(1,...clientGrowth.map(m=>m.count));
@@ -3807,7 +3807,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
 
             {/* Truck performance */}
             {truckData.length > 0 && (
-              <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
+              <div style={{background:"#162236",border:"1px solid rgba(42,90,149,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",marginBottom:12}}>Truck hours — this month</div>
                 {truckData.map((t,i)=>(
                   <div key={i} style={{marginBottom:10}}>
