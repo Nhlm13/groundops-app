@@ -1725,7 +1725,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
       </div>
 
       <div className="section-hd" style={{marginTop:8}}>{t.contactMgr}</div>
-      <ContactDropdown/>
     </div>
   );
 }
