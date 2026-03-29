@@ -2060,8 +2060,10 @@ function JobsTab({ truck }) {
           });
         }
         const timeEntries = Object.entries(finalLogs).filter(([,secs]) => secs > 0);
-        if(timeEntries.length > 0) {
-          await supabase.from("job_time_logs").insert(
+console.log("Time entries to save:", JSON.stringify(timeEntries));
+console.log("truck.sessionId:", truck.sessionId);
+if(timeEntries.length > 0) {
+  const { error: timeLogError } = await supabase.from("job_time_logs").insert(
             timeEntries.map(([serviceId, secs]) => ({
               job_id: activeJob.id,
               session_id: truck.sessionId || null,
