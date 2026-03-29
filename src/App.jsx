@@ -2970,6 +2970,7 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
   const [serviceDescriptions, setServiceDescriptions] = useState({});
   const [fields, setFields] = useState({
     property_id: "",
+    propertySearch: "",
     date: preselectedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
     notes: "",
   });
@@ -3024,12 +3025,20 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
       </div>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
         <label style={labelStyle}>Property *</label>
+        <input type="text" placeholder="Search by name or address..."
+          value={fields.propertySearch||""}
+          onChange={e=>set("propertySearch",e.target.value)}
+          style={{...inputStyle,marginBottom:6}}/>
         <select value={fields.property_id} onChange={e=>set("property_id",e.target.value)}
           style={{...inputStyle,appearance:"none"}}>
           <option value="">Select a property...</option>
-          {properties.map(p=>(
-            <option key={p.id} value={p.id}>{p.client_name} — {p.address}</option>
-          ))}
+          {properties
+            .filter(p => !fields.propertySearch || 
+              p.client_name?.toLowerCase().includes(fields.propertySearch.toLowerCase()) ||
+              p.address?.toLowerCase().includes(fields.propertySearch.toLowerCase()))
+            .map(p=>(
+              <option key={p.id} value={p.id}>{p.client_name} — {p.address}</option>
+            ))}
         </select>
         <label style={labelStyle}>Date *</label>
         <input style={inputStyle} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
