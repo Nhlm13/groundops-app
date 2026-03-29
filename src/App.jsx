@@ -3534,8 +3534,7 @@ function ManagerZone({ onLogout }) {
         { data: receiptData },
       ] = await Promise.all([
         supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
-        supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
-        supabase.from("briefing_acknowledgments").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
+supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate).is("ended_at", null),        supabase.from("briefing_acknowledgments").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
         supabase.from("dot_inspections").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
         supabase.from("end_of_day_checklists").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
         supabase.from("property_inspections").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate),
@@ -4036,7 +4035,9 @@ if(sessionData) tr.sessionId = sessionData.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
   const postSignOut = async (tr) => {
-    // Sign-out is now handled by session end — no separate record needed
+    if(tr.sessionId) {
+      await supabase.from("crew_sessions").update({ ended_at: new Date().toISOString() }).eq("id", tr.sessionId);
+    }
   };
 
   const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
