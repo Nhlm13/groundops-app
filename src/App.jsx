@@ -1751,9 +1751,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
