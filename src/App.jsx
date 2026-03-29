@@ -3576,7 +3576,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   const [revenueData, setRevenueData] = useState([]);
   const [serviceData, setServiceData] = useState([]);
   const [truckData, setTruckData] = useState([]);
-  const [clientGrowth, setClientGrowth] = useState([]);
   const chartRef1 = useRef(null);
   const chartRef2 = useRef(null);
   const chartInst1 = useRef(null);
@@ -3646,18 +3645,6 @@ function OwnerDashboard({ onLogout, onManagerView }) {
         });
         const truckArr = Object.entries(truckHours).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,secs]) => ({name, hours: Math.round(secs/3600)}));
         setTruckData(truckArr);
-
-        const growth = [];
-        for(let i=5; i>=0; i--) {
-          const d = new Date();
-          d.setMonth(d.getMonth() - i);
-          const key = d.toLocaleDateString("en-CA", {timeZone:"America/New_York"}).slice(0,7);
-          const label = d.toLocaleDateString("en-US", {month:"short"});
-          const count = (properties||[]).filter(p => p.created_at?.startsWith(key)).length;
-          growth.push({ label, count });
-        }
-        setClientGrowth(growth);
-
       } catch(e){ console.warn(e); }
       setLoading(false);
     };
