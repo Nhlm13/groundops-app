@@ -3519,6 +3519,10 @@ function OfficeView({ onLogout }) {
   const [filterPriority, setFilterPriority] = useState("all");
   const [converting, setConverting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [schedule, setSchedule] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [form, setForm] = useState({
     name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false
   });
@@ -3529,6 +3533,8 @@ function OfficeView({ onLogout }) {
     { key:"estimate sent",  label:"Estimate Sent",  color:"#4472CA", bg:"rgba(68,114,202,0.12)"  },
     { key:"schedule",       label:"Scheduled",      color:"#22a86e", bg:"rgba(34,168,110,0.12)"  },
   ];
+
+  const TRUCK_COLORS = ["#4472CA","#22a86e","#d4bc4a","#e05540","#9b59b6","#5E7CE2","#0A369D","#92B4F4"];
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -3542,6 +3548,28 @@ function OfficeView({ onLogout }) {
   };
 
   useEffect(() => { fetchRequests(); }, []);
+
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      const today = new Date();
+      const dates = Array.from({length: 7}, (_, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      });
+      const [{ data: jobData }, { data: propData }, { data: truckData }, { data: assignData }] = await Promise.all([
+        supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).in("date", dates).order("date"),
+        supabase.from("properties").select("id, client_name").eq("company_id", COMPANY_ID),
+        supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
+        supabase.from("job_assignments").select("*"),
+      ]);
+      setSchedule(jobData || []);
+      setProperties(propData || []);
+      setTrucks(truckData || []);
+      setAssignments(assignData || []);
+    };
+    fetchSchedule();
+  }, []);
 
   const updateStatus = async (id, status) => {
     await supabase.from("requests").update({ status }).eq("id", id);
@@ -3630,7 +3658,7 @@ function OfficeView({ onLogout }) {
 
   const labelStyle = {
     fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2,
-    color:"#92B4F4", textTransform:"uppercase", marginBottom:4, display:"block",
+    color:"#4472CA", textTransform:"uppercase", marginBottom:4, display:"block",
   };
 
   const PriorityBadge = ({priority}) => {
@@ -3656,131 +3684,70 @@ function OfficeView({ onLogout }) {
     </div>
   );
 
-  // -- ADD FORM --
-  if(view === "add") return (
-    <div className="screen" style={{background:"#1e2d4a",overflowY:"auto"}}>
-      <Topbar title="New Request" right={
-        <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Cancel</button>
-      }/>
-      <div style={{padding:"16px",overflowY:"auto",flex:1}}>
-        <div style={{...cardStyle, marginBottom:12}}>
-          <label style={{...labelStyle,color:"#4472CA"}}>Client Name *</label>
-          <input style={{...inputStyle,marginBottom:10}} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="First & Last Name"/>
-          <label style={{...labelStyle,color:"#4472CA"}}>Address</label>
-          <input style={{...inputStyle,marginBottom:10}} value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St, Southboro"/>
-          <label style={{...labelStyle,color:"#4472CA"}}>Task / Service *</label>
-          <input style={{...inputStyle,marginBottom:10}} value={form.task} onChange={e=>setForm(f=>({...f,task:e.target.value}))} placeholder="e.g. Spring Clean-Up, Mulch Install"/>
-          <label style={{...labelStyle,color:"#4472CA"}}>Priority</label>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {["","High","Mid"].map(p=>(
-              <button key={p} onClick={()=>setForm(f=>({...f,priority:p}))}
-                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.priority===p?"#4472CA":"#dde5f5"}`,background:form.priority===p?"#0A369D":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.priority===p?"#fff":"#4472CA",cursor:"pointer",fontWeight:600}}>
-                {p||"None"}
-              </button>
-            ))}
-          </div>
-          <label style={{...labelStyle,color:"#4472CA"}}>Status</label>
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
-            {STATUSES.map(s=>(
-              <button key={s.key} onClick={()=>setForm(f=>({...f,status:s.key}))}
-                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.status===s.key?s.color:"#dde5f5"}`,background:form.status===s.key?s.bg:"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.status===s.key?s.color:"#4472CA",cursor:"pointer",fontWeight:600}}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:16,marginBottom:12}}>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-              <input type="checkbox" checked={form.awaiting_estimate} onChange={e=>setForm(f=>({...f,awaiting_estimate:e.target.checked}))} style={{width:18,height:18,accentColor:"#4472CA"}}/>
-              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Awaiting Estimate</span>
-            </label>
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-              <input type="checkbox" checked={form.is_great_lawns} onChange={e=>setForm(f=>({...f,is_great_lawns:e.target.checked}))} style={{width:18,height:18,accentColor:"#22a86e"}}/>
-              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Great Lawns Customer</span>
-            </label>
-          </div>
-          <label style={{...labelStyle,color:"#4472CA"}}>Notes</label>
-          <textarea style={{...inputStyle,resize:"none",height:80}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Any details from the call..."/>
-        </div>
-        <button disabled={saving||!form.name.trim()||!form.task.trim()} onClick={saveNew}
-          style={{width:"100%",padding:"16px",background:saving?"#92B4F4":"#0A369D",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:saving?"not-allowed":"pointer"}}>
-          {saving?"Saving...":"Save Request"}
-        </button>
-      </div>
-    </div>
-  );
+  // -- SCHEDULE SIDEBAR --
+  const ScheduleSidebar = () => {
+    const today = new Date();
+    const days = Array.from({length: 7}, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const dayJobs = schedule.filter(j => j.date === dateStr);
+      const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday:"short" });
+      const dateLabel = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+      const count = dayJobs.length;
+      const countColor = count === 0 ? "#22a86e" : count <= 3 ? "#22a86e" : count <= 6 ? "#d4bc4a" : "#e05540";
+      const countBg = count === 0 ? "rgba(34,168,110,0.12)" : count <= 3 ? "rgba(34,168,110,0.12)" : count <= 6 ? "rgba(212,188,74,0.12)" : "rgba(224,85,64,0.12)";
+      return { dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday: i === 0 };
+    });
 
-  // -- DETAIL / EDIT VIEW --
-  if(view === "detail" && selected) {
-    const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
     return (
-      <div className="screen" style={{background:"#1e2d4a",overflowY:"auto"}}>
-        <Topbar title={selected.name} right={
-          <>
-            <button onClick={()=>deleteRequest(selected.id)} style={{background:"none",border:"1px solid #e0554044",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#e05540",cursor:"pointer"}}>Delete</button>
-            <button disabled={saving} onClick={saveEdit} style={{background:"#4472CA",border:"none",borderRadius:6,padding:"5px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#fff",cursor:"pointer",letterSpacing:1}}>{saving?"Saving...":"Save"}</button>
-            <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>← Back</button>
-          </>
-        }/>
-        <div style={{padding:"16px",overflowY:"auto",flex:1}}>
-          <div style={{...cardStyle, borderLeft:`4px solid ${statusColor}`, marginBottom:12}}>
-            <label style={{...labelStyle,color:"#4472CA"}}>Client Name</label>
-            <input style={{...inputStyle,marginBottom:10}} value={selected.name||""} onChange={e=>setSelected(s=>({...s,name:e.target.value}))}/>
-            <label style={{...labelStyle,color:"#4472CA"}}>Address</label>
-            <input style={{...inputStyle,marginBottom:10}} value={selected.address||""} onChange={e=>setSelected(s=>({...s,address:e.target.value}))}/>
-            <label style={{...labelStyle,color:"#4472CA"}}>Task / Service</label>
-            <input style={{...inputStyle,marginBottom:10}} value={selected.task||""} onChange={e=>setSelected(s=>({...s,task:e.target.value}))}/>
-            <label style={{...labelStyle,color:"#4472CA"}}>Priority</label>
-            <div style={{display:"flex",gap:8,marginBottom:10}}>
-              {["","High","Mid"].map(p=>(
-                <button key={p} onClick={()=>setSelected(s=>({...s,priority:p}))}
-                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.priority===p?"#4472CA":"#dde5f5"}`,background:selected.priority===p?"#0A369D":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.priority===p?"#fff":"#4472CA",cursor:"pointer",fontWeight:600}}>
-                  {p||"None"}
-                </button>
-              ))}
+      <div style={{width:200,minWidth:200,background:"#0d1635",borderRight:"1px solid rgba(68,114,202,0.2)",display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
+        <div style={{padding:"12px 14px 10px",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#CFDEE7",textTransform:"uppercase"}}>Schedule</div>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Next 7 days</div>
+        </div>
+        <div style={{overflowY:"auto",flex:1}}>
+          {days.map(({dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday}) => (
+            <div key={dateStr} style={{borderBottom:"1px solid rgba(68,114,202,0.1)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:isToday?"rgba(68,114,202,0.12)":"transparent"}}>
+                <div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#CFDEE7",letterSpacing:1}}>{dayName.toUpperCase()}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:0.5}}>{dateLabel}</div>
+                </div>
+                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,padding:"1px 7px",borderRadius:8,background:countBg,color:countColor,letterSpacing:1}}>
+                  {count === 0 ? "Open" : `${count} jobs`}
+                </div>
+              </div>
+              {dayJobs.slice(0,3).map(job => {
+                const prop = properties.find(p => p.id === job.property_id);
+                const assignment = assignments.find(a => a.job_id === job.id);
+                const truck = trucks.find(t => t.id === assignment?.truck_id);
+                const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
+                const dotColor = TRUCK_COLORS[truckIdx % TRUCK_COLORS.length] || "#92B4F4";
+                return (
+                  <div key={job.id} style={{display:"flex",alignItems:"center",gap:6,padding:"4px 14px 4px 20px"}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}></div>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#CFDEE7",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prop?.client_name||"Job"}</div>
+                    {truck && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",flexShrink:0}}>{truck.name.replace("Truck ","T-")}</div>}
+                  </div>
+                );
+              })}
+              {count > 3 && (
+                <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA55",letterSpacing:0.5}}>+{count - 3} more</div>
+              )}
+              {count === 0 && (
+                <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#22a86e",letterSpacing:0.5}}>Open day</div>
+              )}
             </div>
-            <label style={{...labelStyle,color:"#4472CA"}}>Status</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
-              {STATUSES.map(s=>(
-                <button key={s.key} onClick={()=>setSelected(r=>({...r,status:s.key}))}
-                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.status===s.key?s.color:"#dde5f5"}`,background:selected.status===s.key?s.bg:"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.status===s.key?s.color:"#4472CA",cursor:"pointer",fontWeight:600}}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:16,marginBottom:12}}>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                <input type="checkbox" checked={!!selected.awaiting_estimate} onChange={e=>setSelected(s=>({...s,awaiting_estimate:e.target.checked}))} style={{width:18,height:18,accentColor:"#4472CA"}}/>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Awaiting Estimate</span>
-              </label>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                <input type="checkbox" checked={!!selected.is_great_lawns} onChange={e=>setSelected(s=>({...s,is_great_lawns:e.target.checked}))} style={{width:18,height:18,accentColor:"#22a86e"}}/>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Great Lawns Customer</span>
-              </label>
-            </div>
-            <label style={{...labelStyle,color:"#4472CA"}}>Notes</label>
-            <textarea style={{...inputStyle,resize:"none",height:100}} value={selected.notes||""} onChange={e=>setSelected(s=>({...s,notes:e.target.value}))}/>
-          </div>
-          {selected.status === "schedule" && (
-            <button disabled={converting} onClick={convertToProperty}
-              style={{width:"100%",padding:"14px",background:converting?"#92B4F4":"#22a86e",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:converting?"not-allowed":"pointer",marginBottom:8}}>
-              {converting?"Converting...":"✓ Convert to Property"}
-            </button>
-          )}
+          ))}
         </div>
       </div>
     );
-  }
+  };
 
-  // -- KANBAN BOARD --
-  return (
-    <div className="screen" style={{background:"#1e2d4a",overflowY:"auto"}}>
-      <Topbar title="Spring 2026 Requests" right={
-        <>
-          <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
-          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Out</button>
-        </>
-      }/>
-
+  // -- BOARD CONTENT (shared between board, add, detail) --
+  const BoardContent = () => (
+    <>
       <div style={{padding:"12px 16px 8px",background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.2)"}}>
         <input type="text" placeholder="Search name, address, task..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
           style={{width:"100%",background:"#0d1635",border:"1px solid #4472CA44",borderRadius:8,padding:"9px 12px",color:"#CFDEE7",fontFamily:"'Barlow',sans-serif",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none"}}/>
@@ -3794,7 +3761,6 @@ function OfficeView({ onLogout }) {
           <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#92B4F4",letterSpacing:1}}>{filtered.length} requests</span>
         </div>
       </div>
-
       <div style={{overflowY:"auto",flex:1,padding:"16px 16px 40px"}}>
         {loading ? (
           <div style={{textAlign:"center",padding:"48px 0",color:"#92B4F4",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
@@ -3839,6 +3805,145 @@ function OfficeView({ onLogout }) {
             );
           })
         )}
+      </div>
+    </>
+  );
+
+  // -- ADD FORM --
+  if(view === "add") return (
+    <div className="screen" style={{background:"#1e2d4a"}}>
+      <Topbar title="New Request" right={
+        <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Cancel</button>
+      }/>
+      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+        <ScheduleSidebar/>
+        <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
+          <div style={{...cardStyle, marginBottom:12}}>
+            <label style={labelStyle}>Client Name *</label>
+            <input style={{...inputStyle,marginBottom:10}} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="First & Last Name"/>
+            <label style={labelStyle}>Address</label>
+            <input style={{...inputStyle,marginBottom:10}} value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St, Southboro"/>
+            <label style={labelStyle}>Task / Service *</label>
+            <input style={{...inputStyle,marginBottom:10}} value={form.task} onChange={e=>setForm(f=>({...f,task:e.target.value}))} placeholder="e.g. Spring Clean-Up, Mulch Install"/>
+            <label style={labelStyle}>Priority</label>
+            <div style={{display:"flex",gap:8,marginBottom:10}}>
+              {["","High","Mid"].map(p=>(
+                <button key={p} onClick={()=>setForm(f=>({...f,priority:p}))}
+                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.priority===p?"#4472CA":"#dde5f5"}`,background:form.priority===p?"#0A369D":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.priority===p?"#fff":"#4472CA",cursor:"pointer",fontWeight:600}}>
+                  {p||"None"}
+                </button>
+              ))}
+            </div>
+            <label style={labelStyle}>Status</label>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+              {STATUSES.map(s=>(
+                <button key={s.key} onClick={()=>setForm(f=>({...f,status:s.key}))}
+                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.status===s.key?s.color:"#dde5f5"}`,background:form.status===s.key?s.bg:"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.status===s.key?s.color:"#4472CA",cursor:"pointer",fontWeight:600}}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:16,marginBottom:12}}>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                <input type="checkbox" checked={form.awaiting_estimate} onChange={e=>setForm(f=>({...f,awaiting_estimate:e.target.checked}))} style={{width:18,height:18,accentColor:"#4472CA"}}/>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Awaiting Estimate</span>
+              </label>
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                <input type="checkbox" checked={form.is_great_lawns} onChange={e=>setForm(f=>({...f,is_great_lawns:e.target.checked}))} style={{width:18,height:18,accentColor:"#22a86e"}}/>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Great Lawns Customer</span>
+              </label>
+            </div>
+            <label style={labelStyle}>Notes</label>
+            <textarea style={{...inputStyle,resize:"none",height:80}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Any details from the call..."/>
+          </div>
+          <button disabled={saving||!form.name.trim()||!form.task.trim()} onClick={saveNew}
+            style={{width:"100%",padding:"16px",background:saving?"#92B4F4":"#0A369D",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:saving?"not-allowed":"pointer"}}>
+            {saving?"Saving...":"Save Request"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // -- DETAIL / EDIT VIEW --
+  if(view === "detail" && selected) {
+    const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
+    return (
+      <div className="screen" style={{background:"#1e2d4a"}}>
+        <Topbar title={selected.name} right={
+          <>
+            <button onClick={()=>deleteRequest(selected.id)} style={{background:"none",border:"1px solid #e0554044",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#e05540",cursor:"pointer"}}>Delete</button>
+            <button disabled={saving} onClick={saveEdit} style={{background:"#4472CA",border:"none",borderRadius:6,padding:"5px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#fff",cursor:"pointer",letterSpacing:1}}>{saving?"Saving...":"Save"}</button>
+            <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>← Back</button>
+          </>
+        }/>
+        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+          <ScheduleSidebar/>
+          <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
+            <div style={{...cardStyle, borderLeft:`4px solid ${statusColor}`, marginBottom:12}}>
+              <label style={labelStyle}>Client Name</label>
+              <input style={{...inputStyle,marginBottom:10}} value={selected.name||""} onChange={e=>setSelected(s=>({...s,name:e.target.value}))}/>
+              <label style={labelStyle}>Address</label>
+              <input style={{...inputStyle,marginBottom:10}} value={selected.address||""} onChange={e=>setSelected(s=>({...s,address:e.target.value}))}/>
+              <label style={labelStyle}>Task / Service</label>
+              <input style={{...inputStyle,marginBottom:10}} value={selected.task||""} onChange={e=>setSelected(s=>({...s,task:e.target.value}))}/>
+              <label style={labelStyle}>Priority</label>
+              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                {["","High","Mid"].map(p=>(
+                  <button key={p} onClick={()=>setSelected(s=>({...s,priority:p}))}
+                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.priority===p?"#4472CA":"#dde5f5"}`,background:selected.priority===p?"#0A369D":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.priority===p?"#fff":"#4472CA",cursor:"pointer",fontWeight:600}}>
+                    {p||"None"}
+                  </button>
+                ))}
+              </div>
+              <label style={labelStyle}>Status</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
+                {STATUSES.map(s=>(
+                  <button key={s.key} onClick={()=>setSelected(r=>({...r,status:s.key}))}
+                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.status===s.key?s.color:"#dde5f5"}`,background:selected.status===s.key?s.bg:"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.status===s.key?s.color:"#4472CA",cursor:"pointer",fontWeight:600}}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:16,marginBottom:12}}>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!selected.awaiting_estimate} onChange={e=>setSelected(s=>({...s,awaiting_estimate:e.target.checked}))} style={{width:18,height:18,accentColor:"#4472CA"}}/>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Awaiting Estimate</span>
+                </label>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!selected.is_great_lawns} onChange={e=>setSelected(s=>({...s,is_great_lawns:e.target.checked}))} style={{width:18,height:18,accentColor:"#22a86e"}}/>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Great Lawns Customer</span>
+                </label>
+              </div>
+              <label style={labelStyle}>Notes</label>
+              <textarea style={{...inputStyle,resize:"none",height:100}} value={selected.notes||""} onChange={e=>setSelected(s=>({...s,notes:e.target.value}))}/>
+            </div>
+            {selected.status === "schedule" && (
+              <button disabled={converting} onClick={convertToProperty}
+                style={{width:"100%",padding:"14px",background:converting?"#92B4F4":"#22a86e",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:converting?"not-allowed":"pointer",marginBottom:8}}>
+                {converting?"Converting...":"✓ Convert to Property"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -- KANBAN BOARD --
+  return (
+    <div className="screen" style={{background:"#1e2d4a"}}>
+      <Topbar title="Spring 2026 Requests" right={
+        <>
+          <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
+          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Out</button>
+        </>
+      }/>
+      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+        <ScheduleSidebar/>
+        <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <BoardContent/>
+        </div>
       </div>
     </div>
   );
