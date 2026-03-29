@@ -957,13 +957,6 @@ const CONTACTS = [
   {name:"Nikki",role:"IT & App Support",   initials:"NS",phone:"tel:+15084048480"},
 ];
 
-const TOOL_INVENTORY = [
-  {category:"Hand Tools",tools:[{id:"rake",name:"Rake",total:8},{id:"shovel",name:"Shovel",total:6},{id:"hoe",name:"Garden Hoe",total:5},{id:"trowel",name:"Hand Trowel",total:10},{id:"shears",name:"Pruning Shears",total:7},{id:"loppers",name:"Loppers",total:4},{id:"pitchfork",name:"Pitchfork",total:3},{id:"broom",name:"Push Broom",total:6}]},
-  {category:"Power Tools",tools:[{id:"blower",name:"Leaf Blower",total:6},{id:"trimmer",name:"String Trimmer",total:5},{id:"hedger",name:"Hedge Trimmer",total:4},{id:"chainsaw",name:"Chainsaw",total:2},{id:"edger",name:"Edger",total:3}]},
-  {category:"Trailer & Hauling",tools:[{id:"tarp",name:"Heavy Tarp",total:8},{id:"straps",name:"Tie-Down Straps",total:12},{id:"ramps",name:"Loading Ramps",total:4},{id:"wheelbarrow",name:"Wheelbarrow",total:5},{id:"buckets",name:"Buckets (5gal)",total:15}]},
-  {category:"Safety & PPE",tools:[{id:"gloves",name:"Work Gloves",total:20},{id:"glasses",name:"Safety Glasses",total:15},{id:"vest",name:"Safety Vest",total:10},{id:"earpro",name:"Ear Protection",total:10}]},
-];
-
 const DOT_CATEGORIES = [
   {key:"exterior",items:[{key:"tires_exterior",priority:"high"},{key:"lug_nuts",priority:"high"},{key:"lights_exterior",priority:"high"},{key:"mirrors",priority:"medium"},{key:"windshield",priority:"medium"},{key:"wipers",priority:"medium"},{key:"body_frame",priority:"medium"}]},
   {key:"trailer", items:[{key:"tires_trailer",priority:"high"},{key:"lights_trailer",priority:"high"},{key:"hitch",priority:"high"},{key:"safety_chains",priority:"high"},{key:"trailer_brakes",priority:"high"},{key:"load_secured",priority:"high"},{key:"ramp_latch",priority:"medium"}]},
@@ -989,12 +982,7 @@ const HR_LINKS = [
 ];
 
 function getTodayStr()  { return new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}); }
-function getTimeStr() { 
-  return new Date().toLocaleTimeString("en-US", {
-    hour:"2-digit", minute:"2-digit",
-    timeZone:"America/New_York"
-  }); 
-}
+
 // eslint-disable-next-line no-unused-vars
  function getTodayKey()  {
   const d = new Date();
