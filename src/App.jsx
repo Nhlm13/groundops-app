@@ -3027,21 +3027,33 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
         <label style={labelStyle}>Property *</label>
         <input type="text" placeholder="Search by name or address..."
           value={fields.propertySearch||""}
-          onChange={e=>set("propertySearch",e.target.value)}
-          style={{...inputStyle,marginBottom:6}}/>
-        <select value={fields.property_id} onChange={e=>set("property_id",e.target.value)}
-          style={{...inputStyle,appearance:"none"}}>
-          <option value="">Select a property...</option>
-          {properties
-            .filter(p => !fields.propertySearch || 
+          onChange={e=>{set("propertySearch",e.target.value);set("property_id","");}}
+          style={{...inputStyle,marginBottom:fields.propertySearch?0:10}}/>
+        {fields.propertySearch && (
+          <div style={{maxHeight:200,overflowY:"auto",border:"1px solid var(--moss)",borderTop:"none",borderRadius:"0 0 8px 8px",marginBottom:10}}>
+            {properties
+              .filter(p =>
+                p.client_name?.toLowerCase().includes(fields.propertySearch.toLowerCase()) ||
+                p.address?.toLowerCase().includes(fields.propertySearch.toLowerCase()))
+              .slice(0,20)
+              .map(p=>(
+                <div key={p.id} onClick={()=>{set("property_id",p.id);set("propertySearch",`${p.client_name} — ${p.address}`);}}
+                  style={{padding:"10px 12px",cursor:"pointer",borderTop:"1px solid var(--moss)",background:fields.property_id===p.id?"rgba(42,90,149,0.1)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>
+                  <div style={{fontWeight:700}}>{p.client_name}</div>
+                  <div style={{fontSize:11,color:"var(--stone)",marginTop:2}}>{p.address}</div>
+                </div>
+              ))}
+            {properties.filter(p =>
               p.client_name?.toLowerCase().includes(fields.propertySearch.toLowerCase()) ||
-              p.address?.toLowerCase().includes(fields.propertySearch.toLowerCase()))
-            .map(p=>(
-              <option key={p.id} value={p.id}>{p.client_name} — {p.address}</option>
-            ))}
-        </select>
+              p.address?.toLowerCase().includes(fields.propertySearch.toLowerCase())).length === 0 && (
+              <div style={{padding:"10px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)"}}>No results found</div>
+            )}
+          </div>
+        )}
+
         <label style={labelStyle}>Date *</label>
-        <input style={inputStyle} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
+        <input style={{...inputStyle,boxSizing:"border-box"}} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
+
         <label style={labelStyle}>Services * (select all that apply)</label>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
           {SERVICE_TYPES.map(svc=>(
