@@ -456,6 +456,7 @@ const SERVICE_TYPES = [
   { id: "lighting_takedown",en: "Lighting — Takedown",       es: "Iluminación — Desmontaje",  pt: "Iluminação — Desmontagem" },
 ];
 
+// eslint-disable-next-line no-unused-vars
 function getServiceLabel(id, lang) {
   const s = SERVICE_TYPES.find(t => t.id === id);
   if(!s) return id;
