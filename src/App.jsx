@@ -2280,7 +2280,6 @@ function TruckHome({ truck, initialDivision, onLogout, checkouts, setCheckouts }
   const [propInspectCount, setPropInspectCount]= useState(saved?.propInspectCount || 0);
   const [eodComplete,      setEodComplete]     = useState(saved?.eodComplete      || false);
   const [division]                             = useState(initialDivision||"");
-  const myCheckoutCount = (checkouts[truck.id]||[]).reduce((s,c)=>s+c.qty,0);
 
   useEffect(() => {
     saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
