@@ -1660,6 +1660,9 @@ function UniformGuideInline() {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
+function ToolsTab({
+
 // -- TOOLS TAB -----------------------------------------------------------------
 function ToolsTab({ truck, checkouts, setCheckouts }) {
   const t = useT();
@@ -1980,6 +1983,7 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
       setLoading(false);
     };
     if(truck.supabaseId) fetchJobs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [truck.supabaseId, today]);
 
   useEffect(() => {
