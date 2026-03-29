@@ -1923,6 +1923,19 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
 }
 
 // -- JOBS TAB -----------------------------------------------------------------
+const SERVICE_GROUPS = [
+  { label: { en: "Lawn & Grounds", es: "Césped y Jardín", pt: "Gramado e Jardim" },
+    ids: ["mowing","edging","trimming","weeding"] },
+  { label: { en: "Planting & Beds", es: "Plantación y Arriates", pt: "Plantio e Canteiros" },
+    ids: ["pruning","mulching","planting"] },
+  { label: { en: "Irrigation", es: "Irrigación", pt: "Irrigação" },
+    ids: ["irrigation_startup","irrigation_blowout","irrigation_install"] },
+  { label: { en: "Projects", es: "Proyectos", pt: "Projetos" },
+    ids: ["construction","landscape_install","seasonal_cleanup","special_project"] },
+  { label: { en: "Lighting", es: "Iluminación", pt: "Iluminação" },
+    ids: ["lighting_install","lighting_takedown"] },
+];
+
 function JobsTab({ truck }) {
   const lang = useLang();
   const t = useT();
@@ -1967,7 +1980,6 @@ function JobsTab({ truck }) {
     if(truck.supabaseId) fetchJobs();
   }, [truck.supabaseId, today]);
 
-  // Tick timer every second
   useEffect(() => {
     if(activeServiceId && activeStart) {
       timerRef.current = setInterval(() => {
@@ -1978,6 +1990,18 @@ function JobsTab({ truck }) {
     return () => clearInterval(timerRef.current);
   }, [activeServiceId, activeStart, timeLogs]);
 
+  // Update job status to in_progress when started
+  const startJob = async (job) => {
+    await supabase.from("jobs").update({ status: "in_progress" }).eq("id", job.id);
+    setJobs(prev => prev.map(j => j.id === job.id ? {...j, status: "in_progress"} : j));
+    setActiveJob({...job, status: "in_progress"});
+    setActiveServiceId(null);
+    setActiveStart(null);
+    setTimeLogs({});
+    setElapsed({});
+    setDescriptions({});
+  };
+
   const formatTime = (secs) => {
     if(!secs) return `0${t.mins}`;
     const h = Math.floor(secs / 3600);
@@ -1986,14 +2010,12 @@ function JobsTab({ truck }) {
   };
 
   const switchService = (serviceId) => {
-    // Save current timer
     if(activeServiceId && activeStart) {
       const secs = Math.floor((Date.now() - activeStart) / 1000);
       setTimeLogs(prev => ({...prev, [activeServiceId]: (prev[activeServiceId] || 0) + secs}));
     }
     clearInterval(timerRef.current);
     if(serviceId === activeServiceId) {
-      // Pause
       setActiveServiceId(null);
       setActiveStart(null);
     } else {
@@ -2002,18 +2024,8 @@ function JobsTab({ truck }) {
     }
   };
 
-  const startJob = (job) => {
-    setActiveJob(job);
-    setActiveServiceId(null);
-    setActiveStart(null);
-    setTimeLogs({});
-    setElapsed({});
-    setDescriptions({});
-  };
-
   const handleComplete = async () => {
     if(!activeJob) return;
-    // Save current active timer
     let finalLogs = {...timeLogs};
     if(activeServiceId && activeStart) {
       const secs = Math.floor((Date.now() - activeStart) / 1000);
@@ -2047,7 +2059,6 @@ function JobsTab({ truck }) {
             storage_url: photoUrl,
           });
         }
-        // Save time logs
         const timeEntries = Object.entries(finalLogs).filter(([,secs]) => secs > 0);
         if(timeEntries.length > 0) {
           await supabase.from("job_time_logs").insert(
@@ -2063,17 +2074,11 @@ function JobsTab({ truck }) {
           );
         }
       }
-
+      await supabase.from("jobs").update({ status: "completed" }).eq("id", activeJob.id);
       setJobs(prev => prev.map(j => j.id === activeJob.id ? {...j, status: "completed"} : j));
-      setActiveJob(null);
-      setActiveServiceId(null);
-      setActiveStart(null);
-      setTimeLogs({});
-      setElapsed({});
-      setCompleting(null);
-      setCompletionNote("");
-      setCompletionPhoto(null);
-      setCompletionPhotoFile(null);
+      setActiveJob(null); setActiveServiceId(null); setActiveStart(null);
+      setTimeLogs({}); setElapsed({}); setCompleting(null);
+      setCompletionNote(""); setCompletionPhoto(null); setCompletionPhotoFile(null);
     } catch(e){ console.warn(e); }
     setSubmitting(false);
   };
@@ -2119,31 +2124,35 @@ function JobsTab({ truck }) {
         )}
 
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.selectService}</div>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
-          {SERVICE_TYPES.map(svc => {
-            const isActive = activeServiceId === svc.id;
-            const secs = elapsed[svc.id] || 0;
-            return (
-              <button key={svc.id} onClick={()=>switchService(svc.id)}
-                style={{padding:"10px 14px",borderRadius:8,border:`2px solid ${isActive?"var(--lime)":"var(--moss)"}`,background:isActive?"rgba(74,109,32,0.2)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:isActive?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:80,position:"relative"}}>
-                {isActive && <span style={{position:"absolute",top:4,right:6,width:8,height:8,borderRadius:"50%",background:"var(--lime)",animation:"pulse 1s infinite"}}/>}
-                <span>{svc[lang] || svc.en}</span>
-                {secs > 0 && <span style={{fontSize:10,color:isActive?"var(--lime)":"var(--stone)",letterSpacing:0.5}}>{formatTime(secs)}</span>}
-              </button>
-            );
-          })}
-        </div>
 
-        {/* Description fields for services that need it */}
+        {SERVICE_GROUPS.map(group => (
+          <div key={group.label.en} style={{marginBottom:12}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--moss)",textTransform:"uppercase",marginBottom:6}}>{group.label[lang]||group.label.en}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {group.ids.map(id => {
+                const svc = SERVICE_TYPES.find(s => s.id === id);
+                if(!svc) return null;
+                const isActive = activeServiceId === svc.id;
+                const secs = elapsed[svc.id] || 0;
+                return (
+                  <button key={svc.id} onClick={()=>switchService(svc.id)}
+                    style={{padding:"8px 12px",borderRadius:8,border:`2px solid ${isActive?"var(--lime)":"var(--moss)"}`,background:isActive?"rgba(74,109,32,0.2)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:isActive?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}}>
+                    {isActive && <span style={{position:"absolute",top:3,right:5,width:7,height:7,borderRadius:"50%",background:"var(--lime)",animation:"pulse 1s infinite"}}/>}
+                    <span>{svc[lang]||svc.en}</span>
+                    {secs > 0 && <span style={{fontSize:10,color:isActive?"var(--lime)":"var(--stone)",letterSpacing:0.5}}>{formatTime(secs)}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
         {SERVICE_TYPES.filter(s => s.hasDescription && (elapsed[s.id] > 0 || activeServiceId === s.id)).map(svc => (
           <div key={svc.id} style={{marginBottom:10}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>{svc[lang] || svc.en} — {t.projectDescription}</div>
-            <textarea
-              style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:13,resize:"none",height:56}}
-              placeholder={t.projectDescPlaceholder}
-              value={descriptions[svc.id] || ""}
-              onChange={e=>setDescriptions(prev=>({...prev,[svc.id]:e.target.value}))}
-            />
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>{svc[lang]||svc.en} — {t.projectDescription}</div>
+            <textarea style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:13,resize:"none",height:56}}
+              placeholder={t.projectDescPlaceholder} value={descriptions[svc.id]||""}
+              onChange={e=>setDescriptions(prev=>({...prev,[svc.id]:e.target.value}))}/>
           </div>
         ))}
 
@@ -2160,13 +2169,9 @@ function JobsTab({ truck }) {
     return (
       <div style={{animation:"fadeUp 0.2s ease both"}}>
         <button className="back-btn" style={{marginBottom:14}} onClick={()=>setCompleting(null)}><Ic n="back"/> {t.back}</button>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.notes} ({t.cancel})</div>
-        <textarea
-          style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:64,marginBottom:10}}
-          placeholder="Any notes about this job..."
-          value={completionNote}
-          onChange={e=>setCompletionNote(e.target.value)}
-        />
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Notes (optional)</div>
+        <textarea style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:64,marginBottom:10}}
+          placeholder="Any notes about this job..." value={completionNote} onChange={e=>setCompletionNote(e.target.value)}/>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Photo (optional)</div>
         <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(!f)return;setCompletionPhotoFile(f);setCompletionPhoto(URL.createObjectURL(f));}}/>
         {!completionPhoto ? (
@@ -2180,20 +2185,17 @@ function JobsTab({ truck }) {
             <button onClick={()=>{setCompletionPhoto(null);setCompletionPhotoFile(null);}} style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",border:"none",borderRadius:"50%",width:28,height:28,color:"#fff",cursor:"pointer",fontSize:14}}>✕</button>
           </div>
         )}
-
-        {/* Time summary */}
         {Object.keys(elapsed).length > 0 && (
           <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:12,marginBottom:12}}>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.timeSummary}</div>
             {SERVICE_TYPES.filter(s => elapsed[s.id] > 0).map(svc => (
               <div key={svc.id} style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>{svc[lang] || svc.en}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>{svc[lang]||svc.en}</span>
                 <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--lime)",fontWeight:700}}>{formatTime(elapsed[svc.id])}</span>
               </div>
             ))}
           </div>
         )}
-
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>setCompleting(null)} style={{flex:1,padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.cancel}</button>
           <button disabled={submitting} onClick={handleComplete} style={{flex:2,padding:"12px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer"}}>{submitting?"Saving...":t.submitJob}</button>
@@ -2202,7 +2204,6 @@ function JobsTab({ truck }) {
     );
   }
 
-  // Job list view
   if(jobs.length === 0) return (
     <div style={{textAlign:"center",padding:"48px 0"}}>
       <Ic n="map" style={{width:40,height:40,color:"var(--moss)",marginBottom:12}}/>
@@ -2216,13 +2217,15 @@ function JobsTab({ truck }) {
       {jobs.map(job => {
         const property = prop(job);
         const isCompleted = job.status === "completed";
+        const isInProgress = job.status === "in_progress";
         return (
-          <div key={job.id} style={{background:"var(--bark)",border:`1px solid ${isCompleted?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderLeft:`4px solid ${isCompleted?"var(--leaf)":"var(--lime)"}`,borderRadius:10,marginBottom:12,overflow:"hidden",opacity:isCompleted?0.8:1}}>
+          <div key={job.id} style={{background:"var(--bark)",border:`1px solid ${isCompleted?"rgba(74,109,32,0.3)":isInProgress?"var(--lime)":"var(--moss)"}`,borderLeft:`4px solid ${isCompleted?"var(--leaf)":isInProgress?"var(--lime)":"var(--moss)"}`,borderRadius:10,marginBottom:12,overflow:"hidden",opacity:isCompleted?0.8:1}}>
             {property?.photo_url && <img src={property.photo_url} alt="property" style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>}
             <div style={{padding:"12px 14px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isCompleted?"var(--leaf)":"var(--lime)",letterSpacing:2,lineHeight:1}}>{property?.client_name||"Unknown Property"}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isCompleted?"var(--leaf)":isInProgress?"var(--lime)":"var(--cream)",letterSpacing:2,lineHeight:1}}>{property?.client_name||"Unknown Property"}</div>
                 {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>{t.jobComplete}</span>}
+                {isInProgress && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--lime)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>⏱ In Progress</span>}
               </div>
               <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>📍 {property?.address}</div>
               {job.service_types?.length > 0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
@@ -2246,8 +2249,8 @@ function JobsTab({ truck }) {
               )}
               {!isCompleted && (
                 <button onClick={()=>startJob(job)}
-                  style={{width:"100%",padding:"12px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
-                  {t.startJob}
+                  style={{width:"100%",padding:"12px",background:isInProgress?"rgba(74,109,32,0.2)":"var(--lime)",border:isInProgress?"2px solid var(--lime)":"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:isInProgress?"var(--lime)":"var(--earth)",cursor:"pointer",marginTop:4}}>
+                  {isInProgress?"Resume Job":t.startJob}
                 </button>
               )}
             </div>
@@ -3400,7 +3403,58 @@ function ManagerZone({ onLogout }) {
     </div>
   );
 
-  const ActivityTab = () => {
+const ActivityTab = () => {
+    const [jobData, setJobData] = useState({ active: [], completed: [] });
+    const [jobsLoading, setJobsLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchJobData = async () => {
+        setJobsLoading(true);
+        const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+        if(selectedDate !== today) { setJobsLoading(false); return; }
+
+        const { data: activeJobs } = await supabase
+          .from("jobs").select("*, properties(client_name, address)")
+          .eq("company_id", COMPANY_ID).eq("date", selectedDate)
+          .eq("status", "in_progress");
+
+        const { data: completedJobs } = await supabase
+          .from("jobs").select("*, properties(client_name, address)")
+          .eq("company_id", COMPANY_ID).eq("date", selectedDate)
+          .eq("status", "completed");
+
+        const allJobIds = [...(activeJobs||[]), ...(completedJobs||[])].map(j => j.id);
+        let timeLogs = [];
+        let jobAssignments = [];
+        if(allJobIds.length > 0) {
+          const [{ data: tl }, { data: ja }] = await Promise.all([
+            supabase.from("job_time_logs").select("*").in("job_id", allJobIds),
+            supabase.from("job_assignments").select("job_id, truck_id").in("job_id", allJobIds),
+          ]);
+          timeLogs = tl || [];
+          jobAssignments = ja || [];
+        }
+
+        const enrich = (jobs) => jobs.map(job => ({
+          ...job,
+          timeLogs: timeLogs.filter(l => l.job_id === job.id),
+          truck: trucks.find(t => t.id === jobAssignments.find(a => a.job_id === job.id)?.truck_id),
+        }));
+
+        setJobData({ active: enrich(activeJobs||[]), completed: enrich(completedJobs||[]) });
+        setJobsLoading(false);
+      };
+      fetchJobData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDate, sessions]);
+
+    const formatSecs = (secs) => {
+      if(!secs) return "0m";
+      const h = Math.floor(secs / 3600);
+      const m = Math.floor((secs % 3600) / 60);
+      return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    };
+
     if(sessions.length === 0) return (
       <div>
         <DateBar/>
@@ -3416,6 +3470,7 @@ function ManagerZone({ onLogout }) {
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:0.5,marginBottom:12}}>
           {lastRefresh && `Updated ${lastRefresh} · `}{sessions.length} truck{sessions.length!==1?"s":""} active
         </div>
+
         {sessions.map(session => {
           const hasBriefing = briefings.some(b => b.session_id === session.id);
           const dotRecord = dots.find(d => d.session_id === session.id);
@@ -3433,12 +3488,8 @@ function ManagerZone({ onLogout }) {
                 <Ic n="truck" style={{width:14,height:14,color:"var(--lime)",flexShrink:0}}/>
                 <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--lime)",letterSpacing:1}}>{truck?.name || "Unknown Truck"}</span>
                 <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",marginLeft:4}}>{session.crew_name}</span>
-                {dotFlagged && (
-                  <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:4,padding:"2px 8px",color:"var(--danger)",letterSpacing:1,textTransform:"uppercase"}}>DOT Flagged</span>
-                )}
-                {!dotFlagged && missingRequired && (
-                  <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(160,96,16,0.12)",border:"1px solid var(--warn)",borderRadius:4,padding:"2px 8px",color:"var(--warn)",letterSpacing:1,textTransform:"uppercase"}}>Incomplete</span>
-                )}
+                {dotFlagged && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(192,68,42,0.12)",border:"1px solid var(--danger)",borderRadius:4,padding:"2px 8px",color:"var(--danger)",letterSpacing:1,textTransform:"uppercase"}}>DOT Flagged</span>}
+                {!dotFlagged && missingRequired && <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,background:"rgba(160,96,16,0.12)",border:"1px solid var(--warn)",borderRadius:4,padding:"2px 8px",color:"var(--warn)",letterSpacing:1,textTransform:"uppercase"}}>Incomplete</span>}
               </div>
               <div style={{padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
                 {[
@@ -3458,6 +3509,62 @@ function ManagerZone({ onLogout }) {
             </div>
           );
         })}
+
+        {/* Active Jobs */}
+        {!jobsLoading && jobData.active.length > 0 && (
+          <div style={{marginTop:16}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--lime)",textTransform:"uppercase",marginBottom:8}}>⏱ Jobs In Progress</div>
+            {jobData.active.map(job => (
+              <div key={job.id} style={{background:"var(--bark)",border:"1px solid var(--lime)",borderLeft:"4px solid var(--lime)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.properties?.client_name||"Unknown"}</div>
+                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",letterSpacing:1}}>🚛 {job.truck?.name||"Unassigned"}</span>
+                </div>
+                <div style={{fontSize:12,color:"var(--stone)",marginBottom:job.timeLogs.length>0?6:0}}>{job.properties?.address}</div>
+                {job.timeLogs.length > 0 && (
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {job.timeLogs.map(log => (
+                      <span key={log.id} style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(74,109,32,0.1)",border:"1px solid var(--leaf)",color:"var(--lime)"}}>
+                        {getServiceLabel(log.service_type,"en")} · {formatSecs(log.duration_seconds)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Completed Jobs */}
+        {!jobsLoading && jobData.completed.length > 0 && (
+          <div style={{marginTop:16}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>✓ Completed Jobs</div>
+            {jobData.completed.map(job => {
+              const totalSecs = job.timeLogs.reduce((sum,l) => sum+(l.duration_seconds||0), 0);
+              return (
+                <div key={job.id} style={{background:"var(--bark)",border:"1px solid rgba(74,109,32,0.3)",borderLeft:"4px solid var(--leaf)",borderRadius:9,padding:"12px 14px",marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.properties?.client_name||"Unknown"}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {totalSecs > 0 && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",fontWeight:700}}>{formatSecs(totalSecs)}</span>}
+                      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--stone)",letterSpacing:1}}>🚛 {job.truck?.name||"—"}</span>
+                    </div>
+                  </div>
+                  <div style={{fontSize:12,color:"var(--stone)",marginBottom:job.timeLogs.length>0?6:0}}>{job.properties?.address}</div>
+                  {job.timeLogs.length > 0 && (
+                    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                      {job.timeLogs.map(log => (
+                        <span key={log.id} style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,padding:"2px 8px",borderRadius:4,background:"rgba(74,109,32,0.08)",border:"1px solid rgba(74,109,32,0.3)",color:"var(--stone)"}}>
+                          {getServiceLabel(log.service_type,"en")} · {formatSecs(log.duration_seconds)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
