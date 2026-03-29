@@ -18,6 +18,8 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 @keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
 @keyframes slideIn { from { opacity:0; transform:translateX(32px); } to { opacity:1; transform:translateX(0); } }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+`;
 
 .splash { flex:1; display:flex; flex-direction:column; align-items:center; padding:36px 24px 60px; padding-top:calc(36px + env(safe-area-inset-top)); position:relative; z-index:1; animation:fadeUp 0.4s ease both; overflow-y:auto; }
 .logo-wrap { display:flex; flex-direction:column; align-items:center; margin-bottom:32px; }
@@ -1923,62 +1925,106 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
 
 // -- JOBS TAB -----------------------------------------------------------------
 function JobsTab({ truck }) {
+  const lang = useLang();
+  const t = useT();
   const [jobs, setJobs] = useState([]);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeJob, setActiveJob] = useState(null);
+  const [activeServiceId, setActiveServiceId] = useState(null);
+  const [timeLogs, setTimeLogs] = useState({});
+  const [activeStart, setActiveStart] = useState(null);
+  const [elapsed, setElapsed] = useState({});
   const [completing, setCompleting] = useState(null);
   const [completionNote, setCompletionNote] = useState("");
   const [completionPhoto, setCompletionPhoto] = useState(null);
   const [completionPhotoFile, setCompletionPhotoFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [descriptions, setDescriptions] = useState({});
   const photoRef = useRef();
+  const timerRef = useRef(null);
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
   useEffect(() => {
-   const fetchJobs = async () => {
+    const fetchJobs = async () => {
       setLoading(true);
       const { data: assignments } = await supabase
-        .from("job_assignments")
-        .select("job_id, truck_id")
-        .eq("truck_id", truck.supabaseId);
-
+        .from("job_assignments").select("job_id, truck_id").eq("truck_id", truck.supabaseId);
       if(!assignments || assignments.length === 0) { setLoading(false); return; }
-
       const jobIds = assignments.map(a => a.job_id);
       const { data: jobData } = await supabase
-        .from("jobs")
-        .select("*")
-        .in("id", jobIds)
-        .eq("date", today)
-        .order("sort_order");
-
+        .from("jobs").select("*").in("id", jobIds).eq("date", today).order("sort_order");
       if(!jobData || jobData.length === 0) { setLoading(false); return; }
-
       const propIds = [...new Set(jobData.map(j => j.property_id))];
       const [{ data: propData }, { data: completionData }] = await Promise.all([
         supabase.from("properties").select("id, client_name, address, service_notes, special_instructions, photo_url, service_types").in("id", propIds),
         supabase.from("job_completions").select("job_id").in("job_id", jobIds),
       ]);
-
       const completedJobIds = new Set((completionData || []).map(c => c.job_id));
-      const jobsWithStatus = jobData.map(j => ({
-        ...j,
-        status: completedJobIds.has(j.id) ? "completed" : j.status,
-      }));
-
-      setJobs(jobsWithStatus);
+      setJobs(jobData.map(j => ({...j, status: completedJobIds.has(j.id) ? "completed" : j.status})));
       setProperties(propData || []);
       setLoading(false);
     };
     if(truck.supabaseId) fetchJobs();
   }, [truck.supabaseId, today]);
 
-  const handleComplete = async (job) => {
+  // Tick timer every second
+  useEffect(() => {
+    if(activeServiceId && activeStart) {
+      timerRef.current = setInterval(() => {
+        const secs = Math.floor((Date.now() - activeStart) / 1000);
+        setElapsed(prev => ({...prev, [activeServiceId]: (timeLogs[activeServiceId] || 0) + secs}));
+      }, 1000);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [activeServiceId, activeStart, timeLogs]);
+
+  const formatTime = (secs) => {
+    if(!secs) return `0${t.mins}`;
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    return h > 0 ? `${h}${t.hrs} ${m}${t.mins}` : `${m}${t.mins}`;
+  };
+
+  const switchService = (serviceId) => {
+    // Save current timer
+    if(activeServiceId && activeStart) {
+      const secs = Math.floor((Date.now() - activeStart) / 1000);
+      setTimeLogs(prev => ({...prev, [activeServiceId]: (prev[activeServiceId] || 0) + secs}));
+    }
+    clearInterval(timerRef.current);
+    if(serviceId === activeServiceId) {
+      // Pause
+      setActiveServiceId(null);
+      setActiveStart(null);
+    } else {
+      setActiveServiceId(serviceId);
+      setActiveStart(Date.now());
+    }
+  };
+
+  const startJob = (job) => {
+    setActiveJob(job);
+    setActiveServiceId(null);
+    setActiveStart(null);
+    setTimeLogs({});
+    setElapsed({});
+    setDescriptions({});
+  };
+
+  const handleComplete = async () => {
+    if(!activeJob) return;
+    // Save current active timer
+    let finalLogs = {...timeLogs};
+    if(activeServiceId && activeStart) {
+      const secs = Math.floor((Date.now() - activeStart) / 1000);
+      finalLogs[activeServiceId] = (finalLogs[activeServiceId] || 0) + secs;
+    }
     setSubmitting(true);
     try {
       let photoUrl = null;
       if(completionPhotoFile) {
-        const fileName = `${job.id}_${Date.now()}.jpg`;
+        const fileName = `${activeJob.id}_${Date.now()}.jpg`;
         const { error: uploadError } = await supabase.storage
           .from("job-completion-photos")
           .upload(fileName, completionPhotoFile, { contentType: completionPhotoFile.type || "image/jpeg" });
@@ -1987,27 +2033,44 @@ function JobsTab({ truck }) {
           photoUrl = urlData.publicUrl;
         }
       }
-      await supabase.from("job_completions").insert({
-        job_id: job.id,
+      const { data: completion } = await supabase.from("job_completions").insert({
+        job_id: activeJob.id,
         session_id: truck.sessionId || null,
         notes: completionNote || null,
         materials_used: [],
         completed_at: new Date().toISOString(),
-      });
-      if(photoUrl) {
-        const { data: completion } = await supabase
-          .from("job_completions")
-          .select("id")
-          .eq("job_id", job.id)
-          .single();
-        if(completion) {
+      }).select().single();
+
+      if(completion) {
+        if(photoUrl) {
           await supabase.from("job_completion_photos").insert({
             job_completion_id: completion.id,
             storage_url: photoUrl,
           });
         }
+        // Save time logs
+        const timeEntries = Object.entries(finalLogs).filter(([,secs]) => secs > 0);
+        if(timeEntries.length > 0) {
+          await supabase.from("job_time_logs").insert(
+            timeEntries.map(([serviceId, secs]) => ({
+              job_id: activeJob.id,
+              session_id: truck.sessionId || null,
+              company_id: COMPANY_ID,
+              service_type: serviceId,
+              started_at: new Date().toISOString(),
+              ended_at: new Date().toISOString(),
+              duration_seconds: secs,
+            }))
+          );
+        }
       }
-      setJobs(prev => prev.map(j => j.id === job.id ? {...j, status: "completed"} : j));
+
+      setJobs(prev => prev.map(j => j.id === activeJob.id ? {...j, status: "completed"} : j));
+      setActiveJob(null);
+      setActiveServiceId(null);
+      setActiveStart(null);
+      setTimeLogs({});
+      setElapsed({});
       setCompleting(null);
       setCompletionNote("");
       setCompletionPhoto(null);
@@ -2016,46 +2079,154 @@ function JobsTab({ truck }) {
     setSubmitting(false);
   };
 
-  const handlePhotoSelect = e => {
-    const file = e.target.files?.[0];
-    if(!file) return;
-    setCompletionPhotoFile(file);
-    setCompletionPhoto(URL.createObjectURL(file));
-  };
-
   const prop = (job) => properties.find(p => p.id === job.property_id);
 
   if(loading) return (
-    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading jobs...</div>
+    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>{t.loading}</div>
   );
 
+  // Active job timer view
+  if(activeJob && !completing) {
+    const property = prop(activeJob);
+    const totalSecs = Object.values(elapsed).reduce((a,b) => a+b, 0);
+    return (
+      <div style={{animation:"fadeUp 0.2s ease both"}}>
+        <button className="back-btn" style={{marginBottom:14}} onClick={()=>{
+          if(activeServiceId && activeStart) {
+            const secs = Math.floor((Date.now() - activeStart) / 1000);
+            setTimeLogs(prev => ({...prev, [activeServiceId]: (prev[activeServiceId] || 0) + secs}));
+          }
+          clearInterval(timerRef.current);
+          setActiveJob(null); setActiveServiceId(null); setActiveStart(null);
+        }}><Ic n="back"/> {t.back}</button>
+
+        <div style={{background:"var(--bark)",border:"1px solid var(--lime)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:14,marginBottom:12}}>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"var(--lime)",letterSpacing:2,lineHeight:1}}>{property?.client_name}</div>
+          <div style={{fontSize:13,color:"var(--stone)",marginTop:2}}>📍 {property?.address}</div>
+          {totalSecs > 0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",marginTop:6,letterSpacing:1}}>{t.totalTime}: <span style={{color:"var(--lime)",fontWeight:700}}>{formatTime(totalSecs)}</span></div>}
+        </div>
+
+        {property?.service_notes && (
+          <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--warn)",textTransform:"uppercase",marginBottom:2}}>Access Notes</div>
+            <div style={{fontSize:12,color:"var(--cream)"}}>{property.service_notes}</div>
+          </div>
+        )}
+        {property?.special_instructions && (
+          <div style={{background:"rgba(42,90,149,0.08)",border:"1px solid rgba(42,90,149,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:2}}>Special Instructions</div>
+            <div style={{fontSize:12,color:"var(--cream)"}}>{property.special_instructions}</div>
+          </div>
+        )}
+
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.selectService}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+          {SERVICE_TYPES.map(svc => {
+            const isActive = activeServiceId === svc.id;
+            const secs = elapsed[svc.id] || 0;
+            return (
+              <button key={svc.id} onClick={()=>switchService(svc.id)}
+                style={{padding:"10px 14px",borderRadius:8,border:`2px solid ${isActive?"var(--lime)":"var(--moss)"}`,background:isActive?"rgba(74,109,32,0.2)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:isActive?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:80,position:"relative"}}>
+                {isActive && <span style={{position:"absolute",top:4,right:6,width:8,height:8,borderRadius:"50%",background:"var(--lime)",animation:"pulse 1s infinite"}}/>}
+                <span>{svc[lang] || svc.en}</span>
+                {secs > 0 && <span style={{fontSize:10,color:isActive?"var(--lime)":"var(--stone)",letterSpacing:0.5}}>{formatTime(secs)}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Description fields for services that need it */}
+        {SERVICE_TYPES.filter(s => s.hasDescription && (elapsed[s.id] > 0 || activeServiceId === s.id)).map(svc => (
+          <div key={svc.id} style={{marginBottom:10}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:4}}>{svc[lang] || svc.en} — {t.projectDescription}</div>
+            <textarea
+              style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:13,resize:"none",height:56}}
+              placeholder={t.projectDescPlaceholder}
+              value={descriptions[svc.id] || ""}
+              onChange={e=>setDescriptions(prev=>({...prev,[svc.id]:e.target.value}))}
+            />
+          </div>
+        ))}
+
+        <button onClick={()=>setCompleting(activeJob)}
+          style={{width:"100%",padding:"14px",background:"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
+          {t.completeJob}
+        </button>
+      </div>
+    );
+  }
+
+  // Completion form
+  if(completing) {
+    return (
+      <div style={{animation:"fadeUp 0.2s ease both"}}>
+        <button className="back-btn" style={{marginBottom:14}} onClick={()=>setCompleting(null)}><Ic n="back"/> {t.back}</button>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.notes} ({t.cancel})</div>
+        <textarea
+          style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:64,marginBottom:10}}
+          placeholder="Any notes about this job..."
+          value={completionNote}
+          onChange={e=>setCompletionNote(e.target.value)}
+        />
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Photo (optional)</div>
+        <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(!f)return;setCompletionPhotoFile(f);setCompletionPhoto(URL.createObjectURL(f));}}/>
+        {!completionPhoto ? (
+          <div onClick={()=>photoRef.current.click()} style={{display:"flex",alignItems:"center",gap:10,background:"var(--bark2)",border:"1.5px dashed var(--moss)",borderRadius:8,padding:"12px",cursor:"pointer",marginBottom:10}}>
+            <Ic n="camera" style={{width:18,height:18,color:"var(--stone)"}}/>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1}}>Take completion photo</span>
+          </div>
+        ) : (
+          <div style={{position:"relative",marginBottom:10}}>
+            <img src={completionPhoto} alt="completion" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
+            <button onClick={()=>{setCompletionPhoto(null);setCompletionPhotoFile(null);}} style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",border:"none",borderRadius:"50%",width:28,height:28,color:"#fff",cursor:"pointer",fontSize:14}}>✕</button>
+          </div>
+        )}
+
+        {/* Time summary */}
+        {Object.keys(elapsed).length > 0 && (
+          <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:8,padding:12,marginBottom:12}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.timeSummary}</div>
+            {SERVICE_TYPES.filter(s => elapsed[s.id] > 0).map(svc => (
+              <div key={svc.id} style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--cream)"}}>{svc[lang] || svc.en}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--lime)",fontWeight:700}}>{formatTime(elapsed[svc.id])}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={()=>setCompleting(null)} style={{flex:1,padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.cancel}</button>
+          <button disabled={submitting} onClick={handleComplete} style={{flex:2,padding:"12px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer"}}>{submitting?"Saving...":t.submitJob}</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Job list view
   if(jobs.length === 0) return (
     <div style={{textAlign:"center",padding:"48px 0"}}>
       <Ic n="map" style={{width:40,height:40,color:"var(--moss)",marginBottom:12}}/>
-      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>No jobs assigned for today</div>
+      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase"}}>{t.noJobsToday}</div>
     </div>
   );
 
   return (
     <div>
-      <div className="section-hd">Today's Jobs — {jobs.length} assigned</div>
+      <div className="section-hd">{t.todayJobs} — {jobs.length}</div>
       {jobs.map(job => {
         const property = prop(job);
         const isCompleted = job.status === "completed";
-        const isCompleting = completing?.id === job.id;
-
         return (
           <div key={job.id} style={{background:"var(--bark)",border:`1px solid ${isCompleted?"rgba(74,109,32,0.3)":"var(--moss)"}`,borderLeft:`4px solid ${isCompleted?"var(--leaf)":"var(--lime)"}`,borderRadius:10,marginBottom:12,overflow:"hidden",opacity:isCompleted?0.8:1}}>
-            {property?.photo_url && (
-              <img src={property.photo_url} alt="property" style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>
-            )}
+            {property?.photo_url && <img src={property.photo_url} alt="property" style={{width:"100%",height:120,objectFit:"cover",display:"block"}}/>}
             <div style={{padding:"12px 14px"}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isCompleted?"var(--leaf)":"var(--lime)",letterSpacing:2,lineHeight:1}}>{property?.client_name||"Unknown Property"}</div>
-                {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>✓ Done</span>}
+                {isCompleted && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--lime)",background:"rgba(74,109,32,0.12)",border:"1px solid var(--leaf)",borderRadius:4,padding:"2px 8px",textTransform:"uppercase"}}>{t.jobComplete}</span>}
               </div>
               <div style={{fontSize:13,color:"var(--stone)",marginBottom:4}}>📍 {property?.address}</div>
-              {(job.service_type || property?.service_types?.length>0) && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{job.service_type || property?.service_types?.join(" · ")}</div>}
+              {job.service_types?.length > 0 && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--mgr-lt)",letterSpacing:0.5,marginBottom:6}}>{job.service_types.map(id => getServiceLabel(id, lang)).join(" · ")}</div>}
               {property?.service_notes && (
                 <div style={{background:"rgba(160,96,16,0.08)",border:"1px solid rgba(160,96,16,0.2)",borderRadius:8,padding:"8px 10px",marginBottom:6}}>
                   <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--warn)",textTransform:"uppercase",marginBottom:2}}>Access Notes</div>
@@ -2074,51 +2245,11 @@ function JobsTab({ truck }) {
                   <div style={{fontSize:12,color:"var(--cream)"}}>{job.notes}</div>
                 </div>
               )}
-
               {!isCompleted && (
-                <>
-                  {!isCompleting ? (
-                    <button onClick={()=>setCompleting(job)}
-                      style={{width:"100%",padding:"12px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
-                      Mark Complete
-                    </button>
-                  ) : (
-                    <div style={{marginTop:8,borderTop:"1px solid var(--moss)",paddingTop:12,animation:"fadeUp 0.2s ease both"}}>
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Notes (optional)</div>
-                      <textarea
-                        style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:64,marginBottom:10}}
-                        placeholder="Any notes about this job..."
-                        value={completionNote}
-                        onChange={e=>setCompletionNote(e.target.value)}
-                      />
-                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:6}}>Photo (optional)</div>
-                      <input ref={photoRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handlePhotoSelect}/>
-                      {!completionPhoto ? (
-                        <div onClick={()=>photoRef.current.click()}
-                          style={{display:"flex",alignItems:"center",gap:10,background:"var(--bark2)",border:"1.5px dashed var(--moss)",borderRadius:8,padding:"12px",cursor:"pointer",marginBottom:10}}>
-                          <Ic n="camera" style={{width:18,height:18,color:"var(--stone)"}}/>
-                          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1}}>Take completion photo</span>
-                        </div>
-                      ) : (
-                        <div style={{position:"relative",marginBottom:10}}>
-                          <img src={completionPhoto} alt="completion" style={{width:"100%",borderRadius:8,border:"1px solid var(--moss)",display:"block"}}/>
-                          <button onClick={()=>{setCompletionPhoto(null);setCompletionPhotoFile(null);}}
-                            style={{position:"absolute",top:6,right:6,background:"rgba(0,0,0,0.5)",border:"none",borderRadius:"50%",width:28,height:28,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✕</button>
-                        </div>
-                      )}
-                      <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>{setCompleting(null);setCompletionNote("");setCompletionPhoto(null);setCompletionPhotoFile(null);}}
-                          style={{flex:1,padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>
-                          Cancel
-                        </button>
-                        <button disabled={submitting} onClick={()=>handleComplete(job)}
-                          style={{flex:2,padding:"12px",background:submitting?"var(--moss)":"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--earth)",cursor:submitting?"not-allowed":"pointer"}}>
-                          {submitting?"Saving...":"Submit"}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
+                <button onClick={()=>startJob(job)}
+                  style={{width:"100%",padding:"12px",background:"var(--lime)",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:3,color:"var(--earth)",cursor:"pointer",marginTop:4}}>
+                  {t.startJob}
+                </button>
               )}
             </div>
           </div>
@@ -2318,14 +2449,16 @@ function EditScheduleForm({ schedule, onBack, onSaved }) {
 }
 
 // -- ADD SCHEDULE FORM --------------------------------------------------------
-function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setSubmitting] = useState(false);
+function AddScheduleForm({ property, onBack, onSaved }) {
+  const lang = useLang();
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [serviceDescriptions, setServiceDescriptions] = useState({});
   const [fields, setFields] = useState({
-    service_type: "", frequency: "", day_of_week: "",
-    start_date: "", end_date: "", price: "",
+    frequency: "", day_of_week: "", start_date: "", end_date: "", price: "",
   });
 
-  const SERVICE_TYPES = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
   const FREQUENCIES = [
     {label:"Weekly", value:"weekly"},
     {label:"Biweekly", value:"biweekly"},
@@ -2334,9 +2467,12 @@ function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setS
   ];
   const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const set = (k, v) => setFields(f => ({...f, [k]: v}));
+  const toggleService = id => setSelectedServices(prev =>
+    prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+  );
 
   const handleSubmit = async () => {
-    if(!fields.service_type || !fields.frequency || !fields.day_of_week || !fields.start_date) {
+    if(selectedServices.length === 0 || !fields.frequency || !fields.day_of_week || !fields.start_date) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -2344,7 +2480,8 @@ function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setS
     try {
       const { error } = await supabase.from("schedules").insert({
         property_id: property.id,
-        service_type: fields.service_type,
+        service_type: selectedServices[0],
+        service_types: selectedServices,
         frequency: fields.frequency,
         day_of_week: fields.day_of_week,
         start_date: fields.start_date,
@@ -2371,15 +2508,24 @@ function AddScheduleForm({ property, onBack, onSaved }) {const [submitting, setS
         </div>
       </div>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
-        <label style={labelStyle}>Service Type *</label>
+        <label style={labelStyle}>Services * (select all that apply)</label>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
-          {SERVICE_TYPES.map(type=>(
-            <button key={type} onClick={()=>set("service_type",type)}
-              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.service_type===type?"var(--mgr)":"var(--moss)"}`,background:fields.service_type===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.service_type===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-              {type}
+          {SERVICE_TYPES.map(svc=>(
+            <button key={svc.id} onClick={()=>toggleService(svc.id)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {svc[lang] || svc.en}
             </button>
           ))}
         </div>
+
+        {SERVICE_TYPES.filter(s => s.hasDescription && selectedServices.includes(s.id)).map(svc=>(
+          <div key={svc.id} style={{marginBottom:10}}>
+            <label style={labelStyle}>{svc[lang] || svc.en} — Description</label>
+            <textarea style={{...inputStyle,resize:"none",height:64}} placeholder="Describe the work..."
+              value={serviceDescriptions[svc.id]||""} onChange={e=>setServiceDescriptions(p=>({...p,[svc.id]:e.target.value}))}/>
+          </div>
+        ))}
+
         <label style={labelStyle}>Frequency *</label>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
           {FREQUENCIES.map(f=>(
@@ -2843,18 +2989,22 @@ if(!schedules || schedules.length === 0) return;
 }
 // -- ADD ONE TIME JOB FORM ----------------------------------------------------
 function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
+  const lang = useLang();
   const [properties, setProperties] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [serviceDescriptions, setServiceDescriptions] = useState({});
   const [fields, setFields] = useState({
     property_id: "",
     date: preselectedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
-    service_type: "",
     notes: "",
   });
 
-  const SERVICE_TYPES = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
   const set = (k, v) => setFields(f => ({...f, [k]: v}));
+  const toggleService = id => setSelectedServices(prev =>
+    prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+  );
 
   useEffect(() => {
     supabase.from("properties").select("id, client_name, address").eq("company_id", COMPANY_ID).eq("active", true).order("client_name")
@@ -2862,7 +3012,7 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
   }, []);
 
   const handleSubmit = async () => {
-    if(!fields.property_id || !fields.date || !fields.service_type) {
+    if(!fields.property_id || !fields.date || selectedServices.length === 0) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -2876,6 +3026,9 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
         status: "scheduled",
         sort_order: 0,
         notes: fields.notes || null,
+        service_type: selectedServices[0],
+        service_types: selectedServices,
+        service_descriptions: serviceDescriptions,
       });
       if(error){ setError("Failed to save job."); setSubmitting(false); return; }
       onSaved();
@@ -2896,7 +3049,6 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
           <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>Schedule a single visit</div>
         </div>
       </div>
-
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
         <label style={labelStyle}>Property *</label>
         <select value={fields.property_id} onChange={e=>set("property_id",e.target.value)}
@@ -2906,26 +3058,28 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
             <option key={p.id} value={p.id}>{p.client_name} — {p.address}</option>
           ))}
         </select>
-
         <label style={labelStyle}>Date *</label>
         <input style={inputStyle} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
-
-        <label style={labelStyle}>Service Type *</label>
+        <label style={labelStyle}>Services * (select all that apply)</label>
         <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
-          {SERVICE_TYPES.map(type=>(
-            <button key={type} onClick={()=>set("service_type",type)}
-              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.service_type===type?"var(--mgr)":"var(--moss)"}`,background:fields.service_type===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.service_type===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-              {type}
+          {SERVICE_TYPES.map(svc=>(
+            <button key={svc.id} onClick={()=>toggleService(svc.id)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {svc[lang] || svc.en}
             </button>
           ))}
         </div>
-
+        {SERVICE_TYPES.filter(s => s.hasDescription && selectedServices.includes(s.id)).map(svc=>(
+          <div key={svc.id} style={{marginBottom:10}}>
+            <label style={labelStyle}>{svc[lang] || svc.en} — Description</label>
+            <textarea style={{...inputStyle,resize:"none",height:64}} placeholder="Describe the work..."
+              value={serviceDescriptions[svc.id]||""} onChange={e=>setServiceDescriptions(p=>({...p,[svc.id]:e.target.value}))}/>
+          </div>
+        ))}
         <label style={labelStyle}>Notes (optional)</label>
         <textarea style={{...inputStyle,resize:"none",height:80}} placeholder="Any special instructions for this visit..." value={fields.notes} onChange={e=>set("notes",e.target.value)}/>
       </div>
-
       {error && <div className="error-msg" style={{marginBottom:12}}>{error}</div>}
-
       <button disabled={submitting} onClick={handleSubmit}
         style={{width:"100%",padding:"16px",background:submitting?"var(--moss)":"var(--mgr)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:submitting?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
         {submitting?"Saving...":"Add Job"}
