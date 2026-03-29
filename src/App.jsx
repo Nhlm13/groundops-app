@@ -3635,15 +3635,6 @@ function OfficeView({ onLogout }) {
     );
   };
 
-  const StatusBadge = ({status}) => {
-    const s = STATUSES.find(st => st.key === status) || STATUSES[0];
-    return (
-      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,textTransform:"uppercase",background:s.bg,color:s.color,border:`1px solid ${s.color}44`}}>
-        {s.label}
-      </span>
-    );
-  };
-
   // -- ADD FORM --
   if(view === "add") return (
     <div className="screen" style={{background:"var(--earth)"}}>
