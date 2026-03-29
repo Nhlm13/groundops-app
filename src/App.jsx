@@ -2473,7 +2473,7 @@ function AddScheduleForm({ property, onBack, onSaved }) {
 <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12,overflow:"hidden"}}>        <label style={labelStyle}>Services * (select all that apply)</label>
         {SERVICE_GROUPS.map(group=>(
           <div key={group.label.en} style={{marginBottom:10}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {group.ids.map(id=>{
                 const svc = SERVICE_TYPES.find(s=>s.id===id);
@@ -3040,7 +3040,7 @@ const inputStyle = {width:"100%",boxSizing:"border-box",background:"var(--bark2)
         <label style={labelStyle}>Services * (select all that apply)</label>
         {SERVICE_GROUPS.map(group=>(
           <div key={group.label.en} style={{marginBottom:10}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {group.ids.map(id=>{
                 const svc = SERVICE_TYPES.find(s=>s.id===id);
