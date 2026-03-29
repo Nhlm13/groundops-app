@@ -1984,7 +1984,6 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
   const handleComplete = async () => {
     if(!activeJob) return;
     const finalLogs = finalLogsRef.current;
-    console.log("finalLogs at submit:", JSON.stringify(finalLogs));
     setSubmitting(true);
     try {
       let photoUrl = null;
