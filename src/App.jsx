@@ -1737,16 +1737,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:2,color:"var(--lime)"}}>{t.contactMgr}</div>
               <button onClick={()=>setShowContacts(false)} style={{background:"none",border:"none",color:"var(--stone)",fontSize:20,cursor:"pointer",lineHeight:1}}>✕</button>
             </div>
-            {CONTACTS.map(c=>(
-              <div key={c.name} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid var(--moss)"}}>
-                <div style={{width:40,height:40,borderRadius:"50%",background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"var(--lime)",letterSpacing:1}}>
-                  {c.initials}
-                </div>
-                <div style={{flex:1}}>
-                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{c.name}</div>
-                  <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{c.role}</div>
-                </div>
-    </div>
   );
 }
 
