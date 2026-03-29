@@ -439,8 +439,8 @@ function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 
 // -- TRANSLATIONS --------------------------------------------------------------
 const SERVICE_TYPES = [
-  { id: "mowing",           en: "Mowing & Lawn Maintenance", es: "Corte y Mantenimiento", pt: "Corte e Manutenção" },
-  { id: "edging",           en: "Edging",                    es: "Bordeado",              pt: "Bordeamento" },
+{ id: "mowing", en: "Mowing", es: "Corte", pt: "Corte" },
+{ id: "lawn_maintenance", en: "Lawn Maintenance", es: "Mantenimiento de Césped", pt: "Manutenção de Gramado" },  { id: "edging",           en: "Edging",                    es: "Bordeado",              pt: "Bordeamento" },
   { id: "trimming",         en: "Trimming",                  es: "Recorte",               pt: "Aparação" },
   { id: "weeding",          en: "Weeding",                   es: "Deshierbe",             pt: "Capina" },
   { id: "pruning",          en: "Pruning",                   es: "Poda",                  pt: "Poda" },
@@ -1925,7 +1925,7 @@ function saveFormState(truckId, dot, briefing, propCount, eod) {
 // -- JOBS TAB -----------------------------------------------------------------
 const SERVICE_GROUPS = [
   { label: { en: "Lawn & Grounds", es: "Césped y Jardín", pt: "Gramado e Jardim" },
-    ids: ["mowing","edging","trimming","weeding"] },
+  ids: ["mowing","lawn_maintenance","edging","trimming","weeding"] },
   { label: { en: "Planting & Beds", es: "Plantación y Arriates", pt: "Plantio e Canteiros" },
     ids: ["pruning","mulching","planting"] },
   { label: { en: "Irrigation", es: "Irrigación", pt: "Irrigação" },
@@ -2127,8 +2127,7 @@ function JobsTab({ truck }) {
 
         {SERVICE_GROUPS.map(group => (
           <div key={group.label.en} style={{marginBottom:12}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"var(--moss)",textTransform:"uppercase",marginBottom:6}}>{group.label[lang]||group.label.en}</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+<div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"var(--lime)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{group.label[lang]||group.label.en}</div>            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               {group.ids.map(id => {
                 const svc = SERVICE_TYPES.find(s => s.id === id);
                 if(!svc) return null;
@@ -3446,7 +3445,7 @@ const ActivityTab = () => {
       };
       fetchJobData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDate, sessions]);
+    }, [selectedDate]);
 
     const formatSecs = (secs) => {
       if(!secs) return "0m";
