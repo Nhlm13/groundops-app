@@ -3570,8 +3570,264 @@ function ManagerJobsTab() {
   );
 }
 
+// -- OWNER DASHBOARD ----------------------------------------------------------
+function OwnerDashboard({ onLogout, onManagerView }) {
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ revenue: 0, jobs: 0, laborHours: 0, clients: 0, receiptsTotal: 0 });
+  const [revenueData, setRevenueData] = useState([]);
+  const [serviceData, setServiceData] = useState([]);
+  const [truckData, setTruckData] = useState([]);
+  const [clientGrowth, setClientGrowth] = useState([]);
+  const chartRef1 = useRef(null);
+  const chartRef2 = useRef(null);
+  const chartInst1 = useRef(null);
+  const chartInst2 = useRef(null);
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const thisMonth = today.slice(0, 7);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [
+          { data: jobs },
+          { data: timeLogs },
+          { data: receipts },
+          { data: properties },
+          { data: trucks },
+          { data: assignments },
+        ] = await Promise.all([
+          supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("status", "completed"),
+          supabase.from("job_time_logs").select("*").eq("company_id", COMPANY_ID),
+          supabase.from("receipts").select("*").eq("company_id", COMPANY_ID),
+          supabase.from("properties").select("id, created_at, property_type").eq("company_id", COMPANY_ID).eq("active", true),
+          supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
+          supabase.from("job_assignments").select("*"),
+        ]);
+
+        // This month stats
+        const thisMonthJobs = (jobs||[]).filter(j => j.date?.startsWith(thisMonth));
+        const totalLaborSecs = (timeLogs||[]).filter(l => l.started_at?.startsWith(thisMonth)).reduce((s,l) => s+(l.duration_seconds||0), 0);
+        const totalReceipts = (receipts||[]).filter(r => r.date?.startsWith(thisMonth)).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
+
+        setStats({
+          jobs: thisMonthJobs.length,
+          laborHours: Math.round(totalLaborSecs / 3600),
+          clients: (properties||[]).length,
+          receiptsTotal: totalReceipts,
+          revenue: thisMonthJobs.length * 185, // placeholder avg per job
+        });
+
+        // Revenue last 6 months
+        const months = [];
+        for(let i=5; i>=0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          const key = d.toLocaleDateString("en-CA", {timeZone:"America/New_York"}).slice(0,7);
+          const label = d.toLocaleDateString("en-US", {month:"short"});
+          const monthJobs = (jobs||[]).filter(j => j.date?.startsWith(key)).length;
+          const monthLaborSecs = (timeLogs||[]).filter(l => l.started_at?.startsWith(key)).reduce((s,l) => s+(l.duration_seconds||0), 0);
+          const monthReceipts = (receipts||[]).filter(r => r.date?.startsWith(key)).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
+          months.push({ label, revenue: monthJobs * 185, labor: Math.round(monthLaborSecs/3600), receipts: monthReceipts });
+        }
+        setRevenueData(months);
+
+        // Service breakdown
+        const svcCounts = {};
+        (timeLogs||[]).forEach(l => { svcCounts[l.service_type] = (svcCounts[l.service_type]||0) + 1; });
+        setServiceData(Object.entries(svcCounts).sort((a,b)=>b[1]-a[1]).slice(0,5));
+
+        // Truck hours
+        const truckHours = {};
+        (timeLogs||[]).filter(l => l.started_at?.startsWith(thisMonth)).forEach(l => {
+          const job = (jobs||[]).find(j => j.id === l.job_id);
+          if(!job) return;
+          const assignment = (assignments||[]).find(a => a.job_id === job.id);
+          if(!assignment) return;
+          const truck = (trucks||[]).find(t => t.id === assignment.truck_id);
+          if(!truck) return;
+          truckHours[truck.name] = (truckHours[truck.name]||0) + (l.duration_seconds||0);
+        });
+        const truckArr = Object.entries(truckHours).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,secs]) => ({name, hours: Math.round(secs/3600)}));
+        setTruckData(truckArr);
+
+        // Client growth last 6 months
+        const growth = [];
+        for(let i=5; i>=0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          const key = d.toLocaleDateString("en-CA", {timeZone:"America/New_York"}).slice(0,7);
+          const label = d.toLocaleDateString("en-US", {month:"short"});
+          const count = (properties||[]).filter(p => p.created_at?.startsWith(key)).length;
+          growth.push({ label, count });
+        }
+        setClientGrowth(growth);
+
+      } catch(e){ console.warn(e); }
+      setLoading(false);
+   };
+    if(!window.Chart) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+      script.onload = () => fetchData();
+      document.head.appendChild(script);
+      return;
+    }
+    fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if(revenueData.length === 0 || !chartRef1.current) return;
+    if(chartInst1.current) chartInst1.current.destroy();
+    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#888' : '#999';
+    chartInst1.current = new window.Chart(chartRef1.current, {
+      type: 'bar',
+      data: {
+        labels: revenueData.map(m => m.label),
+        datasets: [
+          { label: 'Est. Revenue', data: revenueData.map(m => m.revenue), backgroundColor: '#3d6b10', borderRadius: 4, barPercentage: 0.5 },
+          { label: 'Receipts', data: revenueData.map(m => m.receipts), backgroundColor: '#b5d4f4', borderRadius: 4, barPercentage: 0.5 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, callback: v => '$' + (v/1000).toFixed(0) + 'k' } }
+        }
+      }
+    });
+  }, [revenueData]);
+
+  useEffect(() => {
+    if(serviceData.length === 0 || !chartRef2.current) return;
+    if(chartInst2.current) chartInst2.current.destroy();
+    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const textColor = isDark ? '#888' : '#999';
+    chartInst2.current = new window.Chart(chartRef2.current, {
+      type: 'doughnut',
+      data: {
+        labels: serviceData.map(([id]) => getServiceLabel(id, "en")),
+        datasets: [{ data: serviceData.map(([,c]) => c), backgroundColor: ['#3d6b10','#2a5a95','#a06010','#7a6845','#c4bfb0'], borderWidth: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, color: textColor, boxWidth: 10, padding: 8 } } }
+      }
+    });
+  }, [serviceData]);
+
+  const maxHours = truckData.length > 0 ? Math.max(...truckData.map(t => t.hours)) : 1;
+
+  return (
+    <div className="screen" style={{background:"#1a1e14",overflowY:"auto"}}>
+      {/* Topbar */}
+      <div style={{background:"#232918",borderBottom:"1px solid rgba(61,107,16,0.3)",padding:"12px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:28,height:28,background:"var(--lime)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a1e14" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          </div>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--lime)"}}>TotalFlo</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.4)",textTransform:"uppercase"}}>Owner Dashboard</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button onClick={onManagerView} style={{background:"rgba(42,90,149,0.2)",border:"1px solid rgba(42,90,149,0.4)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"#7aabdd",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
+          <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:"rgba(255,255,255,0.4)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
+        </div>
+      </div>
+
+      <div style={{padding:"16px"}}>
+        {loading ? (
+          <div style={{textAlign:"center",padding:"48px 0",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"rgba(255,255,255,0.3)",textTransform:"uppercase"}}>Loading...</div>
+        ) : (
+          <>
+            {/* Summary cards */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
+              {[
+                {label:"Est. Monthly Revenue", value:`$${(stats.revenue).toLocaleString()}`, sub:"based on completed jobs"},
+                {label:"Jobs Completed", value:stats.jobs, sub:"this month"},
+                {label:"Labor Hours", value:`${stats.laborHours}h`, sub:"this month"},
+                {label:"Total Receipts", value:`$${stats.receiptsTotal.toFixed(0)}`, sub:"expenses this month"},
+                {label:"Active Clients", value:stats.clients, sub:"total properties"},
+              ].map(({label,value,sub})=>(
+                <div key={label} style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:"14px"}}>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",marginBottom:4}}>{label}</div>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"var(--lime)",letterSpacing:1,lineHeight:1}}>{value}</div>
+                  <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:4}}>{sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Revenue chart */}
+            <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:8}}>Revenue vs Expenses — 6 months</div>
+              <div style={{display:"flex",gap:16,marginBottom:10}}>
+                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+                  <span style={{width:10,height:10,borderRadius:2,background:"#3d6b10",display:"inline-block"}}></span>Est. Revenue
+                </span>
+                <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+                  <span style={{width:10,height:10,borderRadius:2,background:"#b5d4f4",display:"inline-block"}}></span>Receipts
+                </span>
+              </div>
+              <div style={{position:"relative",height:160}}>
+                <canvas ref={chartRef1}></canvas>
+              </div>
+            </div>
+
+            {/* Service breakdown + client growth */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:8}}>Jobs by service</div>
+                <div style={{position:"relative",height:160}}>
+                  <canvas ref={chartRef2}></canvas>
+                </div>
+              </div>
+              <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:12}}>Client growth</div>
+                {clientGrowth.map((m,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",width:28}}>{m.label}</span>
+                    <div style={{flex:1,height:6,background:"rgba(255,255,255,0.08)",borderRadius:3}}>
+                      <div style={{height:"100%",width:`${Math.max(4,(m.count/10)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
+                    </div>
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--lime)",width:20,textAlign:"right"}}>+{m.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Truck performance */}
+            {truckData.length > 0 && (
+              <div style={{background:"#232918",border:"1px solid rgba(61,107,16,0.25)",borderRadius:10,padding:16,marginBottom:12}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",marginBottom:12}}>Truck hours — this month</div>
+                {truckData.map((t,i)=>(
+                  <div key={i} style={{marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,marginBottom:4}}>
+                      <span style={{color:"rgba(255,255,255,0.6)"}}>{t.name}</span>
+                      <span style={{color:"var(--lime)",fontWeight:700}}>{t.hours}h</span>
+                    </div>
+                    <div style={{height:6,background:"rgba(255,255,255,0.08)",borderRadius:3}}>
+                      <div style={{height:"100%",width:`${Math.round((t.hours/maxHours)*100)}%`,background:"var(--lime)",borderRadius:3}}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // -- MANAGER -------------------------------------------------------------------
-function ManagerZone({ onLogout }) {
+function ManagerZone({ onLogout, isOwner, onOwnerView }) {
   const [tab, setTab] = useState("activity");
   const [loading, setLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(null);
@@ -3883,8 +4139,9 @@ supabase.from("crew_sessions").select("*").eq("company_id", COMPANY_ID).eq("date
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
               </button>
-              <span className="mgr-badge">Admin</span>
-              <button className="logout-btn" onClick={onLogout}>Out</button>
+              {isOwner && <button onClick={onOwnerView} style={{background:"var(--lime)",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--earth)",cursor:"pointer",textTransform:"uppercase"}}>Owner View</button>}
+          <span className="mgr-badge">{isOwner?"Owner":"Admin"}</span>
+          <button className="logout-btn" onClick={onLogout}>Out</button>
             </div>
           </>
         )}
@@ -4060,50 +4317,38 @@ export default function App() {
   const[truck,setTruck]=useState(null);
   const[truckDiv,setTruckDiv]=useState("");
   const[lang,setLang]=useState(detectLang);
+  const[ownerMode,setOwnerMode]=useState("dashboard"); // "dashboard" or "manager"
 
- const postSignIn = async (tr) => {
+  const OWNER_EMAIL = "nikki@salernicreative.com"; // change to owner email
+
+  const postSignIn = async (tr) => {
     try {
-      // Look up truck ID if not already loaded
       let truckId = tr.supabaseId;
       if (!truckId) {
         const { data: truckData } = await supabase
-          .from("trucks")
-          .select("id")
-          .eq("name", tr.label)
-          .eq("company_id", COMPANY_ID)
-          .single();
+          .from("trucks").select("id").eq("name", tr.label).eq("company_id", COMPANY_ID).single();
         truckId = truckData?.id || null;
       }
-
-     const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-
-// Check if a session already exists for this truck today
-const { data: existing } = await supabase
-  .from("crew_sessions")
-  .select("id")
-  .eq("truck_id", truckId)
-  .eq("date", today)
-  .single();
-
-let sessionData;
-if(existing) {
-  sessionData = existing;
-} else {
-  const { data: newSession } = await supabase
-    .from("crew_sessions")
-    .insert({
-      company_id: COMPANY_ID,
-      truck_id: truckId,
-      crew_name: loadCrewName() || "Unknown",
-      date: today,
-    })
-    .select()
-    .single();
-  sessionData = newSession;
-}
-if(sessionData) tr.sessionId = sessionData.id;
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const { data: existing } = await supabase
+        .from("crew_sessions").select("id").eq("truck_id", truckId).eq("date", today).single();
+      let sessionData;
+      if(existing) {
+        sessionData = existing;
+      } else {
+        const { data: newSession } = await supabase
+          .from("crew_sessions").insert({
+            company_id: COMPANY_ID,
+            truck_id: truckId,
+            crew_name: loadCrewName() || "Unknown",
+            date: today,
+          }).select().single();
+        sessionData = newSession;
+      }
+      if(sessionData) tr.sessionId = sessionData.id;
     } catch(e){ console.warn("Sign-in post failed",e); }
   };
+
   const postSignOut = async (tr) => {
     if(tr.sessionId) {
       await supabase.from("crew_sessions").update({ ended_at: new Date().toISOString() }).eq("id", tr.sessionId);
@@ -4113,12 +4358,24 @@ if(sessionData) tr.sessionId = sessionData.id;
   const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
   const handleLogout = () => { if(truck) postSignOut(truck); setTruck(null); setTruckDiv(""); setScreen("login"); };
 
+  const handleMgrLogin = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if(user?.email === OWNER_EMAIL) {
+      setScreen("owner");
+    } else {
+      setScreen("manager");
+    }
+  };
+
   return (
     <LangContext.Provider value={lang}>
       <style>{css}</style>
       <div className="app">
-        {screen==="login"   &&<LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={()=>setScreen("manager")} lang={lang} setLang={setLang}/>}
-{screen==="truck"&&truck&&<TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout}/>}        {screen==="manager" &&<ManagerZone onLogout={()=>setScreen("login")}/>}
+        {screen==="login" && <LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={handleMgrLogin} lang={lang} setLang={setLang}/>}
+        {screen==="truck" && truck && <TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout}/>}
+        {screen==="manager" && <ManagerZone onLogout={()=>setScreen("login")}/>}
+        {screen==="owner" && ownerMode==="dashboard" && <OwnerDashboard onLogout={()=>setScreen("login")} onManagerView={()=>setOwnerMode("manager")}/>}
+        {screen==="owner" && ownerMode==="manager" && <ManagerZone onLogout={()=>setScreen("login")} isOwner={true} onOwnerView={()=>setOwnerMode("dashboard")}/>}
       </div>
     </LangContext.Provider>
   );
