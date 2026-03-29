@@ -3995,8 +3995,9 @@ function OfficeView({ onLogout }) {
 
   // -- ADD FORM --
   if(view === "add") return (
+  <>
+    <JobEditModal/>
     <div className="screen" style={{background:"#1e2d4a"}}>
-      <JobEditModal/>
       <Topbar title="New Request" right={
         <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Cancel</button>
       }/>
@@ -4048,15 +4049,17 @@ function OfficeView({ onLogout }) {
         </div>
       </div>
     </div>
+  </>
   );
 
   // -- DETAIL / EDIT VIEW --
   if(view === "detail" && selected) {
     const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
     return (
-      <div className="screen" style={{background:"#1e2d4a"}}>
-        <JobEditModal/>
-        <Topbar title={selected.name} right={
+  <>
+    <JobEditModal/>
+    <div className="screen" style={{background:"#1e2d4a"}}>
+      <Topbar title={selected.name} right={
           <>
             <button onClick={()=>deleteRequest(selected.id)} style={{background:"none",border:"1px solid #e0554044",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#e05540",cursor:"pointer"}}>Delete</button>
             <button disabled={saving} onClick={saveEdit} style={{background:"#4472CA",border:"none",borderRadius:6,padding:"5px 14px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#fff",cursor:"pointer",letterSpacing:1}}>{saving?"Saving...":"Save"}</button>
@@ -4113,13 +4116,15 @@ function OfficeView({ onLogout }) {
           </div>
         </div>
       </div>
+    </>
     );
   }
 
   // -- KANBAN BOARD --
-  return (
+ return (
+  <>
+    <JobEditModal/>
     <div className="screen" style={{background:"#1e2d4a"}}>
-      <JobEditModal/>
       <Topbar title="Spring 2026 Requests" right={
         <>
           <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
