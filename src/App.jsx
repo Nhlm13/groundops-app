@@ -3509,8 +3509,111 @@ function ManagerJobsTab() {
   );
 }
 
+// -- CUSTOMER MAP --
+function CustomerMap({ onClose }) {
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const mapRef = React.useRef(null);
+  const mapInst = React.useRef(null);
+
+  useEffect(() => {
+    supabase
+      .from("properties")
+      .select("id, client_name, address, property_type, lat, lng")
+      .eq("company_id", COMPANY_ID)
+      .eq("active", true)
+      .not("lat", "is", null)
+      .then(({ data }) => {
+        setProperties(data || []);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if(loading || !mapRef.current || mapInst.current) return;
+
+    if(!window.L) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.onload = () => initMap();
+      document.head.appendChild(script);
+    } else {
+      initMap();
+    }
+
+    function initMap() {
+      mapInst.current = window.L.map(mapRef.current).setView([42.305, -71.52], 11);
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(mapInst.current);
+
+      properties.forEach(p => {
+        if(!p.lat || !p.lng) return;
+        const isCommercial = p.property_type === "commercial";
+        const color = isCommercial ? "#e05540" : "#4472CA";
+        const marker = window.L.circleMarker([p.lat, p.lng], {
+          radius: 7,
+          fillColor: color,
+          color: "#fff",
+          weight: 1.5,
+          opacity: 1,
+          fillOpacity: 0.85,
+        }).addTo(mapInst.current);
+        marker.bindPopup(`
+          <div style="font-family:'Barlow Condensed',sans-serif;min-width:140px;">
+            <div style="font-weight:700;font-size:14px;color:#0A369D;">${p.client_name}</div>
+            <div style="font-size:12px;color:#666;margin-top:2px;">${p.address}</div>
+            <div style="font-size:11px;margin-top:4px;padding:2px 6px;border-radius:4px;display:inline-block;background:${isCommercial?"rgba(224,85,64,0.1)":"rgba(68,114,202,0.1)"};color:${color};">${isCommercial?"Commercial":"Residential"}</div>
+          </div>
+        `);
+      });
+    }
+
+    return () => {
+      if(mapInst.current) {
+        mapInst.current.remove();
+        mapInst.current = null;
+      }
+    };
+  }, [loading, properties]);
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:400,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:28,height:28,objectFit:"contain"}}/>
+          <div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#CFDEE7",letterSpacing:2,lineHeight:1}}>Customer Map</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>{properties.length} properties</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:12,marginLeft:16}}>
+            <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
+              <span style={{width:10,height:10,borderRadius:"50%",background:"#4472CA",display:"inline-block",border:"1.5px solid #fff"}}></span>Residential
+            </span>
+            <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
+              <span style={{width:10,height:10,borderRadius:"50%",background:"#e05540",display:"inline-block",border:"1.5px solid #fff"}}></span>Commercial
+            </span>
+          </div>
+        </div>
+        <button onClick={onClose} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"rgba(255,255,255,0.7)",cursor:"pointer"}}>✕ Close</button>
+      </div>
+      {loading ? (
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#1e2d4a",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"#92B4F4",textTransform:"uppercase"}}>Loading map...</div>
+      ) : (
+        <div ref={mapRef} style={{flex:1,width:"100%"}}></div>
+      )}
+    </div>
+  );
+}
+
 // -- OFFICE VIEW ---------------------------------------------------------------
 function OfficeView({ onLogout }) {
+  const [showMap, setShowMap] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("board");
@@ -3933,6 +4036,7 @@ function OfficeView({ onLogout }) {
   if(view === "add") return (
   <>
     <JobEditModal/>
+    {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
     <div className="screen" style={{background:"#1e2d4a"}}>
       <Topbar title="New Request" right={
         <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Cancel</button>
@@ -3991,8 +4095,9 @@ function OfficeView({ onLogout }) {
   if(view === "detail" && selected) {
     const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
     return (
-    <>
-      <JobEditModal/>
+  <>
+    <JobEditModal/>
+    {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
       <div className="screen" style={{background:"#1e2d4a"}}>
         <Topbar title={selected.name} right={
           <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>← Back</button>
@@ -4064,8 +4169,9 @@ function OfficeView({ onLogout }) {
 
 // -- KANBAN BOARD --
   return (
-    <>
-      <JobEditModal/>
+  <>
+    <JobEditModal/>
+    {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
       <div style={{flex:1,display:"flex",flexDirection:"column",height:"100dvh",background:"#1e2d4a",overflow:"hidden",animation:"fadeUp 0.35s ease both"}}>
         <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -4076,8 +4182,8 @@ function OfficeView({ onLogout }) {
             </div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
-            <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Out</button>
+            <button onClick={()=>setShowMap(true)} style={{background:"rgba(68,114,202,0.2)",border:"1px solid rgba(68,114,202,0.4)",borderRadius:6,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#92B4F4",cursor:"pointer"}}>Map</button>
+<button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
           </div>
         </div>
         <div style={{display:"flex",flex:1,overflow:"hidden"}}>
@@ -4156,6 +4262,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   const [unassignedCount, setUnassignedCount] = useState(0);
   const [weather, setWeather] = useState(null);
   const [quickAction, setQuickAction] = useState(null);
+  const [showMap, setShowMap] = useState(false);
   const chartRef1 = useRef(null);
   const chartRef2 = useRef(null);
   const chartInst1 = useRef(null);
@@ -4312,6 +4419,8 @@ function OwnerDashboard({ onLogout, onManagerView }) {
   return (
     <div className="screen" style={{background:"#1e2d4a",overflowY:"auto"}}>
 
+      {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
+
       {quickAction === "add-job" && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:200,overflowY:"auto",padding:"24px 16px"}}>
           <div style={{background:"#fff",borderRadius:12,padding:16,maxWidth:480,margin:"0 auto"}}>
@@ -4334,6 +4443,7 @@ function OwnerDashboard({ onLogout, onManagerView }) {
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:2,color:"#CFDEE7",lineHeight:1}}>TotalFlo</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"#92B4F4",textTransform:"uppercase",marginTop:2}}>Owner Dashboard</div>
             <div style={{display:"flex",gap:6,marginTop:6}}>
+              <button onClick={()=>setShowMap(true)} style={{background:"rgba(68,114,202,0.2)",border:"1px solid rgba(68,114,202,0.4)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#92B4F4",cursor:"pointer",textTransform:"uppercase"}}>Customer Map</button>
               <button onClick={onManagerView} style={{background:"#4472CA",border:"none",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"#fff",cursor:"pointer",textTransform:"uppercase"}}>Manager View</button>
               <button onClick={onLogout} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"rgba(255,255,255,0.5)",cursor:"pointer",textTransform:"uppercase"}}>Out</button>
             </div>
