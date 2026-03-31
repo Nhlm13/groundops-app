@@ -3633,14 +3633,22 @@ function OfficeView({ onLogout }) {
   const [editingJobNotes, setEditingJobNotes] = useState("");
   const [savingJob, setSavingJob] = useState(false);
   const [form, setForm] = useState({
-    name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false
+    name: "",
+    phone: "",
+    address: "",
+    task: "",
+    priority: "",
+    awaiting_estimate: false,
+    status: "",
+    notes: "",
+    source: "phone",
   });
 
   const STATUSES = [
-    { key:"",               label:"New",            color:"#8a9bb0", bg:"rgba(138,155,176,0.15)" },
-    { key:"created ticket", label:"Ticket Created", color:"#d4bc4a", bg:"rgba(212,188,74,0.12)"  },
-    { key:"estimate sent",  label:"Estimate Sent",  color:"#4472CA", bg:"rgba(68,114,202,0.12)"  },
-    { key:"schedule",       label:"Scheduled",      color:"#22a86e", bg:"rgba(34,168,110,0.12)"  },
+    { key: "",               label: "New",            color: "#8a9bb0", bg: "rgba(138,155,176,0.15)" },
+    { key: "created ticket", label: "Ticket Created", color: "#d4bc4a", bg: "rgba(212,188,74,0.12)"  },
+    { key: "estimate sent",  label: "Estimate Sent",  color: "#4472CA", bg: "rgba(68,114,202,0.12)"  },
+    { key: "schedule",       label: "Scheduled",      color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
   ];
 
   const TRUCK_COLORS = ["#4472CA","#22a86e","#d4bc4a","#e05540","#9b59b6","#5E7CE2","#0A369D","#92B4F4"];
@@ -3661,14 +3669,15 @@ function OfficeView({ onLogout }) {
   useEffect(() => {
     const fetchSchedule = async () => {
       const today = new Date();
-      const dates = Array.from({length: 7}, (_, i) => {
+      const dates = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
       });
       const [{ data: jobData }, { data: propData }, { data: truckData }, { data: assignData }] = await Promise.all([
         supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).in("date", dates).order("date"),
-        supabase.from("properties").select("id, client_name, address").eq("company_id", COMPANY_ID),
+        // FIX: join clients so we get the client name via the FK relationship
+        supabase.from("properties").select("id, address, client_id, clients(name)").eq("company_id", COMPANY_ID),
         supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
         supabase.from("job_assignments").select("*"),
       ]);
@@ -3682,12 +3691,12 @@ function OfficeView({ onLogout }) {
 
   const updateStatus = async (id, status) => {
     await supabase.from("requests").update({ status }).eq("id", id);
-    setRequests(prev => prev.map(r => r.id === id ? {...r, status} : r));
-    if(selected?.id === id) setSelected(s => ({...s, status}));
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    if (selected?.id === id) setSelected(s => ({ ...s, status }));
   };
 
   const deleteRequest = async (id) => {
-    if(!window.confirm("Delete this request?")) return;
+    if (!window.confirm("Delete this request?")) return;
     await supabase.from("requests").delete().eq("id", id);
     setRequests(prev => prev.filter(r => r.id !== id));
     setView("board");
@@ -3695,30 +3704,42 @@ function OfficeView({ onLogout }) {
   };
 
   const saveNew = async () => {
-    if(!form.name.trim() || !form.task.trim()) return;
+    if (!form.name.trim() || !form.task.trim()) return;
     setSaving(true);
     const { data } = await supabase.from("requests").insert({
-      ...form,
       company_id: COMPANY_ID,
+      name: form.name,
+      phone: form.phone,
+      address: form.address,
+      task: form.task,
+      priority: form.priority,
+      awaiting_estimate: form.awaiting_estimate,
+      status: form.status,
+      notes: form.notes,
+      source: form.source,
     }).select().single();
-    if(data) setRequests(prev => [data, ...prev]);
-    setForm({ name:"", address:"", task:"", priority:"", awaiting_estimate:false, status:"", notes:"", is_great_lawns:false });
+    if (data) setRequests(prev => [data, ...prev]);
+    setForm({
+      name: "", phone: "", address: "", task: "",
+      priority: "", awaiting_estimate: false,
+      status: "", notes: "", source: "phone",
+    });
     setView("board");
     setSaving(false);
   };
 
   const saveEdit = async () => {
-    if(!selected) return;
+    if (!selected) return;
     setSaving(true);
     await supabase.from("requests").update({
       name: selected.name,
+      phone: selected.phone,
       address: selected.address,
       task: selected.task,
       priority: selected.priority,
       awaiting_estimate: selected.awaiting_estimate,
       status: selected.status,
       notes: selected.notes,
-      is_great_lawns: selected.is_great_lawns,
     }).eq("id", selected.id);
     setRequests(prev => prev.map(r => r.id === selected.id ? selected : r));
     setView("board");
@@ -3726,25 +3747,47 @@ function OfficeView({ onLogout }) {
   };
 
   const convertToProperty = async () => {
-    if(!selected) return;
+    if (!selected) return;
     setConverting(true);
-    const { error } = await supabase.from("properties").insert({
+
+    // Step 1 — create client record
+    const { data: clientData, error: clientError } = await supabase
+      .from("clients")
+      .insert({
+        company_id: COMPANY_ID,
+        name: selected.name,
+        email: selected.billing_email || null,
+        phone: selected.phone || null,
+      }).select().single();
+
+    if (clientError) {
+      alert("Error creating client record. Please try again.");
+      setConverting(false);
+      return;
+    }
+
+    // Step 2 — create property linked to client
+    const { error: propError } = await supabase.from("properties").insert({
       company_id: COMPANY_ID,
-      client_name: selected.name,
+      client_id: clientData.id,
       address: selected.address,
       service_notes: selected.notes || null,
       active: true,
       property_type: "residential",
+      base_service_price: 0,
     });
-    if(!error) {
+
+    if (!propError) {
       await updateStatus(selected.id, "schedule");
       alert(`${selected.name} has been added as a property!`);
+    } else {
+      alert("Error creating property. Client was created but property failed.");
     }
     setConverting(false);
   };
 
   const deleteJob = async (jobId) => {
-    if(!window.confirm("Remove this job from the schedule?")) return;
+    if (!window.confirm("Remove this job from the schedule?")) return;
     await supabase.from("job_assignments").delete().eq("job_id", jobId);
     await supabase.from("jobs").delete().eq("id", jobId);
     setSchedule(prev => prev.filter(j => j.id !== jobId));
@@ -3752,7 +3795,7 @@ function OfficeView({ onLogout }) {
   };
 
   const saveJob = async () => {
-    if(!editingJob) return;
+    if (!editingJob) return;
     setSavingJob(true);
     try {
       await supabase.from("jobs").update({
@@ -3762,15 +3805,19 @@ function OfficeView({ onLogout }) {
       }).eq("id", editingJob.id);
 
       const existingAssignment = assignments.find(a => a.job_id === editingJob.id);
-      if(editingJobTruck) {
-        if(existingAssignment) {
+      if (editingJobTruck) {
+        if (existingAssignment) {
           await supabase.from("job_assignments").update({ truck_id: editingJobTruck }).eq("id", existingAssignment.id);
-          setAssignments(prev => prev.map(a => a.id === existingAssignment.id ? {...a, truck_id: editingJobTruck} : a));
+          setAssignments(prev => prev.map(a => a.id === existingAssignment.id ? { ...a, truck_id: editingJobTruck } : a));
         } else {
-          const { data } = await supabase.from("job_assignments").insert({ job_id: editingJob.id, truck_id: editingJobTruck, crew_name: "" }).select().single();
-          if(data) setAssignments(prev => [...prev, data]);
+          const { data } = await supabase.from("job_assignments").insert({
+            job_id: editingJob.id,
+            truck_id: editingJobTruck,
+            crew_name: "",
+          }).select().single();
+          if (data) setAssignments(prev => [...prev, data]);
         }
-      } else if(existingAssignment) {
+      } else if (existingAssignment) {
         await supabase.from("job_assignments").delete().eq("id", existingAssignment.id);
         setAssignments(prev => prev.filter(a => a.id !== existingAssignment.id));
       }
@@ -3783,7 +3830,7 @@ function OfficeView({ onLogout }) {
       } : j));
 
       setEditingJob(null);
-    } catch(e){ console.warn(e); }
+    } catch (e) { console.warn(e); }
     setSavingJob(false);
   };
 
@@ -3797,97 +3844,99 @@ function OfficeView({ onLogout }) {
   });
 
   const cardStyle = {
-    background:"#fff",
-    border:"1px solid #dde5f5",
-    borderRadius:10,
-    padding:"14px",
+    background: "#fff",
+    border: "1px solid #dde5f5",
+    borderRadius: 10,
+    padding: "14px",
   };
 
   const inputStyle = {
-    width:"100%", background:"#0d1635", border:"1px solid #4472CA44",
-    borderRadius:8, padding:"12px 14px", color:"#CFDEE7",
-    fontFamily:"'Barlow',sans-serif", fontSize:15, boxSizing:"border-box",
+    width: "100%", background: "#0d1635", border: "1px solid #4472CA44",
+    borderRadius: 8, padding: "12px 14px", color: "#CFDEE7",
+    fontFamily: "'Barlow',sans-serif", fontSize: 15, boxSizing: "border-box",
   };
 
   const labelStyle = {
-    fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2,
-    color:"#4472CA", textTransform:"uppercase", marginBottom:4, display:"block",
+    fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2,
+    color: "#4472CA", textTransform: "uppercase", marginBottom: 4, display: "block",
   };
 
-  const PriorityBadge = ({priority}) => {
-    if(!priority) return null;
-    const colors = { High:"#e05540", Mid:"#d4bc4a" };
+  const PriorityBadge = ({ priority }) => {
+    if (!priority) return null;
+    const colors = { High: "#e05540", Mid: "#d4bc4a" };
     return (
-      <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,textTransform:"uppercase",background:`${colors[priority]}22`,color:colors[priority],border:`1px solid ${colors[priority]}55`,flexShrink:0}}>
+      <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 1, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", background: `${colors[priority]}22`, color: colors[priority], border: `1px solid ${colors[priority]}55`, flexShrink: 0 }}>
         {priority}
       </span>
     );
   };
 
-  const Topbar = ({title, right}) => (
-    <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:28,height:28,objectFit:"contain"}}/>
+  const Topbar = ({ title, right }) => (
+    <div style={{ background: "#162238", borderBottom: "3px solid #4472CA", padding: "12px 16px", paddingTop: "calc(12px + env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <img src="/TotalFlo.svg" alt="TotalFlo" style={{ width: 28, height: 28, objectFit: "contain" }} />
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#CFDEE7",letterSpacing:2,lineHeight:1}}>Office View</div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>{title}</div>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: "#CFDEE7", letterSpacing: 2, lineHeight: 1 }}>Office View</div>
+          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 1, textTransform: "uppercase", marginTop: 1 }}>{title}</div>
         </div>
       </div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{right}</div>
     </div>
   );
 
   // -- JOB EDIT MODAL --
   const JobEditModal = () => {
-    if(!editingJob) return null;
+    if (!editingJob) return null;
     const prop = properties.find(p => p.id === editingJob.property_id);
+    // FIX: use clients(name) from joined query instead of removed client_name column
+    const clientName = prop?.clients?.name || "Job";
     return (
-      <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}
-        onClick={()=>setEditingJob(null)}>
-        <div style={{background:"#fff",borderRadius:12,padding:20,width:"100%",maxWidth:480,maxHeight:"80vh",overflowY:"auto"}}
-          onClick={e=>e.stopPropagation()}>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+        onClick={() => setEditingJob(null)}>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 20, width: "100%", maxWidth: 480, maxHeight: "80vh", overflowY: "auto" }}
+          onClick={e => e.stopPropagation()}>
 
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#0A369D",letterSpacing:2,lineHeight:1}}>{prop?.client_name||"Job"}</div>
-              <div style={{fontSize:12,color:"#888",marginTop:2}}>📍 {prop?.address}</div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#4472CA",letterSpacing:1,marginTop:2,textTransform:"uppercase"}}>
-                {new Date(editingJob.date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: "#0A369D", letterSpacing: 2, lineHeight: 1 }}>{clientName}</div>
+              <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>📍 {prop?.address}</div>
+              <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: "#4472CA", letterSpacing: 1, marginTop: 2, textTransform: "uppercase" }}>
+                {new Date(editingJob.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
               </div>
             </div>
-            <button onClick={()=>setEditingJob(null)} style={{background:"none",border:"none",fontSize:20,color:"#aaa",cursor:"pointer",lineHeight:1}}>✕</button>
+            <button onClick={() => setEditingJob(null)} style={{ background: "none", border: "none", fontSize: 20, color: "#aaa", cursor: "pointer", lineHeight: 1 }}>✕</button>
           </div>
 
-          <div style={{marginBottom:14}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Assigned Truck</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              <button onClick={()=>setEditingJobTruck("")}
-                style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${!editingJobTruck?"#e05540":"#dde5f5"}`,background:!editingJobTruck?"rgba(224,85,64,0.08)":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:!editingJobTruck?"#e05540":"#4472CA",cursor:"pointer",fontWeight:600}}>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 6 }}>Assigned Truck</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <button onClick={() => setEditingJobTruck("")}
+                style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${!editingJobTruck ? "#e05540" : "#dde5f5"}`, background: !editingJobTruck ? "rgba(224,85,64,0.08)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: !editingJobTruck ? "#e05540" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
                 Unassigned
               </button>
-              {trucks.map(truck=>(
-                <button key={truck.id} onClick={()=>setEditingJobTruck(truck.id)}
-                  style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${editingJobTruck===truck.id?"#4472CA":"#dde5f5"}`,background:editingJobTruck===truck.id?"rgba(68,114,202,0.1)":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:editingJobTruck===truck.id?"#0A369D":"#4472CA",cursor:"pointer",fontWeight:600}}>
+              {trucks.map(truck => (
+                <button key={truck.id} onClick={() => setEditingJobTruck(truck.id)}
+                  style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${editingJobTruck === truck.id ? "#4472CA" : "#dde5f5"}`, background: editingJobTruck === truck.id ? "rgba(68,114,202,0.1)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: editingJobTruck === truck.id ? "#0A369D" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
                   {truck.name}
                 </button>
               ))}
             </div>
           </div>
 
-          <div style={{marginBottom:14}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Services</div>
-            {SERVICE_GROUPS.map(group=>(
-              <div key={group.label.en} style={{marginBottom:10}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:2,color:"#92B4F4",textTransform:"uppercase",marginBottom:5,borderBottom:"1px solid #dde5f5",paddingBottom:3}}>{group.label.en}</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {group.ids.map(id=>{
-                    const svc = SERVICE_TYPES.find(s=>s.id===id);
-                    if(!svc) return null;
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 6 }}>Services</div>
+            {SERVICE_GROUPS.map(group => (
+              <div key={group.label.en} style={{ marginBottom: 10 }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 2, color: "#92B4F4", textTransform: "uppercase", marginBottom: 5, borderBottom: "1px solid #dde5f5", paddingBottom: 3 }}>{group.label.en}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {group.ids.map(id => {
+                    const svc = SERVICE_TYPES.find(s => s.id === id);
+                    if (!svc) return null;
                     const isSelected = editingJobServices.includes(svc.id);
                     return (
                       <button key={svc.id}
-                        onClick={()=>setEditingJobServices(prev=>isSelected?prev.filter(s=>s!==svc.id):[...prev,svc.id])}
-                        style={{padding:"5px 10px",borderRadius:8,border:`1.5px solid ${isSelected?"#4472CA":"#dde5f5"}`,background:isSelected?"rgba(68,114,202,0.1)":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:isSelected?"#0A369D":"#4472CA",cursor:"pointer",fontWeight:isSelected?700:400}}>
+                        onClick={() => setEditingJobServices(prev => isSelected ? prev.filter(s => s !== svc.id) : [...prev, svc.id])}
+                        style={{ padding: "5px 10px", borderRadius: 8, border: `1.5px solid ${isSelected ? "#4472CA" : "#dde5f5"}`, background: isSelected ? "rgba(68,114,202,0.1)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: isSelected ? "#0A369D" : "#4472CA", cursor: "pointer", fontWeight: isSelected ? 700 : 400 }}>
                         {svc.en}
                       </button>
                     );
@@ -3897,24 +3946,24 @@ function OfficeView({ onLogout }) {
             ))}
           </div>
 
-          <div style={{marginBottom:16}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"#4472CA",textTransform:"uppercase",marginBottom:6}}>Notes</div>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 6 }}>Notes</div>
             <textarea
               value={editingJobNotes}
-              onChange={e=>setEditingJobNotes(e.target.value)}
+              onChange={e => setEditingJobNotes(e.target.value)}
               placeholder="Any notes for this job..."
-              style={{width:"100%",background:"#f0f4ff",border:"1px solid #dde5f5",borderRadius:8,padding:"10px 12px",color:"#0A369D",fontFamily:"'Barlow',sans-serif",fontSize:14,resize:"none",height:72,boxSizing:"border-box",outline:"none"}}
+              style={{ width: "100%", background: "#f0f4ff", border: "1px solid #dde5f5", borderRadius: 8, padding: "10px 12px", color: "#0A369D", fontFamily: "'Barlow',sans-serif", fontSize: 14, resize: "none", height: 72, boxSizing: "border-box", outline: "none" }}
             />
           </div>
 
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>deleteJob(editingJob.id)}
-              style={{padding:"10px 16px",background:"none",border:"1px solid #e0554044",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"#e05540",cursor:"pointer"}}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => deleteJob(editingJob.id)}
+              style={{ padding: "10px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>
               Remove Job
             </button>
             <button disabled={savingJob} onClick={saveJob}
-              style={{flex:1,padding:"10px",background:savingJob?"#92B4F4":"#0A369D",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:savingJob?"not-allowed":"pointer"}}>
-              {savingJob?"Saving...":"Save Changes"}
+              style={{ flex: 1, padding: "10px", background: savingJob ? "#92B4F4" : "#0A369D", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: savingJob ? "not-allowed" : "pointer" }}>
+              {savingJob ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </div>
@@ -3925,13 +3974,13 @@ function OfficeView({ onLogout }) {
   // -- SCHEDULE SIDEBAR --
   const ScheduleSidebar = () => {
     const today = new Date();
-    const days = Array.from({length: 7}, (_, i) => {
+    const days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const dateStr = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
       const dayJobs = schedule.filter(j => j.date === dateStr);
-      const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday:"short" });
-      const dateLabel = d.toLocaleDateString("en-US", { month:"short", day:"numeric" });
+      const dayName = i === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" });
+      const dateLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
       const count = dayJobs.length;
       const countColor = count === 0 ? "#22a86e" : count <= 3 ? "#22a86e" : count <= 6 ? "#d4bc4a" : "#e05540";
       const countBg = count === 0 ? "rgba(34,168,110,0.12)" : count <= 3 ? "rgba(34,168,110,0.12)" : count <= 6 ? "rgba(212,188,74,0.12)" : "rgba(224,85,64,0.12)";
@@ -3939,67 +3988,69 @@ function OfficeView({ onLogout }) {
     });
 
     return (
-      <div style={{width:220,minWidth:220,background:"#0d1635",borderRight:"1px solid rgba(68,114,202,0.2)",display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
-        <div style={{padding:"12px 14px 10px",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#CFDEE7",textTransform:"uppercase"}}>Schedule</div>
-          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Next 7 days — click to expand</div>
+      <div style={{ width: 220, minWidth: 220, background: "#0d1635", borderRight: "1px solid rgba(68,114,202,0.2)", display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
+        <div style={{ padding: "12px 14px 10px", borderBottom: "1px solid rgba(68,114,202,0.2)", flexShrink: 0 }}>
+          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#CFDEE7", textTransform: "uppercase" }}>Schedule</div>
+          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 1, textTransform: "uppercase", marginTop: 1 }}>Next 7 days — click to expand</div>
         </div>
-        <div style={{overflowY:"auto",flex:1}}>
-          {days.map(({dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday}) => {
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {days.map(({ dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday }) => {
             const isExpanded = !!expandedDays[dateStr];
             const visibleJobs = isExpanded ? dayJobs : dayJobs.slice(0, 2);
             return (
-              <div key={dateStr} style={{borderBottom:"1px solid rgba(68,114,202,0.1)"}}>
+              <div key={dateStr} style={{ borderBottom: "1px solid rgba(68,114,202,0.1)" }}>
                 <div
-                  onClick={() => setExpandedDays(prev => ({...prev, [dateStr]: !prev[dateStr]}))}
-                  style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 14px",background:isToday?"rgba(68,114,202,0.12)":isExpanded?"rgba(68,114,202,0.07)":"transparent",cursor:"pointer",userSelect:"none"}}
+                  onClick={() => setExpandedDays(prev => ({ ...prev, [dateStr]: !prev[dateStr] }))}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 14px", background: isToday ? "rgba(68,114,202,0.12)" : isExpanded ? "rgba(68,114,202,0.07)" : "transparent", cursor: "pointer", userSelect: "none" }}
                 >
                   <div>
-                    <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#CFDEE7",letterSpacing:1}}>{dayName.toUpperCase()}</div>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:0.5}}>{dateLabel}</div>
+                    <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, color: "#CFDEE7", letterSpacing: 1 }}>{dayName.toUpperCase()}</div>
+                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 0.5 }}>{dateLabel}</div>
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,padding:"1px 7px",borderRadius:8,background:countBg,color:countColor,letterSpacing:1}}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, padding: "1px 7px", borderRadius: 8, background: countBg, color: countColor, letterSpacing: 1 }}>
                       {count === 0 ? "Open" : `${count} jobs`}
                     </div>
                     {count > 0 && (
-                      <span style={{color:"#92B4F4",fontSize:10,display:"inline-block",transform:isExpanded?"rotate(90deg)":"rotate(0deg)",transition:"transform 0.2s"}}>▶</span>
+                      <span style={{ color: "#92B4F4", fontSize: 10, display: "inline-block", transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>▶</span>
                     )}
                   </div>
                 </div>
 
                 {count === 0 ? (
-                  <div style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#22a86e",letterSpacing:0.5}}>Open day</div>
+                  <div style={{ padding: "2px 14px 6px 20px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#22a86e", letterSpacing: 0.5 }}>Open day</div>
                 ) : (
                   <>
                     {visibleJobs.map(job => {
                       const prop = properties.find(p => p.id === job.property_id);
+                      // FIX: use clients(name) from joined query
+                      const clientName = prop?.clients?.name || "Job";
                       const assignment = assignments.find(a => a.job_id === job.id);
                       const truck = trucks.find(t => t.id === assignment?.truck_id);
                       const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
                       const dotColor = TRUCK_COLORS[truckIdx % TRUCK_COLORS.length] || "#92B4F4";
                       return (
                         <div key={job.id}
-                          onClick={e=>{
+                          onClick={e => {
                             e.stopPropagation();
                             setEditingJob(job);
                             setEditingJobServices(job.service_types || (job.service_type ? [job.service_type] : []));
                             setEditingJobTruck(assignment?.truck_id || "");
                             setEditingJobNotes(job.notes || "");
                           }}
-                          style={{display:"flex",alignItems:"center",gap:6,padding:"5px 10px 5px 20px",borderRadius:6,margin:"1px 6px",cursor:"pointer"}}
-                          onMouseEnter={e=>e.currentTarget.style.background="rgba(68,114,202,0.1)"}
-                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+                          style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 10px 5px 20px", borderRadius: 6, margin: "1px 6px", cursor: "pointer" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "rgba(68,114,202,0.1)"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                         >
-                          <div style={{width:6,height:6,borderRadius:"50%",background:dotColor,flexShrink:0}}></div>
-                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#CFDEE7",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{prop?.client_name||"Job"}</div>
-                          {truck && <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",flexShrink:0,marginRight:2}}>{truck.name.replace("Truck ","T-")}</div>}
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, flexShrink: 0 }}></div>
+                          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: "#CFDEE7", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{clientName}</div>
+                          {truck && <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", flexShrink: 0, marginRight: 2 }}>{truck.name.replace("Truck ", "T-")}</div>}
                           {isExpanded && (
                             <button
-                              onClick={e=>{e.stopPropagation();deleteJob(job.id);}}
-                              style={{background:"none",border:"none",color:"#e0554066",cursor:"pointer",fontSize:12,padding:"0 2px",lineHeight:1,flexShrink:0}}
-                              onMouseEnter={e=>e.target.style.color="#e05540"}
-                              onMouseLeave={e=>e.target.style.color="#e0554066"}
+                              onClick={e => { e.stopPropagation(); deleteJob(job.id); }}
+                              style={{ background: "none", border: "none", color: "#e0554066", cursor: "pointer", fontSize: 12, padding: "0 2px", lineHeight: 1, flexShrink: 0 }}
+                              onMouseEnter={e => e.target.style.color = "#e05540"}
+                              onMouseLeave={e => e.target.style.color = "#e0554066"}
                               title="Remove job"
                             >✕</button>
                           )}
@@ -4008,16 +4059,16 @@ function OfficeView({ onLogout }) {
                     })}
                     {!isExpanded && count > 2 && (
                       <div
-                        onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:true}))}
-                        style={{padding:"2px 14px 6px 20px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA",letterSpacing:0.5,cursor:"pointer",textDecoration:"underline",textUnderlineOffset:2}}>
+                        onClick={() => setExpandedDays(prev => ({ ...prev, [dateStr]: true }))}
+                        style={{ padding: "2px 14px 6px 20px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#4472CA", letterSpacing: 0.5, cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 2 }}>
                         +{count - 2} more
                       </div>
                     )}
                     {isExpanded && (
-                      <div style={{padding:"4px 14px 6px",display:"flex",justifyContent:"flex-end"}}>
+                      <div style={{ padding: "4px 14px 6px", display: "flex", justifyContent: "flex-end" }}>
                         <button
-                          onClick={()=>setExpandedDays(prev=>({...prev,[dateStr]:false}))}
-                          style={{background:"none",border:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#4472CA55",cursor:"pointer",letterSpacing:0.5,padding:0}}>
+                          onClick={() => setExpandedDays(prev => ({ ...prev, [dateStr]: false }))}
+                          style={{ background: "none", border: "none", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#4472CA55", cursor: "pointer", letterSpacing: 0.5, padding: 0 }}>
                           collapse ▲
                         </button>
                       </div>
@@ -4032,210 +4083,290 @@ function OfficeView({ onLogout }) {
     );
   };
 
-  // -- ADD FORM --
-  if(view === "add") return (
-  <>
-    <JobEditModal/>
-    {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
-    <div className="screen" style={{background:"#1e2d4a"}}>
-      <Topbar title="New Request" right={
-        <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 12px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>Cancel</button>
-      }/>
-      <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-        <ScheduleSidebar/>
-        <div style={{flex:1,overflowY:"auto",padding:"16px"}}>
-          <div style={{...cardStyle, marginBottom:12}}>
-            <label style={labelStyle}>Client Name *</label>
-            <input style={{...inputStyle,marginBottom:10}} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="First & Last Name"/>
-            <label style={labelStyle}>Address</label>
-            <input style={{...inputStyle,marginBottom:10}} value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} placeholder="123 Main St, Southboro"/>
-            <label style={labelStyle}>Task / Service *</label>
-            <input style={{...inputStyle,marginBottom:10}} value={form.task} onChange={e=>setForm(f=>({...f,task:e.target.value}))} placeholder="e.g. Spring Clean-Up, Mulch Install"/>
-            <label style={labelStyle}>Priority</label>
-            <div style={{display:"flex",gap:8,marginBottom:10}}>
-              {["","High","Mid"].map(p=>(
-                <button key={p} onClick={()=>setForm(f=>({...f,priority:p}))}
-                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.priority===p?"#4472CA":"#dde5f5"}`,background:form.priority===p?"#0A369D":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.priority===p?"#fff":"#4472CA",cursor:"pointer",fontWeight:600}}>
-                  {p||"None"}
-                </button>
-              ))}
-            </div>
-            <label style={labelStyle}>Status</label>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
-              {STATUSES.map(s=>(
-                <button key={s.key} onClick={()=>setForm(f=>({...f,status:s.key}))}
-                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${form.status===s.key?s.color:"#dde5f5"}`,background:form.status===s.key?s.bg:"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:form.status===s.key?s.color:"#4472CA",cursor:"pointer",fontWeight:600}}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            <div style={{display:"flex",gap:16,marginBottom:12}}>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                <input type="checkbox" checked={form.awaiting_estimate} onChange={e=>setForm(f=>({...f,awaiting_estimate:e.target.checked}))} style={{width:18,height:18,accentColor:"#4472CA"}}/>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Awaiting Estimate</span>
-              </label>
-              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                <input type="checkbox" checked={form.is_great_lawns} onChange={e=>setForm(f=>({...f,is_great_lawns:e.target.checked}))} style={{width:18,height:18,accentColor:"#22a86e"}}/>
-                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Great Lawns Customer</span>
-              </label>
-            </div>
-            <label style={labelStyle}>Notes</label>
-            <textarea style={{...inputStyle,resize:"none",height:80}} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Any details from the call..."/>
-          </div>
-          <button disabled={saving||!form.name.trim()||!form.task.trim()} onClick={saveNew}
-            style={{width:"100%",padding:"16px",background:saving?"#92B4F4":"#0A369D",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"#fff",cursor:saving?"not-allowed":"pointer"}}>
-            {saving?"Saving...":"Save Request"}
-          </button>
-        </div>
-      </div>
-    </div>
-  </>
-  );
-// -- DETAIL / EDIT VIEW --
-  if(view === "detail" && selected) {
-    const statusColor = STATUSES.find(s=>s.key===selected.status)?.color || "#8a9bb0";
-    return (
-  <>
-    <JobEditModal/>
-    {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
-      <div className="screen" style={{background:"#1e2d4a"}}>
-        <Topbar title={selected.name} right={
-          <button onClick={()=>setView("board")} style={{background:"none",border:"1px solid rgba(255,255,255,0.15)",borderRadius:6,padding:"5px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)",cursor:"pointer"}}>← Back</button>
-        }/>
-        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          <ScheduleSidebar/>
-          <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column"}}>
-            <div style={{...cardStyle, borderLeft:`4px solid ${statusColor}`, marginBottom:12}}>
-              <label style={labelStyle}>Client Name</label>
-              <input style={{...inputStyle,marginBottom:10}} value={selected.name||""} onChange={e=>setSelected(s=>({...s,name:e.target.value}))}/>
-              <label style={labelStyle}>Address</label>
-              <input style={{...inputStyle,marginBottom:10}} value={selected.address||""} onChange={e=>setSelected(s=>({...s,address:e.target.value}))}/>
-              <label style={labelStyle}>Task / Service</label>
-              <input style={{...inputStyle,marginBottom:10}} value={selected.task||""} onChange={e=>setSelected(s=>({...s,task:e.target.value}))}/>
-              <label style={labelStyle}>Priority</label>
-              <div style={{display:"flex",gap:8,marginBottom:10}}>
-                {["","High","Mid"].map(p=>(
-                  <button key={p} onClick={()=>setSelected(s=>({...s,priority:p}))}
-                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.priority===p?"#4472CA":"#dde5f5"}`,background:selected.priority===p?"#0A369D":"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.priority===p?"#fff":"#4472CA",cursor:"pointer",fontWeight:600}}>
-                    {p||"None"}
-                  </button>
-                ))}
-              </div>
-              <label style={labelStyle}>Status</label>
-              <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12}}>
-                {STATUSES.map(s=>(
-                  <button key={s.key} onClick={()=>setSelected(r=>({...r,status:s.key}))}
-                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selected.status===s.key?s.color:"#dde5f5"}`,background:selected.status===s.key?s.bg:"#f8faff",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selected.status===s.key?s.color:"#4472CA",cursor:"pointer",fontWeight:600}}>
+  // -- ADD / CREATE LEAD FORM --
+  if (view === "add") return (
+    <>
+      <JobEditModal />
+      {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
+      <div className="screen" style={{ background: "#1e2d4a" }}>
+        <Topbar title="Create Lead" right={
+          <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Cancel</button>
+        } />
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <ScheduleSidebar />
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+            <div style={{ ...cardStyle, marginBottom: 12 }}>
+
+              {/* Source selector */}
+              <label style={labelStyle}>Source</label>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                {[
+                  { value: "phone", label: "📞 Phone Call" },
+                  { value: "web_form", label: "🌐 Web Form" },
+                  { value: "referral", label: "🤝 Referral" },
+                  { value: "other", label: "Other" },
+                ].map(s => (
+                  <button key={s.value} onClick={() => setForm(f => ({ ...f, source: s.value }))}
+                    style={{ padding: "7px 12px", borderRadius: 8, border: `1.5px solid ${form.source === s.value ? "#4472CA" : "#dde5f5"}`, background: form.source === s.value ? "#0A369D" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: form.source === s.value ? "#fff" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
                     {s.label}
                   </button>
                 ))}
               </div>
-              <div style={{display:"flex",gap:16,marginBottom:12}}>
-                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                  <input type="checkbox" checked={!!selected.awaiting_estimate} onChange={e=>setSelected(s=>({...s,awaiting_estimate:e.target.checked}))} style={{width:18,height:18,accentColor:"#4472CA"}}/>
-                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Awaiting Estimate</span>
-                </label>
-                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-                  <input type="checkbox" checked={!!selected.is_great_lawns} onChange={e=>setSelected(s=>({...s,is_great_lawns:e.target.checked}))} style={{width:18,height:18,accentColor:"#22a86e"}}/>
-                  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"#0A369D"}}>Great Lawns Customer</span>
+
+              <label style={labelStyle}>Client Name *</label>
+              <input
+                style={{ ...inputStyle, marginBottom: 10 }}
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="First & Last Name or Business Name"
+              />
+
+              <label style={labelStyle}>Phone Number</label>
+              <input
+                style={{ ...inputStyle, marginBottom: 10 }}
+                value={form.phone}
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                placeholder="(508) 555-0100"
+                type="tel"
+              />
+
+              <label style={labelStyle}>Address</label>
+              <input
+                style={{ ...inputStyle, marginBottom: 10 }}
+                value={form.address}
+                onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="123 Main St, Southboro"
+              />
+
+              <label style={labelStyle}>Task / Service *</label>
+              <input
+                style={{ ...inputStyle, marginBottom: 10 }}
+                value={form.task}
+                onChange={e => setForm(f => ({ ...f, task: e.target.value }))}
+                placeholder="e.g. Spring Clean-Up, Mulch Install"
+              />
+
+              <label style={labelStyle}>Priority</label>
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                {["", "High", "Mid"].map(p => (
+                  <button key={p} onClick={() => setForm(f => ({ ...f, priority: p }))}
+                    style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${form.priority === p ? "#4472CA" : "#dde5f5"}`, background: form.priority === p ? "#0A369D" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: form.priority === p ? "#fff" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
+                    {p || "None"}
+                  </button>
+                ))}
+              </div>
+
+              <label style={labelStyle}>Status</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {STATUSES.map(s => (
+                  <button key={s.key} onClick={() => setForm(f => ({ ...f, status: s.key }))}
+                    style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${form.status === s.key ? s.color : "#dde5f5"}`, background: form.status === s.key ? s.bg : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: form.status === s.key ? s.color : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.awaiting_estimate}
+                    onChange={e => setForm(f => ({ ...f, awaiting_estimate: e.target.checked }))}
+                    style={{ width: 18, height: 18, accentColor: "#4472CA" }}
+                  />
+                  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: "#0A369D" }}>Awaiting Estimate</span>
                 </label>
               </div>
+
               <label style={labelStyle}>Notes</label>
-              <textarea style={{...inputStyle,resize:"none",height:100}} value={selected.notes||""} onChange={e=>setSelected(s=>({...s,notes:e.target.value}))}/>
+              <textarea
+                style={{ ...inputStyle, resize: "none", height: 80 }}
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Any details from the call..."
+              />
             </div>
-            {selected.status === "schedule" && (
-              <button disabled={converting} onClick={convertToProperty}
-                style={{width:"100%",padding:"14px",background:converting?"#92B4F4":"#22a86e",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:converting?"not-allowed":"pointer",marginBottom:8}}>
-                {converting?"Converting...":"✓ Convert to Property"}
-              </button>
-            )}
-            {/* Sticky action bar */}
-            <div style={{position:"sticky",bottom:0,background:"#1e2d4a",borderTop:"1px solid rgba(68,114,202,0.2)",padding:"12px 16px",display:"flex",gap:8,marginTop:"auto"}}>
-              <button onClick={()=>deleteRequest(selected.id)}
-                style={{padding:"12px 16px",background:"none",border:"1px solid #e0554044",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"#e05540",cursor:"pointer"}}>
-                Delete
-              </button>
-              <button disabled={saving} onClick={saveEdit}
-                style={{flex:1,padding:"12px",background:saving?"#92B4F4":"#4472CA",border:"none",borderRadius:8,fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"#fff",cursor:saving?"not-allowed":"pointer"}}>
-                {saving?"Saving...":"Save Changes"}
-              </button>
-            </div>
+            <button
+              disabled={saving || !form.name.trim() || !form.task.trim()}
+              onClick={saveNew}
+              style={{ width: "100%", padding: "16px", background: saving ? "#92B4F4" : "#0A369D", border: "none", borderRadius: 10, fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, letterSpacing: 3, color: "#fff", cursor: saving ? "not-allowed" : "pointer" }}>
+              {saving ? "Saving..." : "Create Lead"}
+            </button>
           </div>
         </div>
       </div>
     </>
+  );
+
+  // -- DETAIL / EDIT VIEW --
+  if (view === "detail" && selected) {
+    const statusColor = STATUSES.find(s => s.key === selected.status)?.color || "#8a9bb0";
+    return (
+      <>
+        <JobEditModal />
+        {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
+        <div className="screen" style={{ background: "#1e2d4a" }}>
+          <Topbar title={selected.name} right={
+            <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 10px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Back</button>
+          } />
+          <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+            <ScheduleSidebar />
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column" }}>
+              <div style={{ ...cardStyle, borderLeft: `4px solid ${statusColor}`, marginBottom: 12 }}>
+
+                <label style={labelStyle}>Client Name</label>
+                <input style={{ ...inputStyle, marginBottom: 10 }} value={selected.name || ""} onChange={e => setSelected(s => ({ ...s, name: e.target.value }))} />
+
+                {/* FIX: phone field now appears in detail/edit view */}
+                <label style={labelStyle}>Phone Number</label>
+                <input style={{ ...inputStyle, marginBottom: 10 }} value={selected.phone || ""} onChange={e => setSelected(s => ({ ...s, phone: e.target.value }))} type="tel" />
+
+                <label style={labelStyle}>Address</label>
+                <input style={{ ...inputStyle, marginBottom: 10 }} value={selected.address || ""} onChange={e => setSelected(s => ({ ...s, address: e.target.value }))} />
+
+                <label style={labelStyle}>Task / Service</label>
+                <input style={{ ...inputStyle, marginBottom: 10 }} value={selected.task || ""} onChange={e => setSelected(s => ({ ...s, task: e.target.value }))} />
+
+                <label style={labelStyle}>Priority</label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  {["", "High", "Mid"].map(p => (
+                    <button key={p} onClick={() => setSelected(s => ({ ...s, priority: p }))}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${selected.priority === p ? "#4472CA" : "#dde5f5"}`, background: selected.priority === p ? "#0A369D" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: selected.priority === p ? "#fff" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
+                      {p || "None"}
+                    </button>
+                  ))}
+                </div>
+
+                <label style={labelStyle}>Status</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                  {STATUSES.map(s => (
+                    <button key={s.key} onClick={() => setSelected(r => ({ ...r, status: s.key }))}
+                      style={{ padding: "8px 14px", borderRadius: 8, border: `1.5px solid ${selected.status === s.key ? s.color : "#dde5f5"}`, background: selected.status === s.key ? s.bg : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: selected.status === s.key ? s.color : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={!!selected.awaiting_estimate}
+                      onChange={e => setSelected(s => ({ ...s, awaiting_estimate: e.target.checked }))}
+                      style={{ width: 18, height: 18, accentColor: "#4472CA" }}
+                    />
+                    <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: "#0A369D" }}>Awaiting Estimate</span>
+                  </label>
+                </div>
+
+                <label style={labelStyle}>Notes</label>
+                <textarea style={{ ...inputStyle, resize: "none", height: 100 }} value={selected.notes || ""} onChange={e => setSelected(s => ({ ...s, notes: e.target.value }))} />
+              </div>
+
+              {selected.status === "schedule" && (
+                <button disabled={converting} onClick={convertToProperty}
+                  style={{ width: "100%", padding: "14px", background: converting ? "#92B4F4" : "#22a86e", border: "none", borderRadius: 10, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: converting ? "not-allowed" : "pointer", marginBottom: 8 }}>
+                  {converting ? "Converting..." : "✓ Convert to Property"}
+                </button>
+              )}
+
+              <div style={{ position: "sticky", bottom: 0, background: "#1e2d4a", borderTop: "1px solid rgba(68,114,202,0.2)", padding: "12px 16px", display: "flex", gap: 8, marginTop: "auto" }}>
+                <button onClick={() => deleteRequest(selected.id)}
+                  style={{ padding: "12px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>
+                  Delete
+                </button>
+                <button disabled={saving} onClick={saveEdit}
+                  style={{ flex: 1, padding: "12px", background: saving ? "#92B4F4" : "#4472CA", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: saving ? "not-allowed" : "pointer" }}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
-// -- KANBAN BOARD --
+  // -- KANBAN BOARD --
   return (
-  <>
-    <JobEditModal/>
-    {showMap && <CustomerMap onClose={()=>setShowMap(false)}/>}
-      <div style={{flex:1,display:"flex",flexDirection:"column",height:"100dvh",background:"#1e2d4a",overflow:"hidden",animation:"fadeUp 0.35s ease both"}}>
-        <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 16px",paddingTop:"calc(12px + env(safe-area-inset-top))",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:28,height:28,objectFit:"contain"}}/>
+    <>
+      <JobEditModal />
+      {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", height: "100dvh", background: "#1e2d4a", overflow: "hidden", animation: "fadeUp 0.35s ease both" }}>
+        <div style={{ background: "#162238", borderBottom: "3px solid #4472CA", padding: "12px 16px", paddingTop: "calc(12px + env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src="/TotalFlo.svg" alt="TotalFlo" style={{ width: 28, height: 28, objectFit: "contain" }} />
             <div>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#CFDEE7",letterSpacing:2,lineHeight:1}}>Office View</div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>Spring 2026 Requests</div>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 18, color: "#CFDEE7", letterSpacing: 2, lineHeight: 1 }}>Office View</div>
+              <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 1, textTransform: "uppercase", marginTop: 1 }}>Spring 2026 Requests</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <button onClick={()=>setShowMap(true)} style={{background:"rgba(68,114,202,0.2)",border:"1px solid rgba(68,114,202,0.4)",borderRadius:6,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#92B4F4",cursor:"pointer"}}>Map</button>
-<button onClick={()=>setView("add")} style={{background:"#4472CA",border:"none",borderRadius:8,padding:"7px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>+ New</button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
+            {/* FIX: button label updated to "Create Lead" */}
+            <button onClick={() => setView("add")} style={{ background: "#4472CA", border: "none", borderRadius: 8, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#fff", cursor: "pointer" }}>+ Create Lead</button>
           </div>
         </div>
-        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          <ScheduleSidebar/>
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{padding:"12px 16px 8px",background:"#162238",borderBottom:"1px solid rgba(68,114,202,0.2)",flexShrink:0}}>
-              <input type="text" placeholder="Search name, address, task..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
-                style={{width:"100%",background:"#0d1635",border:"1px solid #4472CA44",borderRadius:8,padding:"9px 12px",color:"#CFDEE7",fontFamily:"'Barlow',sans-serif",fontSize:14,boxSizing:"border-box",marginBottom:8,outline:"none"}}/>
-              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                {["all","High","Mid"].map(p=>(
-                  <button key={p} onClick={()=>setFilterPriority(p)}
-                    style={{padding:"5px 12px",borderRadius:6,border:`1.5px solid ${filterPriority===p?"#4472CA":"rgba(68,114,202,0.3)"}`,background:filterPriority===p?"rgba(68,114,202,0.2)":"transparent",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:filterPriority===p?"#CFDEE7":"#92B4F4",cursor:"pointer",letterSpacing:1}}>
-                    {p==="all"?"All":p}
+
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <ScheduleSidebar />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px 8px", background: "#162238", borderBottom: "1px solid rgba(68,114,202,0.2)", flexShrink: 0 }}>
+              <input type="text" placeholder="Search name, address, task..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: "100%", background: "#0d1635", border: "1px solid #4472CA44", borderRadius: 8, padding: "9px 12px", color: "#CFDEE7", fontFamily: "'Barlow',sans-serif", fontSize: 14, boxSizing: "border-box", marginBottom: 8, outline: "none" }} />
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                {["all", "High", "Mid"].map(p => (
+                  <button key={p} onClick={() => setFilterPriority(p)}
+                    style={{ padding: "5px 12px", borderRadius: 6, border: `1.5px solid ${filterPriority === p ? "#4472CA" : "rgba(68,114,202,0.3)"}`, background: filterPriority === p ? "rgba(68,114,202,0.2)" : "transparent", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: filterPriority === p ? "#CFDEE7" : "#92B4F4", cursor: "pointer", letterSpacing: 1 }}>
+                    {p === "all" ? "All" : p}
                   </button>
                 ))}
-                <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#92B4F4",letterSpacing:1}}>{filtered.length} requests</span>
+                <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#92B4F4", letterSpacing: 1 }}>{filtered.length} leads</span>
               </div>
             </div>
-            <div style={{overflowY:"auto",flex:1,padding:"16px 16px 40px"}}>
+
+            <div style={{ overflowY: "auto", flex: 1, padding: "16px 16px 40px" }}>
               {loading ? (
-                <div style={{textAlign:"center",padding:"48px 0",color:"#92B4F4",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+                <div style={{ textAlign: "center", padding: "48px 0", color: "#92B4F4", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 14, letterSpacing: 1, textTransform: "uppercase" }}>Loading...</div>
               ) : (
                 STATUSES.map(status => {
                   const group = filtered.filter(r => r.status === status.key);
                   return (
-                    <div key={status.key} style={{marginBottom:24}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:status.color,textTransform:"uppercase"}}>{status.label}</div>
-                        <div style={{background:status.bg,border:`1px solid ${status.color}55`,borderRadius:10,padding:"1px 8px",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:status.color,letterSpacing:1}}>{group.length}</div>
-                        <div style={{flex:1,height:1,background:"rgba(68,114,202,0.2)"}}></div>
+                    <div key={status.key} style={{ marginBottom: 24 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                        <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: status.color, textTransform: "uppercase" }}>{status.label}</div>
+                        <div style={{ background: status.bg, border: `1px solid ${status.color}55`, borderRadius: 10, padding: "1px 8px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: status.color, letterSpacing: 1 }}>{group.length}</div>
+                        <div style={{ flex: 1, height: 1, background: "rgba(68,114,202,0.2)" }}></div>
                       </div>
                       {group.length === 0 ? (
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#4472CA55",letterSpacing:1,padding:"4px 0"}}>No requests</div>
+                        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#4472CA55", letterSpacing: 1, padding: "4px 0" }}>No leads</div>
                       ) : group.map(r => (
-                        <div key={r.id} onClick={()=>{setSelected(r);setView("detail");}}
-                          style={{background:"#fff",border:"1px solid #dde5f5",borderLeft:`4px solid ${status.color}`,borderRadius:10,padding:"14px",marginBottom:8,cursor:"pointer"}}
-                          onMouseEnter={e=>e.currentTarget.style.background="#f0f4ff"}
-                          onMouseLeave={e=>e.currentTarget.style.background="#fff"}
+                        <div key={r.id} onClick={() => { setSelected(r); setView("detail"); }}
+                          style={{ background: "#fff", border: "1px solid #dde5f5", borderLeft: `4px solid ${status.color}`, borderRadius: 10, padding: "14px", marginBottom: 8, cursor: "pointer" }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
+                          onMouseLeave={e => e.currentTarget.style.background = "#fff"}
                         >
-                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,flexWrap:"wrap"}}>
-                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"#0A369D",flex:1}}>{r.name}</div>
-                            <PriorityBadge priority={r.priority}/>
-                            {r.is_great_lawns && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,background:"rgba(34,168,110,0.1)",color:"#22a86e",border:"1px solid rgba(34,168,110,0.3)"}}>GL</span>}
-                            {r.awaiting_estimate && <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,padding:"2px 7px",borderRadius:4,background:"rgba(68,114,202,0.1)",color:"#4472CA",border:"1px solid rgba(68,114,202,0.3)"}}>EST</span>}
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: 15, color: "#0A369D", flex: 1 }}>{r.name}</div>
+                            <PriorityBadge priority={r.priority} />
+                            {r.awaiting_estimate && (
+                              <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 1, padding: "2px 7px", borderRadius: 4, background: "rgba(68,114,202,0.1)", color: "#4472CA", border: "1px solid rgba(68,114,202,0.3)" }}>EST</span>
+                            )}
+                            {/* FIX: source badge replaces GL badge */}
+                            {r.source && r.source !== "phone" && (
+                              <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 1, padding: "2px 7px", borderRadius: 4, background: "rgba(34,168,110,0.1)", color: "#22a86e", border: "1px solid rgba(34,168,110,0.3)", textTransform: "uppercase" }}>
+                                {r.source === "web_form" ? "Web" : r.source === "referral" ? "Ref" : r.source}
+                              </span>
+                            )}
                           </div>
-                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:"#4472CA",letterSpacing:1,marginBottom:2}}>{r.task}</div>
-                          <div style={{fontSize:12,color:"#888",marginBottom:r.notes?3:0}}>📍 {r.address}</div>
-                          {r.notes && <div style={{fontSize:11,color:"#aaa",fontStyle:"italic",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.notes}</div>}
-                          <div style={{display:"flex",gap:5,marginTop:8,flexWrap:"wrap"}}>
-                            {STATUSES.filter(s=>s.key!==r.status).map(s=>(
-                              <button key={s.key} onClick={e=>{e.stopPropagation();updateStatus(r.id,s.key);}}
-                                style={{padding:"3px 10px",borderRadius:6,border:`1px solid ${s.color}44`,background:s.bg,fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:s.color,cursor:"pointer",letterSpacing:0.5}}>
+                          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, color: "#4472CA", letterSpacing: 1, marginBottom: 2 }}>{r.task}</div>
+                          {r.phone && <div style={{ fontSize: 12, color: "#22a86e", marginBottom: 2 }}>📞 {r.phone}</div>}
+                          <div style={{ fontSize: 12, color: "#888", marginBottom: r.notes ? 3 : 0 }}>📍 {r.address}</div>
+                          {r.notes && <div style={{ fontSize: 11, color: "#aaa", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes}</div>}
+                          <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
+                            {STATUSES.filter(s => s.key !== r.status).map(s => (
+                              <button key={s.key} onClick={e => { e.stopPropagation(); updateStatus(r.id, s.key); }}
+                                style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${s.color}44`, background: s.bg, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: s.color, cursor: "pointer", letterSpacing: 0.5 }}>
                                 → {s.label}
                               </button>
                             ))}
