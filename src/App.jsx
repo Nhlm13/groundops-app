@@ -2973,8 +2973,10 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
       });
   }, []);
 
-  const getClientName = (p) => p?.clients?.name || p?.address || "Unknown";
-
+  const getClientName = (p) => {
+  const c = Array.isArray(p.clients) ? p.clients[0] : p.clients;
+  return c?.name || p.address || "Unknown";
+};
   const handleSubmit = async () => {
     if(!fields.property_id || !fields.date || selectedServices.length === 0) {
       setError("Please fill in all required fields.");
