@@ -2821,6 +2821,7 @@ function PropertiesTab({ searchQuery = "" }) {
       .select("id, name");
     if (clientError) console.warn("PropertiesTab clients error:", clientError);
     (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+console.log("CLIENTS:", clientData?.length, "FIRST:", clientData?.[0]);
 
     const merged = propData.map(p => ({
       ...p,
