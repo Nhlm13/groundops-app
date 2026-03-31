@@ -2910,7 +2910,38 @@ function PropertiesTab({ searchQuery = "" }) {
           Loading...
         </div>
       ) : filteredProperties.length === 0 ? (
-        <div style={{ textAlign:"center", padding
+        <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
+          {properties.length === 0 ? "No properties yet" : "No results found"}
+        </div>
+      ) : filteredProperties.map(p => (
+        <div key={p.id}
+          onClick={() => { setSelected(p); setView("detail"); }}
+          style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:"4px solid var(--mgr)", borderRadius:9, padding:"13px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
+          <div style={{ width:40, height:40, borderRadius:8, background:"rgba(42,90,149,0.12)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+            {p.photo_url
+              ? <img src={p.photo_url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+              : <Ic n="map" style={{ width:18, height:18, color:"var(--mgr-lt)" }}/>
+            }
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {p.client_name}
+            </div>
+            <div style={{ fontSize:12, color:"var(--stone)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {p.address}
+            </div>
+            {p.service_types?.length > 0 && (
+              <div style={{ fontSize:11, color:"var(--mgr-lt)", marginTop:2, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5 }}>
+                {p.service_types.join(" · ")}
+              </div>
+            )}
+          </div>
+          <Ic n="chev" style={{ width:16, height:16, color:"var(--moss)", flexShrink:0 }}/>
+        </div>
+      ))}
+    </div>
+  );
+}
 // -- JOB GENERATION -----------------------------------------------------------
 async function generateJobsFromSchedules() {
   try {
