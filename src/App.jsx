@@ -2815,15 +2815,13 @@ function PropertiesTab({ searchQuery = "" }) {
       return [];
     }
 
-    const clientIds = [...new Set(propData.map(p => p.client_id).filter(Boolean))];
     let clientMap = {};
-    if (clientIds.length > 0) {
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("id, name")
-        .in("id", clientIds);
-      if (clientError) console.warn("PropertiesTab clients error:", clientError);
-      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+    const { data: clientData, error: clientError } = await supabase
+      .from("clients")
+      .select("id, name")
+      .eq("company_id", COMPANY_ID);
+    if (clientError) console.warn("PropertiesTab clients error:", clientError);
+    (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
     }
 
     const merged = propData.map(p => ({
@@ -3199,16 +3197,13 @@ function CalendarTab() {
       if (propError) console.warn("CalendarTab properties error:", propError);
 
       // Two-step client name lookup
-      const clientIds = [...new Set((propData || []).map(p => p.client_id).filter(Boolean))];
       let clientMap = {};
-      if (clientIds.length > 0) {
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("id, name")
-          .in("id", clientIds);
-        if (clientError) console.warn("CalendarTab clients error:", clientError);
-        (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
-      }
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id, name")
+        .eq("company_id", COMPANY_ID);
+      if (clientError) console.warn("AddOneTimeJobForm clients error:", clientError);
+      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
 
       const mergedProps = (propData || []).map(p => ({
         ...p,
@@ -3554,16 +3549,13 @@ function ManagerJobsTab() {
       if (propError) console.warn("ManagerJobsTab properties error:", propError);
 
       // Two-step client name lookup
-      const clientIds = [...new Set((propData || []).map(p => p.client_id).filter(Boolean))];
       let clientMap = {};
-      if (clientIds.length > 0) {
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("id, name")
-          .in("id", clientIds);
-        if (clientError) console.warn("ManagerJobsTab clients error:", clientError);
-        (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
-      }
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id, name")
+        .eq("company_id", COMPANY_ID);
+      if (clientError) console.warn("ManagerJobsTab clients error:", clientError);
+      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
 
       const mergedProps = (propData || []).map(p => ({
         ...p,
@@ -5088,16 +5080,13 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
         const allJobIds = allJobs.map(j => j.id);
 
         // Two-step client name lookup
-        const clientIds = [...new Set(
-          allJobs.map(j => j.properties?.client_id).filter(Boolean)
-        )];
         let clientMap = {};
-        if (clientIds.length > 0) {
-          const { data: clientData } = await supabase
-            .from("clients")
-            .select("id, name")
-            .in("id", clientIds);
-          (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id, name")
+        .eq("company_id", COMPANY_ID);
+      if (clientError) console.warn("CalendarTab clients error:", clientError);
+      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
         }
 
         let timeLogs = [];
