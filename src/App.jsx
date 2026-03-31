@@ -5085,8 +5085,6 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
         .eq("company_id", COMPANY_ID);
       if (clientError) console.warn("CalendarTab clients error:", clientError);
       (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
-        }
-
         let timeLogs = [];
         let jobAssignments = [];
         if (allJobIds.length > 0) {
