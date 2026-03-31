@@ -2796,83 +2796,134 @@ function PropertiesTab({ searchQuery = "" }) {
 
   const fetchProperties = async () => {
     setLoading(true);
-    const { data } = await supabase
+
+    const { data: propData, error: propError } = await supabase
       .from("properties")
       .select("*")
       .eq("company_id", COMPANY_ID)
       .eq("active", true)
-      .order("client_name");
-    setProperties(data || []);
+      .order("address");
+
+    if (propError) {
+      console.warn("PropertiesTab fetch error:", propError);
+      setLoading(false);
+      return [];
+    }
+    if (!propData?.length) {
+      setProperties([]);
+      setLoading(false);
+      return [];
+    }
+
+    const clientIds = [...new Set(propData.map(p => p.client_id).filter(Boolean))];
+    let clientMap = {};
+    if (clientIds.length > 0) {
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id, name")
+        .in("id", clientIds);
+      if (clientError) console.warn("PropertiesTab clients error:", clientError);
+      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+    }
+
+    const merged = propData.map(p => ({
+      ...p,
+      client_name: clientMap[p.client_id] || p.address,
+    }));
+
+    setProperties(merged);
     setLoading(false);
-    return data || [];
+    return merged;
   };
 
   useEffect(() => { fetchProperties(); }, []);
 
-  if(view === "add") return <AddPropertyForm onBack={()=>setView("list")} onSaved={()=>{setView("list");fetchProperties();}}/>;
-  if(view === "add-schedule" && selected) return <AddScheduleForm property={selected} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
-  if(view === "add-one-time" && selected) return <AddOneTimeJobForm onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}} preselectedDate={null}/>;
-  if(view === "edit-schedule" && selected && selectedSchedule) return <EditScheduleForm schedule={selectedSchedule} onBack={()=>setView("detail")} onSaved={async()=>{await fetchProperties();setView("detail");}}/>;
-if(view === "detail" && selected) return <PropertyDetail property={properties.find(p=>p.id===selected.id)||selected} onBack={()=>{setView("list");setSelected(null);}} onAddSchedule={()=>setView("add-schedule")} onAddOneTimeJob={()=>setView("add-one-time")} onEditSchedule={s=>{setSelectedSchedule(s);setView("edit-schedule");}} onRefresh={fetchProperties}/>;
-const filteredProperties = properties
+  if (view === "add") return (
+    <AddPropertyForm
+      onBack={() => setView("list")}
+      onSaved={() => { setView("list"); fetchProperties(); }}
+    />
+  );
+  if (view === "add-schedule" && selected) return (
+    <AddScheduleForm
+      property={selected}
+      onBack={() => setView("detail")}
+      onSaved={async () => { await fetchProperties(); setView("detail"); }}
+    />
+  );
+  if (view === "add-one-time" && selected) return (
+    <AddOneTimeJobForm
+      onBack={() => setView("detail")}
+      onSaved={async () => { await fetchProperties(); setView("detail"); }}
+      preselectedDate={null}
+    />
+  );
+  if (view === "edit-schedule" && selected && selectedSchedule) return (
+    <EditScheduleForm
+      schedule={selectedSchedule}
+      onBack={() => setView("detail")}
+      onSaved={async () => { await fetchProperties(); setView("detail"); }}
+    />
+  );
+  if (view === "detail" && selected) return (
+    <PropertyDetail
+      property={properties.find(p => p.id === selected.id) || selected}
+      onBack={() => { setView("list"); setSelected(null); }}
+      onAddSchedule={() => setView("add-schedule")}
+      onAddOneTimeJob={() => setView("add-one-time")}
+      onEditSchedule={s => { setSelectedSchedule(s); setView("edit-schedule"); }}
+      onRefresh={fetchProperties}
+    />
+  );
+
+  const filteredProperties = properties
     .filter(p => typeFilter === "all" || p.property_type === typeFilter)
-    .filter(p => !searchQuery || p.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.address?.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter(p =>
+      !searchQuery ||
+      p.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.address?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
   return (
     <div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"var(--mgr-lt)",letterSpacing:2}}>{filteredProperties.length} Properties</div>
-        <button onClick={()=>setView("add")}
-          style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"8px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"#fff",cursor:"pointer"}}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"var(--mgr-lt)", letterSpacing:2 }}>
+          {filteredProperties.length} Properties
+        </div>
+        <button onClick={() => setView("add")}
+          style={{ background:"var(--mgr)", border:"none", borderRadius:8, padding:"8px 14px", fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"#fff", cursor:"pointer" }}>
           + Add Property
         </button>
       </div>
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
-        {["all","residential","commercial"].map(type=>(
-          <button key={type} onClick={()=>setTypeFilter(type)}
-            style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${typeFilter===type?"var(--mgr)":"var(--moss)"}`,background:typeFilter===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:1,color:typeFilter===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600,textTransform:"capitalize"}}>
-            {type==="all"?"All":type.charAt(0).toUpperCase()+type.slice(1)}
+
+      <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+        {["all", "residential", "commercial"].map(type => (
+          <button key={type} onClick={() => setTypeFilter(type)}
+            style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${typeFilter === type ? "var(--mgr)" : "var(--moss)"}`, background:typeFilter === type ? "rgba(42,90,149,0.15)" : "var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:typeFilter === type ? "var(--mgr-lt)" : "var(--stone)", cursor:"pointer", fontWeight:600, textTransform:"capitalize" }}>
+            {type === "all" ? "All" : type.charAt(0).toUpperCase() + type.slice(1)}
           </button>
         ))}
       </div>
+
       {loading ? (
-        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
-      ) : properties.length === 0 ? (
-        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>No properties yet</div>
-      ) : filteredProperties.map(p => (
-        <div key={p.id} onClick={()=>{setSelected(p);setView("detail");}}
-          style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--mgr)",borderRadius:9,padding:"13px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
-          <div style={{width:40,height:40,borderRadius:8,background:"rgba(42,90,149,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,overflow:"hidden"}}>
-            {p.photo_url
-              ? <img src={p.photo_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-              : <Ic n="map" style={{width:18,height:18,color:"var(--mgr-lt)"}}/>
-            }
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.client_name}</div>
-            <div style={{fontSize:12,color:"var(--stone)",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.address}</div>
-            {p.service_types?.length>0&&<div style={{fontSize:11,color:"var(--mgr-lt)",marginTop:2,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:0.5}}>{p.service_types.join(" · ")}</div>}
-          </div>
-          <Ic n="chev" style={{width:16,height:16,color:"var(--moss)",flexShrink:0}}/>
+        <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
+          Loading...
         </div>
-      ))}
-    </div>
-  );
-}
+      ) : filteredProperties.length === 0 ? (
+        <div style={{ textAlign:"center", padding
 // -- JOB GENERATION -----------------------------------------------------------
 async function generateJobsFromSchedules() {
   try {
-    // Get all active schedules with their properties
     const { data: schedules } = await supabase
       .from("schedules")
-      .select("*, properties!inner(id, company_id, client_name, active)")
+      .select("*, properties!inner(id, company_id, active)")
       .eq("properties.company_id", COMPANY_ID)
       .eq("properties.active", true);
 
-if(!schedules || schedules.length === 0) return;
+    if (!schedules || schedules.length === 0) return;
 
     const activeSchedules = schedules.filter(s => !s.paused && s.active !== false);
 
-    // Get existing jobs for next 60 days to avoid duplicates
     const today = new Date();
     const futureDate = new Date();
     futureDate.setDate(today.getDate() + 60);
@@ -2895,27 +2946,24 @@ if(!schedules || schedules.length === 0) return;
 
     const jobsToInsert = [];
 
-    for(const schedule of activeSchedules) {
+    for (const schedule of activeSchedules) {
       const startDate = new Date(schedule.start_date + "T12:00:00");
       const endDate = schedule.end_date ? new Date(schedule.end_date + "T12:00:00") : futureDate;
       const targetDay = DAY_MAP[schedule.day_of_week];
       const interval = FREQ_DAYS[schedule.frequency] || 7;
 
-      // Find first occurrence on or after today that matches the day of week
       let current = new Date(Math.max(startDate, today));
       current.setHours(12, 0, 0, 0);
 
-      // Advance to the correct day of week
-      while(current.getDay() !== targetDay) {
+      while (current.getDay() !== targetDay) {
         current.setDate(current.getDate() + 1);
       }
 
-      // Generate jobs at the correct interval
-      while(current <= endDate && current <= futureDate) {
+      while (current <= endDate && current <= futureDate) {
         const dateStr = current.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
         const key = `${schedule.id}_${dateStr}`;
 
-        if(!existingKeys.has(key) && dateStr >= todayStr) {
+        if (!existingKeys.has(key) && dateStr >= todayStr) {
           jobsToInsert.push({
             company_id: COMPANY_ID,
             property_id: schedule.property_id,
@@ -2932,7 +2980,7 @@ if(!schedules || schedules.length === 0) return;
       }
     }
 
-    if(jobsToInsert.length > 0) {
+    if (jobsToInsert.length > 0) {
       await supabase.from("jobs").insert(jobsToInsert);
       console.log(`Generated ${jobsToInsert.length} jobs`);
     }
@@ -3089,7 +3137,7 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
 }
 // -- CALENDAR TAB -------------------------------------------------------------
 function CalendarTab() {
- const [jobs, setJobs] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [properties, setProperties] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [assignments, setAssignments] = useState({});
@@ -3105,20 +3153,40 @@ function CalendarTab() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const firstDay = new Date(currentMonth.year, currentMonth.month, 1);
-      const lastDay = new Date(currentMonth.year, currentMonth.month + 1, 0);
-      const firstStr = firstDay.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-      const lastStr = lastDay.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
-      const [{ data: jobData }, { data: propData }, { data: truckData }] = await Promise.all([
+      const firstDay = new Date(currentMonth.year, currentMonth.month, 1);
+      const lastDay  = new Date(currentMonth.year, currentMonth.month + 1, 0);
+      const firstStr = firstDay.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const lastStr  = lastDay.toLocaleDateString("en-CA",  { timeZone: "America/New_York" });
+
+      const [{ data: jobData }, { data: propData, error: propError }, { data: truckData }] = await Promise.all([
         supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).gte("date", firstStr).lte("date", lastStr).order("date"),
-        supabase.from("properties").select("id, client_name, service_types, service_notes, special_instructions, photo_url").eq("company_id", COMPANY_ID),
+        supabase.from("properties").select("id, address, service_types, service_notes, special_instructions, photo_url, client_id").eq("company_id", COMPANY_ID),
         supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
       ]);
 
+      if (propError) console.warn("CalendarTab properties error:", propError);
+
+      // Two-step client name lookup
+      const clientIds = [...new Set((propData || []).map(p => p.client_id).filter(Boolean))];
+      let clientMap = {};
+      if (clientIds.length > 0) {
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id, name")
+          .in("id", clientIds);
+        if (clientError) console.warn("CalendarTab clients error:", clientError);
+        (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+      }
+
+      const mergedProps = (propData || []).map(p => ({
+        ...p,
+        client_name: clientMap[p.client_id] || p.address,
+      }));
+
       const jobIds = (jobData || []).map(j => j.id);
       let assignmentMap = {};
-      if(jobIds.length > 0) {
+      if (jobIds.length > 0) {
         const { data: assignData } = await supabase
           .from("job_assignments")
           .select("*")
@@ -3127,7 +3195,7 @@ function CalendarTab() {
       }
 
       setJobs(jobData || []);
-      setProperties(propData || []);
+      setProperties(mergedProps);
       setTrucks(truckData || []);
       setAssignments(assignmentMap);
       setLoading(false);
@@ -3137,181 +3205,225 @@ function CalendarTab() {
   }, [currentMonth]);
 
   const SERVICE_COLORS = {
-    "Mowing": "#4a6d20",
+    "Mowing":         "#4a6d20",
     "Fine Gardening": "#2a5a95",
-    "Irrigation": "#0e7490",
-    "Fertilization": "#a06010",
-    "Cleanup": "#7a6845",
-    "Mulching": "#6b4e2a",
-    "Other": "#6a6658",
+    "Irrigation":     "#0e7490",
+    "Fertilization":  "#a06010",
+    "Cleanup":        "#7a6845",
+    "Mulching":       "#6b4e2a",
+    "Other":          "#6a6658",
   };
 
-const assignJobToTruck = async (jobId, truckId) => {
+  const assignJobToTruck = async (jobId, truckId) => {
     const existing = assignments[jobId];
-    if(existing) {
+    if (existing) {
       await supabase.from("job_assignments").update({ truck_id: truckId }).eq("id", existing.id);
-      setAssignments(prev => ({...prev, [jobId]: {...existing, truck_id: truckId}}));
+      setAssignments(prev => ({ ...prev, [jobId]: { ...existing, truck_id: truckId } }));
     } else {
-      const { data } = await supabase.from("job_assignments").insert({
-        job_id: jobId,
-        truck_id: truckId,
-        crew_name: "",
-      }).select().single();
-      if(data) setAssignments(prev => ({...prev, [jobId]: data}));
+      const { data } = await supabase
+        .from("job_assignments")
+        .insert({ job_id: jobId, truck_id: truckId, crew_name: "" })
+        .select()
+        .single();
+      if (data) setAssignments(prev => ({ ...prev, [jobId]: data }));
     }
     setAssigningJob(null);
   };
 
   const unassignJob = async (jobId) => {
     const existing = assignments[jobId];
-    if(existing) {
+    if (existing) {
       await supabase.from("job_assignments").delete().eq("id", existing.id);
-      setAssignments(prev => { const next = {...prev}; delete next[jobId]; return next; });
+      setAssignments(prev => { const next = { ...prev }; delete next[jobId]; return next; });
     }
     setAssigningJob(null);
   };
 
-const skipJob = async (jobId) => {
-    if(!window.confirm("Skip this job? It will be removed from the calendar.")) return;
+  const skipJob = async (jobId) => {
+    if (!window.confirm("Skip this job? It will be removed from the calendar.")) return;
     await supabase.from("jobs").delete().eq("id", jobId);
     setJobs(prev => prev.filter(j => j.id !== jobId));
-    setAssignments(prev => { const next = {...prev}; delete next[jobId]; return next; });
+    setAssignments(prev => { const next = { ...prev }; delete next[jobId]; return next; });
   };
-  
-  const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
+
+  const daysInMonth    = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
-  const monthName = new Date(currentMonth.year, currentMonth.month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const monthName      = new Date(currentMonth.year, currentMonth.month, 1).toLocaleDateString("en-US", { month:"long", year:"numeric" });
+  const todayStr       = new Date().toLocaleDateString("en-CA", { timeZone:"America/New_York" });
 
   const jobsByDate = {};
   jobs.forEach(job => {
-    if(!jobsByDate[job.date]) jobsByDate[job.date] = [];
+    if (!jobsByDate[job.date]) jobsByDate[job.date] = [];
     jobsByDate[job.date].push(job);
   });
 
   const prevMonth = () => setCurrentMonth(m => {
-    if(m.month === 0) return { year: m.year - 1, month: 11 };
+    if (m.month === 0) return { year: m.year - 1, month: 11 };
     return { year: m.year, month: m.month - 1 };
   });
   const nextMonth = () => setCurrentMonth(m => {
-    if(m.month === 11) return { year: m.year + 1, month: 0 };
+    if (m.month === 11) return { year: m.year + 1, month: 0 };
     return { year: m.year, month: m.month + 1 };
   });
 
-  const selectedDayJobs = selectedDay ? (jobsByDate[selectedDay] || []) : [];
-  const selectedDayProps = selectedDayJobs.map(job => {
-    const prop = properties.find(p => p.id === job.property_id);
-    return { ...job, property: prop };
-  });
+  const selectedDayJobs  = selectedDay ? (jobsByDate[selectedDay] || []) : [];
+  const selectedDayProps = selectedDayJobs.map(job => ({
+    ...job,
+    property: properties.find(p => p.id === job.property_id),
+  }));
 
- return (
+  return (
     <div>
-      {addingJob && <AddOneTimeJobForm
-        onBack={()=>setAddingJob(false)}
-        onSaved={()=>{ setAddingJob(false); setCurrentMonth(m=>({...m})); }}
-        preselectedDate={selectedDay || new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"})}
-      />}
+      {addingJob && (
+        <AddOneTimeJobForm
+          onBack={() => setAddingJob(false)}
+          onSaved={() => { setAddingJob(false); setCurrentMonth(m => ({ ...m })); }}
+          preselectedDate={selectedDay || new Date().toLocaleDateString("en-CA", { timeZone:"America/New_York" })}
+        />
+      )}
+
       {!addingJob && (
         <>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <button onClick={prevMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>‹ Prev</button>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"var(--mgr-lt)",letterSpacing:2}}>{monthName}</div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setAddingJob(true)} style={{background:"var(--mgr)",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#fff",fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:1}}>+ Add Job</button>
-              <button onClick={nextMonth} style={{background:"none",border:"1px solid var(--moss)",borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Next ›</button>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+            <button onClick={prevMonth}
+              style={{ background:"none", border:"1px solid var(--moss)", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13 }}>
+              ‹ Prev
+            </button>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--mgr-lt)", letterSpacing:2 }}>
+              {monthName}
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => setAddingJob(true)}
+                style={{ background:"var(--mgr)", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"#fff", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:1 }}>
+                + Add Job
+              </button>
+              <button onClick={nextMonth}
+                style={{ background:"none", border:"1px solid var(--moss)", borderRadius:8, padding:"6px 12px", cursor:"pointer", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13 }}>
+                Next ›
+              </button>
             </div>
           </div>
+
           {loading ? (
-            <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+            <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
+              Loading...
+            </div>
           ) : (
             <>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:2}}>
-                {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=>(
-                  <div key={d} style={{textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,color:"var(--stone)",padding:"4px 0",textTransform:"uppercase"}}>{d}</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:2 }}>
+                {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => (
+                  <div key={d} style={{ textAlign:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", padding:"4px 0", textTransform:"uppercase" }}>
+                    {d}
+                  </div>
                 ))}
               </div>
-              <div className="calendar-grid" style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}}>
-                {Array.from({length: firstDayOfMonth}).map((_,i)=>(
-                  <div key={`empty-${i}`} style={{minHeight:56,background:"rgba(196,191,176,0.1)",borderRadius:6}}/>
+
+              <div className="calendar-grid" style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
+                {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                  <div key={`empty-${i}`} style={{ minHeight:56, background:"rgba(196,191,176,0.1)", borderRadius:6 }}/>
                 ))}
-                {Array.from({length: daysInMonth}).map((_,i)=>{
-                  const day = i + 1;
-                  const dateStr = `${currentMonth.year}-${String(currentMonth.month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day     = i + 1;
+                  const dateStr = `${currentMonth.year}-${String(currentMonth.month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
                   const dayJobs = jobsByDate[dateStr] || [];
-                  const isToday = dateStr === todayStr;
+                  const isToday    = dateStr === todayStr;
                   const isSelected = dateStr === selectedDay;
                   return (
-                    <div key={day} onClick={()=>setSelectedDay(isSelected ? null : dateStr)}
+                    <div key={day}
+                      onClick={() => setSelectedDay(isSelected ? null : dateStr)}
                       className="calendar-day"
-                      style={{minHeight:56,background:isSelected?"rgba(42,90,149,0.15)":isToday?"rgba(74,109,32,0.1)":"var(--bark)",border:`1px solid ${isSelected?"var(--mgr)":isToday?"var(--leaf)":"var(--moss)"}`,borderRadius:6,padding:"4px",cursor:dayJobs.length>0||isToday?"pointer":"default",transition:"background 0.15s"}}>
-                      <div className="calendar-day-num" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,fontWeight:700,color:isToday?"var(--lime)":isSelected?"var(--mgr-lt)":"var(--stone)",marginBottom:2}}>{day}</div>
-                      {dayJobs.slice(0,3).map((job,ji)=>{
-                       const prop = properties.find(p=>p.id===job.property_id);
-                       const serviceType = job.service_type || prop?.service_types?.[0] || "Other";
-                       const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
+                      style={{ minHeight:56, background:isSelected ? "rgba(42,90,149,0.15)" : isToday ? "rgba(74,109,32,0.1)" : "var(--bark)", border:`1px solid ${isSelected ? "var(--mgr)" : isToday ? "var(--leaf)" : "var(--moss)"}`, borderRadius:6, padding:"4px", cursor:dayJobs.length > 0 || isToday ? "pointer" : "default", transition:"background 0.15s" }}>
+                      <div className="calendar-day-num"
+                        style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:700, color:isToday ? "var(--lime)" : isSelected ? "var(--mgr-lt)" : "var(--stone)", marginBottom:2 }}>
+                        {day}
+                      </div>
+                      {dayJobs.slice(0, 3).map((job, ji) => {
+                        const prop        = properties.find(p => p.id === job.property_id);
+                        const serviceType = job.service_type || prop?.service_types?.[0] || "Other";
+                        const color       = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
                         return (
-                          <div key={ji} className="calendar-event" style={{background:color,borderRadius:3,padding:"1px 4px",marginBottom:1,overflow:"hidden"}}>
-                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"#fff",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",letterSpacing:0.3}}>
+                          <div key={ji} className="calendar-event"
+                            style={{ background:color, borderRadius:3, padding:"1px 4px", marginBottom:1, overflow:"hidden" }}>
+                            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:0.3 }}>
                               {prop?.client_name || "Job"}
                             </div>
                           </div>
                         );
                       })}
                       {dayJobs.length > 3 && (
-                        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:9,color:"var(--stone)",letterSpacing:0.3}}>+{dayJobs.length-3} more</div>
+                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"var(--stone)", letterSpacing:0.3 }}>
+                          +{dayJobs.length - 3} more
+                        </div>
                       )}
                     </div>
                   );
                 })}
               </div>
+
               {selectedDay && (
-                <div style={{marginTop:14,animation:"fadeUp 0.2s ease both"}}>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--mgr-lt)",marginBottom:8}}>
-                    {new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}
-                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:"var(--stone)",letterSpacing:1,marginLeft:8,fontWeight:400}}>{selectedDayJobs.length} job{selectedDayJobs.length!==1?"s":""}</span>
+                <div style={{ marginTop:14, animation:"fadeUp 0.2s ease both" }}>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"var(--mgr-lt)", marginBottom:8 }}>
+                    {new Date(selectedDay + "T12:00:00").toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" })}
+                    <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--stone)", letterSpacing:1, marginLeft:8, fontWeight:400 }}>
+                      {selectedDayJobs.length} job{selectedDayJobs.length !== 1 ? "s" : ""}
+                    </span>
                   </div>
+
                   {selectedDayJobs.length === 0 ? (
-                    <div style={{textAlign:"center",padding:"16px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,letterSpacing:1}}>No jobs scheduled</div>
-                  ) : selectedDayProps.map((job,i)=>{
-                    const serviceType = job.service_type || job.property?.service_types?.[0] || "Other";
-                    const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
-                    const assignment = assignments[job.id];
-                    const assignedTruck = trucks.find(t=>t.id===assignment?.truck_id);
+                    <div style={{ textAlign:"center", padding:"16px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1 }}>
+                      No jobs scheduled
+                    </div>
+                  ) : selectedDayProps.map((job, i) => {
+                    const serviceType  = job.service_type || job.property?.service_types?.[0] || "Other";
+                    const color        = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
+                    const assignment   = assignments[job.id];
+                    const assignedTruck = trucks.find(t => t.id === assignment?.truck_id);
                     return (
-                      <div key={i} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:`4px solid ${color}`,borderRadius:9,padding:"12px 14px",marginBottom:8,cursor:"pointer"}}
-                        onClick={()=>setAssigningJob(assigningJob?.id===job.id ? null : job)}>
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-                          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{job.property?.client_name||"Unknown Property"}</div>
-<div style={{display:"flex",alignItems:"center",gap:6}}>
-  <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:job.status==="completed"?"rgba(74,109,32,0.12)":job.status==="in_progress"?"rgba(160,96,16,0.12)":"rgba(196,191,176,0.2)",color:job.status==="completed"?"var(--lime)":job.status==="in_progress"?"var(--warn)":"var(--stone)"}}>{job.status}</span>
-  {job.status==="scheduled"&&(
-    <button onClick={e=>{e.stopPropagation();skipJob(job.id);}}
-      style={{padding:"2px 8px",borderRadius:4,border:"1px solid var(--danger)",background:"none",fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--danger)",cursor:"pointer",textTransform:"uppercase"}}>
-      Skip
-    </button>
-  )}
-</div>                        </div>
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                          <div style={{fontSize:12,color:"var(--stone)"}}>{serviceType}</div>
-                          {assignedTruck ? (
-                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
-                          ) : (
-                            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--warn)",letterSpacing:1}}>Unassigned</span>
-                          )}
+                      <div key={i}
+                        style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:`4px solid ${color}`, borderRadius:9, padding:"12px 14px", marginBottom:8, cursor:"pointer" }}
+                        onClick={() => setAssigningJob(assigningJob?.id === job.id ? null : job)}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+                          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)" }}>
+                            {job.property?.client_name || "Unknown Property"}
+                          </div>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, padding:"2px 8px", borderRadius:4, textTransform:"uppercase", background:job.status === "completed" ? "rgba(74,109,32,0.12)" : job.status === "in_progress" ? "rgba(160,96,16,0.12)" : "rgba(196,191,176,0.2)", color:job.status === "completed" ? "var(--lime)" : job.status === "in_progress" ? "var(--warn)" : "var(--stone)" }}>
+                              {job.status}
+                            </span>
+                            {job.status === "scheduled" && (
+                              <button
+                                onClick={e => { e.stopPropagation(); skipJob(job.id); }}
+                                style={{ padding:"2px 8px", borderRadius:4, border:"1px solid var(--danger)", background:"none", fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--danger)", cursor:"pointer", textTransform:"uppercase" }}>
+                                Skip
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        {assigningJob?.id===job.id && (
-                          <div style={{marginTop:10,borderTop:"1px solid var(--moss)",paddingTop:10,animation:"fadeUp 0.2s ease both"}}>
-                            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Assign to Truck</div>
-                            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                              {trucks.map(truck=>(
-                                <button key={truck.id} onClick={e=>{e.stopPropagation();assignJobToTruck(job.id,truck.id);}}
-                                  style={{padding:"6px 12px",borderRadius:6,border:`1.5px solid ${assignment?.truck_id===truck.id?"var(--lime)":"var(--moss)"}`,background:assignment?.truck_id===truck.id?"rgba(74,109,32,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:assignment?.truck_id===truck.id?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                          <div style={{ fontSize:12, color:"var(--stone)" }}>{serviceType}</div>
+                          {assignedTruck
+                            ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#92B4F4", letterSpacing:1 }}>🚛 {assignedTruck.name}</span>
+                            : <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)", letterSpacing:1 }}>Unassigned</span>
+                          }
+                        </div>
+
+                        {assigningJob?.id === job.id && (
+                          <div style={{ marginTop:10, borderTop:"1px solid var(--moss)", paddingTop:10, animation:"fadeUp 0.2s ease both" }}>
+                            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:8 }}>
+                              Assign to Truck
+                            </div>
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                              {trucks.map(truck => (
+                                <button key={truck.id}
+                                  onClick={e => { e.stopPropagation(); assignJobToTruck(job.id, truck.id); }}
+                                  style={{ padding:"6px 12px", borderRadius:6, border:`1.5px solid ${assignment?.truck_id === truck.id ? "var(--lime)" : "var(--moss)"}`, background:assignment?.truck_id === truck.id ? "rgba(74,109,32,0.15)" : "var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:assignment?.truck_id === truck.id ? "var(--lime)" : "var(--stone)", cursor:"pointer", fontWeight:600 }}>
                                   {truck.name}
                                 </button>
                               ))}
                               {assignment && (
-                                <button onClick={e=>{e.stopPropagation();unassignJob(job.id);}}
-                                  style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid var(--danger)",background:"rgba(192,68,42,0.08)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--danger)",cursor:"pointer",fontWeight:600}}>
+                                <button
+                                  onClick={e => { e.stopPropagation(); unassignJob(job.id); }}
+                                  style={{ padding:"6px 12px", borderRadius:6, border:"1.5px solid var(--danger)", background:"rgba(192,68,42,0.08)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--danger)", cursor:"pointer", fontWeight:600 }}>
                                   Remove
                                 </button>
                               )}
@@ -3401,19 +3513,44 @@ function ManagerJobsTab() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const [{ data: jobData }, { data: propData }, { data: truckData }] = await Promise.all([
+
+      const [{ data: jobData }, { data: propData, error: propError }, { data: truckData }] = await Promise.all([
         supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", today).order("sort_order"),
-        supabase.from("properties").select("id, client_name, address, service_types").eq("company_id", COMPANY_ID),
+        supabase.from("properties").select("id, address, service_types, client_id").eq("company_id", COMPANY_ID),
         supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
       ]);
-      const jobIds = (jobData||[]).map(j => j.id);
-      let assignmentMap = {};
-      if(jobIds.length > 0) {
-        const { data: assignData } = await supabase.from("job_assignments").select("*").in("job_id", jobIds);
-        (assignData||[]).forEach(a => { assignmentMap[a.job_id] = a; });
+
+      if (propError) console.warn("ManagerJobsTab properties error:", propError);
+
+      // Two-step client name lookup
+      const clientIds = [...new Set((propData || []).map(p => p.client_id).filter(Boolean))];
+      let clientMap = {};
+      if (clientIds.length > 0) {
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("id, name")
+          .in("id", clientIds);
+        if (clientError) console.warn("ManagerJobsTab clients error:", clientError);
+        (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
       }
+
+      const mergedProps = (propData || []).map(p => ({
+        ...p,
+        client_name: clientMap[p.client_id] || p.address,
+      }));
+
+      const jobIds = (jobData || []).map(j => j.id);
+      let assignmentMap = {};
+      if (jobIds.length > 0) {
+        const { data: assignData } = await supabase
+          .from("job_assignments")
+          .select("*")
+          .in("job_id", jobIds);
+        (assignData || []).forEach(a => { assignmentMap[a.job_id] = a; });
+      }
+
       setJobs(jobData || []);
-      setProperties(propData || []);
+      setProperties(mergedProps);
       setTrucks(truckData || []);
       setAssignments(assignmentMap);
       setLoading(false);
@@ -3424,96 +3561,122 @@ function ManagerJobsTab() {
 
   const assignJobToTruck = async (jobId, truckId) => {
     const existing = assignments[jobId];
-    if(existing) {
+    if (existing) {
       await supabase.from("job_assignments").update({ truck_id: truckId }).eq("id", existing.id);
-      setAssignments(prev => ({...prev, [jobId]: {...existing, truck_id: truckId}}));
+      setAssignments(prev => ({ ...prev, [jobId]: { ...existing, truck_id: truckId } }));
     } else {
-      const { data } = await supabase.from("job_assignments").insert({ job_id: jobId, truck_id: truckId, crew_name: "" }).select().single();
-      if(data) setAssignments(prev => ({...prev, [jobId]: data}));
+      const { data } = await supabase
+        .from("job_assignments")
+        .insert({ job_id: jobId, truck_id: truckId, crew_name: "" })
+        .select()
+        .single();
+      if (data) setAssignments(prev => ({ ...prev, [jobId]: data }));
     }
     setAssigningJob(null);
   };
 
   const unassignJob = async (jobId) => {
     const existing = assignments[jobId];
-    if(existing) {
+    if (existing) {
       await supabase.from("job_assignments").delete().eq("id", existing.id);
-      setAssignments(prev => { const next = {...prev}; delete next[jobId]; return next; });
+      setAssignments(prev => { const next = { ...prev }; delete next[jobId]; return next; });
     }
     setAssigningJob(null);
   };
 
   const filteredJobs = jobs.filter(j => {
-    if(filter === "unassigned") return !assignments[j.id];
-    if(filter === "scheduled") return j.status === "scheduled";
-    if(filter === "in_progress") return j.status === "in_progress";
-    if(filter === "completed") return j.status === "completed";
+    if (filter === "unassigned") return !assignments[j.id];
+    if (filter === "scheduled")  return j.status === "scheduled";
+    if (filter === "in_progress") return j.status === "in_progress";
+    if (filter === "completed")  return j.status === "completed";
     return true;
   });
 
   const counts = {
-    unassigned: jobs.filter(j => !assignments[j.id]).length,
-    scheduled: jobs.filter(j => j.status === "scheduled").length,
+    unassigned:  jobs.filter(j => !assignments[j.id]).length,
+    scheduled:   jobs.filter(j => j.status === "scheduled").length,
     in_progress: jobs.filter(j => j.status === "in_progress").length,
-    completed: jobs.filter(j => j.status === "completed").length,
+    completed:   jobs.filter(j => j.status === "completed").length,
   };
 
-  if(loading) return (
-    <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>Loading...</div>
+  if (loading) return (
+    <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
+      Loading...
+    </div>
   );
 
   return (
     <div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,marginBottom:14}}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:14 }}>
         {[
-          {key:"scheduled", label:"Scheduled", color:"var(--stone)"},
-          {key:"unassigned", label:"Unassigned", color:"var(--warn)"},
-          {key:"in_progress", label:"Active", color:"#92B4F4"},
-          {key:"completed", label:"Done", color:"var(--leaf)"},
-        ].map(({key, label, color})=>(
-          <div key={key} style={{background:"var(--bark)",border:`1px solid ${filter===key?"var(--mgr)":"var(--moss)"}`,borderRadius:8,padding:"8px",textAlign:"center",cursor:"pointer"}} onClick={()=>setFilter(filter===key?"all":key)}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color,lineHeight:1}}>{counts[key]}</div>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,letterSpacing:1,color:"var(--stone)",textTransform:"uppercase",marginTop:2}}>{label}</div>
+          { key:"scheduled",   label:"Scheduled", color:"var(--stone)" },
+          { key:"unassigned",  label:"Unassigned", color:"var(--warn)" },
+          { key:"in_progress", label:"Active",    color:"#92B4F4" },
+          { key:"completed",   label:"Done",      color:"var(--leaf)" },
+        ].map(({ key, label, color }) => (
+          <div key={key}
+            style={{ background:"var(--bark)", border:`1px solid ${filter === key ? "var(--mgr)" : "var(--moss)"}`, borderRadius:8, padding:"8px", textAlign:"center", cursor:"pointer" }}
+            onClick={() => setFilter(filter === key ? "all" : key)}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color, lineHeight:1 }}>{counts[key]}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginTop:2 }}>{label}</div>
           </div>
         ))}
       </div>
+
       {filteredJobs.length === 0 ? (
-        <div style={{textAlign:"center",padding:"48px 0",color:"var(--stone)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,textTransform:"uppercase"}}>No jobs</div>
+        <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
+          No jobs
+        </div>
       ) : filteredJobs.map(job => {
         const prop = properties.find(p => p.id === job.property_id);
         const assignment = assignments[job.id];
         const assignedTruck = trucks.find(t => t.id === assignment?.truck_id);
         const isAssigning = assigningJob === job.id;
-        const statusColor = job.status==="completed"?"var(--leaf)":job.status==="in_progress"?"var(--lime)":"var(--stone)";
+        const statusColor = job.status === "completed" ? "var(--leaf)" : job.status === "in_progress" ? "var(--lime)" : "var(--stone)";
+
         return (
-          <div key={job.id} style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:`4px solid ${statusColor}`,borderRadius:9,padding:"12px 14px",marginBottom:8,cursor:"pointer"}}
-            onClick={()=>setAssigningJob(isAssigning ? null : job.id)}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:15,color:"var(--cream)"}}>{prop?.client_name||"Unknown"}</div>
-              <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:1,padding:"2px 8px",borderRadius:4,textTransform:"uppercase",background:"rgba(196,191,176,0.15)",color:statusColor}}>{job.status.replace("_"," ")}</span>
+          <div key={job.id}
+            style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:`4px solid ${statusColor}`, borderRadius:9, padding:"12px 14px", marginBottom:8, cursor:"pointer" }}
+            onClick={() => setAssigningJob(isAssigning ? null : job.id)}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)" }}>
+                {prop?.client_name || "Unknown"}
+              </div>
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, padding:"2px 8px", borderRadius:4, textTransform:"uppercase", background:"rgba(196,191,176,0.15)", color:statusColor }}>
+                {job.status.replace("_", " ")}
+              </span>
             </div>
-            <div style={{fontSize:12,color:"var(--stone)",marginBottom:4}}>{prop?.address}</div>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{ fontSize:12, color:"var(--stone)", marginBottom:4 }}>{prop?.address}</div>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               {job.service_types?.length > 0
-                ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--mgr-lt)",letterSpacing:0.5}}>{job.service_types.map(id=>getServiceLabel(id,"en")).join(" · ")}</span>
-                : <span/>}
+                ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--mgr-lt)", letterSpacing:0.5 }}>
+                    {job.service_types.map(id => getServiceLabel(id, "en")).join(" · ")}
+                  </span>
+                : <span/>
+              }
               {assignedTruck
-                ? <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"#92B4F4",letterSpacing:1}}>🚛 {assignedTruck.name}</span>
-                : <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--warn)",letterSpacing:1}}>Unassigned</span>}
+                ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#92B4F4", letterSpacing:1 }}>🚛 {assignedTruck.name}</span>
+                : <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)", letterSpacing:1 }}>Unassigned</span>
+              }
             </div>
+
             {isAssigning && (
-              <div style={{marginTop:10,borderTop:"1px solid var(--moss)",paddingTop:10,animation:"fadeUp 0.2s ease both"}}>
-                <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>Assign to Truck</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {trucks.map(truck=>(
-                    <button key={truck.id} onClick={e=>{e.stopPropagation();assignJobToTruck(job.id,truck.id);}}
-                      style={{padding:"6px 12px",borderRadius:6,border:`1.5px solid ${assignment?.truck_id===truck.id?"var(--lime)":"var(--moss)"}`,background:assignment?.truck_id===truck.id?"rgba(74,109,32,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:assignment?.truck_id===truck.id?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              <div style={{ marginTop:10, borderTop:"1px solid var(--moss)", paddingTop:10, animation:"fadeUp 0.2s ease both" }}>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:8 }}>
+                  Assign to Truck
+                </div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  {trucks.map(truck => (
+                    <button key={truck.id}
+                      onClick={e => { e.stopPropagation(); assignJobToTruck(job.id, truck.id); }}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1.5px solid ${assignment?.truck_id === truck.id ? "var(--lime)" : "var(--moss)"}`, background:assignment?.truck_id === truck.id ? "rgba(74,109,32,0.15)" : "var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:assignment?.truck_id === truck.id ? "var(--lime)" : "var(--stone)", cursor:"pointer", fontWeight:600 }}>
                       {truck.name}
                     </button>
                   ))}
                   {assignment && (
-                    <button onClick={e=>{e.stopPropagation();unassignJob(job.id);}}
-                      style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid var(--danger)",background:"rgba(192,68,42,0.08)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--danger)",cursor:"pointer",fontWeight:600}}>
+                    <button
+                      onClick={e => { e.stopPropagation(); unassignJob(job.id); }}
+                      style={{ padding:"6px 12px", borderRadius:6, border:"1.5px solid var(--danger)", background:"rgba(192,68,42,0.08)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--danger)", cursor:"pointer", fontWeight:600 }}>
                       Remove
                     </button>
                   )}
@@ -4875,13 +5038,37 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
     useEffect(() => {
       const fetchJobData = async () => {
         setJobsLoading(true);
+
         const { data: activeJobs } = await supabase
-          .from("jobs").select("*, properties(client_name, address)")
-          .eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "in_progress");
+          .from("jobs")
+          .select("*, properties(address, client_id)")
+          .eq("company_id", COMPANY_ID)
+          .eq("date", selectedDate)
+          .eq("status", "in_progress");
+
         const { data: completedJobs } = await supabase
-          .from("jobs").select("*, properties(client_name, address)")
-          .eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "completed");
-        const allJobIds = [...(activeJobs || []), ...(completedJobs || [])].map(j => j.id);
+          .from("jobs")
+          .select("*, properties(address, client_id)")
+          .eq("company_id", COMPANY_ID)
+          .eq("date", selectedDate)
+          .eq("status", "completed");
+
+        const allJobs = [...(activeJobs || []), ...(completedJobs || [])];
+        const allJobIds = allJobs.map(j => j.id);
+
+        // Two-step client name lookup
+        const clientIds = [...new Set(
+          allJobs.map(j => j.properties?.client_id).filter(Boolean)
+        )];
+        let clientMap = {};
+        if (clientIds.length > 0) {
+          const { data: clientData } = await supabase
+            .from("clients")
+            .select("id, name")
+            .in("id", clientIds);
+          (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+        }
+
         let timeLogs = [];
         let jobAssignments = [];
         if (allJobIds.length > 0) {
@@ -4892,12 +5079,18 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
           timeLogs = tl || [];
           jobAssignments = ja || [];
         }
+
         const enrich = (jobs) => jobs.map(job => ({
           ...job,
+          client_name: clientMap[job.properties?.client_id] || job.properties?.address || "Unknown",
           timeLogs: timeLogs.filter(l => l.job_id === job.id),
           truck: trucks.find(t => t.id === jobAssignments.find(a => a.job_id === job.id)?.truck_id),
         }));
-        setJobData({ active: enrich(activeJobs || []), completed: enrich(completedJobs || []) });
+
+        setJobData({
+          active: enrich(activeJobs || []),
+          completed: enrich(completedJobs || []),
+        });
         setJobsLoading(false);
       };
       fetchJobData();
@@ -4923,14 +5116,13 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
               {lastRefresh && `Updated ${lastRefresh} · `}{sessions.length} truck{sessions.length !== 1 ? "s" : ""} active
             </div>
 
-            {/* Stats strip — operational only, no revenue */}
             {!jobsLoading && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:14 }}>
                 {[
-                  { label:"Active", value:sessions.length, color:"#92B4F4" },
-                  { label:"In Progress", value:jobData.active.length, color:"var(--warn)" },
-                  { label:"Completed", value:jobData.completed.length, color:"var(--leaf)" },
-                  { label:"Labor Hrs", value:jobData.completed.reduce((sum, j) => sum + j.timeLogs.reduce((s, l) => s + (l.duration_seconds || 0), 0), 0), color:"var(--mgr-lt)", isTime:true },
+                  { label:"Active",      value:sessions.length,          color:"#92B4F4" },
+                  { label:"In Progress", value:jobData.active.length,     color:"var(--warn)" },
+                  { label:"Completed",   value:jobData.completed.length,  color:"var(--leaf)" },
+                  { label:"Labor Hrs",   value:jobData.completed.reduce((sum, j) => sum + j.timeLogs.reduce((s, l) => s + (l.duration_seconds || 0), 0), 0), color:"var(--mgr-lt)", isTime:true },
                 ].map(({ label, value, color, isTime }) => (
                   <div key={label} style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"8px", textAlign:"center" }}>
                     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color, lineHeight:1 }}>
@@ -4979,10 +5171,10 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
                   </div>
                   <div style={{ padding:"10px 14px", display:"flex", gap:8, flexWrap:"wrap" }}>
                     {[
-                      { label:"Briefing", done:hasBriefing },
-                      { label:"DOT", done:hasDot, flagged:dotFlagged },
+                      { label:"Briefing",                                          done:hasBriefing },
+                      { label:"DOT",                                               done:hasDot, flagged:dotFlagged },
                       { label:`Property${propCount > 0 ? ` (${propCount})` : ""}`, done:hasProp },
-                      { label:"EOD", done:hasEod },
+                      { label:"EOD",                                               done:hasEod },
                     ].map(({ label, done, flagged }) => (
                       <span key={label} style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, padding:"3px 10px", borderRadius:4, textTransform:"uppercase", background:flagged ? "rgba(192,68,42,0.12)" : done ? "rgba(74,109,32,0.12)" : "rgba(160,96,16,0.12)", color:flagged ? "var(--danger)" : done ? "var(--lime)" : "var(--warn)", border:`1px solid ${flagged ? "var(--danger)" : done ? "var(--leaf)" : "var(--warn)"}` }}>
                         {done && !flagged ? "✓ " : flagged ? "✗ " : "⏳ "}{label}
@@ -4997,15 +5189,18 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
               );
             })}
 
-            {/* Active Jobs */}
             {!jobsLoading && jobData.active.length > 0 && (
               <div style={{ marginTop:16 }}>
                 <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2, color:"#92B4F4", textTransform:"uppercase", marginBottom:8 }}>⏱ Jobs In Progress</div>
                 {jobData.active.map(job => (
                   <div key={job.id} style={{ background:"var(--bark)", border:"1px solid var(--lime)", borderLeft:"4px solid var(--lime)", borderRadius:9, padding:"12px 14px", marginBottom:8 }}>
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)" }}>{job.properties?.client_name || "Unknown"}</div>
-                      <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#92B4F4", letterSpacing:1 }}>🚛 {job.truck?.name || "Unassigned"}</span>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)" }}>
+                        {job.client_name}
+                      </div>
+                      <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#92B4F4", letterSpacing:1 }}>
+                        🚛 {job.truck?.name || "Unassigned"}
+                      </span>
                     </div>
                     <div style={{ fontSize:12, color:"var(--stone)" }}>{job.properties?.address}</div>
                   </div>
@@ -5013,7 +5208,6 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
               </div>
             )}
 
-            {/* Completed Jobs */}
             {!jobsLoading && jobData.completed.length > 0 && (
               <CompletedJobsSummary jobs={jobData.completed} formatSecs={formatSecs}/>
             )}
@@ -5026,7 +5220,6 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
       <div>
         <DateBar/>
         {isIPad ? (
-          // Desktop/iPad: two-column layout
           <div style={{ display:"flex", gap:20, alignItems:"flex-start" }}>
             <div style={{ flex:1, minWidth:0 }}>
               <CrewCards/>
@@ -5034,7 +5227,6 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
             <RightRail jobData={jobData}/>
           </div>
         ) : (
-          // Mobile: single column
           <CrewCards/>
         )}
       </div>
