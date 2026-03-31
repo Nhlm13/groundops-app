@@ -1888,15 +1888,22 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
         .from("jobs").select("*").in("id", jobIds).eq("date", today).order("sort_order");
       if(!jobData || jobData.length === 0) { setLoading(false); return; }
       const propIds = [...new Set(jobData.map(j => j.property_id))];
-      const [{ data: propData }, { data: completionData }] = await Promise.all([
-        supabase.from("properties").select("id, client_name, address, service_notes, special_instructions, photo_url, service_types").in("id", propIds),
+      const [{ data: propData }, { data: clientData }, { data: completionData }] = await Promise.all([
+        supabase.from("properties").select("id, client_id, address, service_notes, special_instructions, photo_url, service_types").in("id", propIds),
+        supabase.from("clients").select("id, name"),
         supabase.from("job_completions").select("job_id").in("job_id", jobIds),
       ]);
+      const clientMap = {};
+      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+      const mergedProps = (propData || []).map(p => ({
+        ...p,
+        client_name: clientMap[p.client_id] || p.address,
+      }));
       const completedJobIds = new Set((completionData || []).map(c => c.job_id));
       const jobsWithStatus = jobData.map(j => ({...j, status: completedJobIds.has(j.id) ? "completed" : j.status}));
       setJobs(jobsWithStatus);
       if(onJobCountChange) onJobCountChange(jobsWithStatus.filter(j => j.status !== "completed").length);
-      setProperties(propData || []);
+      setProperties(mergedProps);
       setLoading(false);
     };
     if(truck.supabaseId) fetchJobs();
