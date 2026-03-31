@@ -3715,43 +3715,53 @@ function ManagerJobsTab() {
     </div>
   );
 }
-
 // -- CUSTOMER MAP --
 function CustomerMap({ onClose }) {
   const [properties, setProperties] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showJobs, setShowJobs] = useState(false);
+  const [loadingJobs, setLoadingJobs] = useState(false);
   const mapRef = React.useRef(null);
   const mapInst = React.useRef(null);
+  const jobsLayerRef = React.useRef(null);
+  const propLookupRef = React.useRef({});
 
+  // Fetch properties with two-step client name lookup
   useEffect(() => {
-    supabase
-      .from("properties")
-      .select("id, client_name, address, property_type, lat, lng")
-      .eq("company_id", COMPANY_ID)
-      .eq("active", true)
-      .not("lat", "is", null)
-      .then(({ data }) => {
-        setProperties(data || []);
-        setLoading(false);
-      });
+    async function fetchData() {
+      const { data: propData } = await supabase
+        .from("properties")
+        .select("id, address, property_type, lat, lng, client_id")
+        .eq("company_id", COMPANY_ID)
+        .eq("active", true)
+        .not("lat", "is", null);
+
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("id, name");
+
+      const clientMap = {};
+      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+
+      const merged = (propData || []).map(p => ({
+        ...p,
+        client_name: clientMap[p.client_id] || p.address,
+      }));
+
+      const lookup = {};
+      merged.forEach(p => { lookup[p.id] = p; });
+      propLookupRef.current = lookup;
+
+      setProperties(merged);
+      setLoading(false);
+    }
+    fetchData();
   }, []);
 
+  // Init Leaflet map once properties are loaded
   useEffect(() => {
-    if(loading || !mapRef.current || mapInst.current) return;
-
-    if(!window.L) {
-      const link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(link);
-
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = () => initMap();
-      document.head.appendChild(script);
-    } else {
-      initMap();
-    }
+    if (loading || !mapRef.current || mapInst.current) return;
 
     function initMap() {
       mapInst.current = window.L.map(mapRef.current).setView([42.305, -71.52], 11);
@@ -3760,7 +3770,7 @@ function CustomerMap({ onClose }) {
       }).addTo(mapInst.current);
 
       properties.forEach(p => {
-        if(!p.lat || !p.lng) return;
+        if (!p.lat || !p.lng) return;
         const isCommercial = p.property_type === "commercial";
         const color = isCommercial ? "#e05540" : "#4472CA";
         const marker = window.L.circleMarker([p.lat, p.lng], {
@@ -3775,39 +3785,144 @@ function CustomerMap({ onClose }) {
           <div style="font-family:'Barlow Condensed',sans-serif;min-width:140px;">
             <div style="font-weight:700;font-size:14px;color:#0A369D;">${p.client_name}</div>
             <div style="font-size:12px;color:#666;margin-top:2px;">${p.address}</div>
-            <div style="font-size:11px;margin-top:4px;padding:2px 6px;border-radius:4px;display:inline-block;background:${isCommercial?"rgba(224,85,64,0.1)":"rgba(68,114,202,0.1)"};color:${color};">${isCommercial?"Commercial":"Residential"}</div>
+            <div style="font-size:11px;margin-top:4px;padding:2px 6px;border-radius:4px;display:inline-block;
+              background:${isCommercial ? "rgba(224,85,64,0.1)" : "rgba(68,114,202,0.1)"};
+              color:${color};">${isCommercial ? "Commercial" : "Residential"}</div>
           </div>
         `);
       });
+
+      jobsLayerRef.current = window.L.layerGroup().addTo(mapInst.current);
+    }
+
+    if (!window.L) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.onload = () => initMap();
+      document.head.appendChild(script);
+    } else {
+      initMap();
     }
 
     return () => {
-      if(mapInst.current) {
-        mapInst.current.remove();
-        mapInst.current = null;
-      }
+      if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
     };
   }, [loading, properties]);
 
+  // Fetch jobs when toggle is turned on
+  useEffect(() => {
+    if (!showJobs) {
+      if (jobsLayerRef.current) jobsLayerRef.current.clearLayers();
+      setJobs([]);
+      return;
+    }
+    setLoadingJobs(true);
+    const today = new Date().toISOString().split("T")[0];
+
+    async function fetchJobs() {
+      const { data: scheduled } = await supabase
+        .from("jobs")
+        .select("id, property_id, status, date")
+        .eq("company_id", COMPANY_ID)
+        .neq("status", "completed");
+
+      const { data: completed } = await supabase
+        .from("jobs")
+        .select("id, property_id, status, date")
+        .eq("company_id", COMPANY_ID)
+        .eq("status", "completed")
+        .eq("date", today);
+
+      setJobs([...(scheduled || []), ...(completed || [])]);
+      setLoadingJobs(false);
+    }
+    fetchJobs();
+  }, [showJobs]);
+
+  // Render job markers whenever jobs data changes
+  useEffect(() => {
+    if (!jobsLayerRef.current) return;
+    jobsLayerRef.current.clearLayers();
+    if (!showJobs || jobs.length === 0) return;
+
+    jobs.forEach(job => {
+      const prop = propLookupRef.current[job.property_id];
+      if (!prop || !prop.lat || !prop.lng) return;
+      const isComplete = job.status === "completed";
+      const color = isComplete ? "#22c55e" : "#eab308";
+      const marker = window.L.circleMarker([prop.lat, prop.lng], {
+        radius: 9,
+        fillColor: color,
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9,
+      }).addTo(jobsLayerRef.current);
+      marker.bindPopup(`
+        <div style="font-family:'Barlow Condensed',sans-serif;min-width:140px;">
+          <div style="font-weight:700;font-size:14px;color:#0A369D;">${prop.client_name}</div>
+          <div style="font-size:12px;color:#666;margin-top:2px;">${prop.address}</div>
+          <div style="font-size:11px;margin-top:4px;padding:2px 6px;border-radius:4px;display:inline-block;
+            background:${isComplete ? "rgba(34,197,94,0.15)" : "rgba(234,179,8,0.15)"};
+            color:${color};">${isComplete ? "✓ Completed Today" : "⏳ Scheduled"}</div>
+        </div>
+      `);
+    });
+  }, [jobs, showJobs]);
+
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:400,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <div style={{background:"#162238",borderBottom:"3px solid #4472CA",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,flexWrap:"wrap",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
           <img src="/TotalFlo.svg" alt="TotalFlo" style={{width:28,height:28,objectFit:"contain"}}/>
           <div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#CFDEE7",letterSpacing:2,lineHeight:1}}>Customer Map</div>
             <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:10,color:"#92B4F4",letterSpacing:1,textTransform:"uppercase",marginTop:1}}>{properties.length} properties</div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:12,marginLeft:16}}>
-            <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginLeft:8,flexWrap:"wrap"}}>
+            <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
               <span style={{width:10,height:10,borderRadius:"50%",background:"#4472CA",display:"inline-block",border:"1.5px solid #fff"}}></span>Residential
             </span>
-            <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
+            <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
               <span style={{width:10,height:10,borderRadius:"50%",background:"#e05540",display:"inline-block",border:"1.5px solid #fff"}}></span>Commercial
             </span>
+            {showJobs && (<>
+              <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
+                <span style={{width:10,height:10,borderRadius:"50%",background:"#eab308",display:"inline-block",border:"1.5px solid #fff"}}></span>Scheduled
+              </span>
+              <span style={{display:"flex",alignItems:"center",gap:4,fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"#CFDEE7"}}>
+                <span style={{width:10,height:10,borderRadius:"50%",background:"#22c55e",display:"inline-block",border:"1.5px solid #fff"}}></span>Completed Today
+              </span>
+            </>)}
           </div>
         </div>
-        <button onClick={onClose} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"rgba(255,255,255,0.7)",cursor:"pointer"}}>✕ Close</button>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <button
+            onClick={() => setShowJobs(v => !v)}
+            style={{
+              background: showJobs ? "rgba(234,179,8,0.15)" : "rgba(255,255,255,0.07)",
+              border: `1.5px solid ${showJobs ? "#eab308" : "rgba(255,255,255,0.2)"}`,
+              borderRadius:8,
+              padding:"6px 14px",
+              fontFamily:"'Bebas Neue',sans-serif",
+              fontSize:13,
+              letterSpacing:1,
+              color: showJobs ? "#eab308" : "rgba(255,255,255,0.7)",
+              cursor:"pointer",
+              display:"flex",
+              alignItems:"center",
+              gap:6,
+              transition:"all 0.2s",
+            }}
+          >
+            {loadingJobs ? "⏳ Loading..." : showJobs ? "📍 Jobs: ON" : "📍 Show Jobs"}
+          </button>
+          <button onClick={onClose} style={{background:"none",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 14px",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:1,color:"rgba(255,255,255,0.7)",cursor:"pointer"}}>✕ Close</button>
+        </div>
       </div>
       {loading ? (
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#1e2d4a",fontFamily:"'Barlow Condensed',sans-serif",fontSize:14,letterSpacing:1,color:"#92B4F4",textTransform:"uppercase"}}>Loading map...</div>
