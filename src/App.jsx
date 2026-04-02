@@ -5668,9 +5668,6 @@ const handleSelectTruck = truck => {
           <div className="mgr-toggle" style={{color:"var(--stone)"}} onClick={()=>{setMode("truck");setError("");}}>{t.backToLogin}</div>
         </div>
       )}
-      <div style={{width:"100%",marginTop:20}}>
-  <EmergencyButton/>
-</div>
       <div style={{marginTop:"auto",paddingTop:32,textAlign:"center"}}>
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,color:"var(--moss)",letterSpacing:1,lineHeight:1.6}}>Created by Salerni Creative Co LLC<br/>All Rights Reserved</div>
       </div>
