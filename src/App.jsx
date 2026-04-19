@@ -2638,6 +2638,8 @@ function AddPropertyForm({ onBack, onSaved }) {
     client_name: "", address: "", client_phone: "", client_email: "",
     billing_contact: "", billing_email: "", service_notes: "",
     special_instructions: "", base_service_price: "", property_type: "residential",
+    invoice_frequency: "", invoice_method: "", is_taxable: false,
+    billing_terms: "", payment_method: "",
   });
   const [error, setError] = useState("");
   const set = (k, v) => setFields(f => ({...f, [k]: v}));
@@ -2681,6 +2683,11 @@ function AddPropertyForm({ onBack, onSaved }) {
         photo_url: photoUrl,
         property_type: fields.property_type || "residential",
         active: true,
+        invoice_frequency: fields.invoice_frequency || null,
+        invoice_method: fields.invoice_method || null,
+        is_taxable: fields.is_taxable || false,
+        billing_terms: fields.billing_terms || null,
+        payment_method: fields.payment_method || null,
       });
       if(error){ setError("Failed to save property."); setSubmitting(false); return; }
       onSaved();
@@ -2728,7 +2735,51 @@ function AddPropertyForm({ onBack, onSaved }) {
         <input style={inputStyle} type="email" placeholder="billing@email.com" value={fields.billing_email} onChange={e=>set("billing_email",e.target.value)}/>
         <label style={labelStyle}>Base Service Price ($)</label>
         <input style={inputStyle} type="number" inputMode="decimal" placeholder="0.00" value={fields.base_service_price} onChange={e=>set("base_service_price",e.target.value)}/>
-      </div>
+        <label style={labelStyle}>When to Invoice</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {["Invoice Monthly","Invoice Weekly","Invoice per Visit","Do Not Invoice"].map(opt=>(
+            <button key={opt} onClick={()=>set("invoice_frequency",opt)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.invoice_frequency===opt?"var(--mgr)":"var(--moss)"}`,background:fields.invoice_frequency===opt?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.invoice_frequency===opt?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {opt}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Send Invoice By</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {["Email","Print","Both"].map(opt=>(
+            <button key={opt} onClick={()=>set("invoice_method",opt)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.invoice_method===opt?"var(--mgr)":"var(--moss)"}`,background:fields.invoice_method===opt?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.invoice_method===opt?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {opt}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Billing Terms</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {["Net 15","Net 30","Net 45","Due on Receipt"].map(opt=>(
+            <button key={opt} onClick={()=>set("billing_terms",opt)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.billing_terms===opt?"var(--mgr)":"var(--moss)"}`,background:fields.billing_terms===opt?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.billing_terms===opt?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {opt}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Payment Method</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {["Check","Credit Card","ACH","Cash"].map(opt=>(
+            <button key={opt} onClick={()=>set("payment_method",opt)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.payment_method===opt?"var(--mgr)":"var(--moss)"}`,background:fields.payment_method===opt?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.payment_method===opt?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {opt}
+            </button>
+          ))}
+        </div>
+        <label style={labelStyle}>Taxable</label>
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          {[{label:"No Tax",val:false},{label:"Taxable",val:true}].map(opt=>(
+            <button key={opt.label} onClick={()=>set("is_taxable",opt.val)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.is_taxable===opt.val?"var(--mgr)":"var(--moss)"}`,background:fields.is_taxable===opt.val?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.is_taxable===opt.val?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Notes & Access</div>
