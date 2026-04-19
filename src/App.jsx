@@ -3628,6 +3628,7 @@ function ManagerJobsTab() {
     if (view !== "carryover") return;
     if (!mapInst.current || !mapReady) return;
 
+    const addMarkers = () => {
     // Clear old markers
     Object.values(markersRef.current).forEach(m => m.remove());
     markersRef.current = {};
@@ -3658,6 +3659,8 @@ function ManagerJobsTab() {
       `);
       markersRef.current[job.id] = marker;
     });
+    };
+    setTimeout(addMarkers, 300);
 // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs, assignments, view, properties, trucks, mapReady]);
   const assignJobToTruck = async (jobId, truckId) => {
