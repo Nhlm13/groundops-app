@@ -5470,7 +5470,6 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
             )}
 
             {sessions.map(session => {
-              const hasBriefing = briefings.some(b => b.session_id === session.id);
               const dotRecord = dots.find(d => d.session_id === session.id);
               const hasDot = !!dotRecord;
               const dotFlagged = dotRecord && !dotRecord.passed;
@@ -5479,11 +5478,10 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
               const hasEod = eods.some(e => e.session_id === session.id);
               const truck = trucks.find(t => t.id === session.truck_id);
               const missingDot = !hasDot || dotFlagged;
-              const missingBriefing = !hasBriefing;
-              const allDone = hasBriefing && hasDot && !dotFlagged && hasEod;
-              const inProgress = hasBriefing && hasDot && !dotFlagged && !hasEod;
-              const borderColor = missingDot ? "var(--danger)" : missingBriefing ? "var(--warn)" : allDone ? "rgba(74,109,32,0.4)" : inProgress ? "var(--mgr)" : "var(--moss)";
-              const accentColor = missingDot ? "var(--danger)" : missingBriefing ? "var(--warn)" : allDone ? "var(--leaf)" : inProgress ? "var(--mgr-lt)" : "var(--moss)";
+              const allDone = hasDot && !dotFlagged && hasEod;
+              const inProgress = hasDot && !dotFlagged && !hasEod;
+              const borderColor = missingDot ? "var(--danger)" : allDone ? "rgba(74,109,32,0.4)" : inProgress ? "var(--mgr)" : "var(--moss)";
+              const accentColor = missingDot ? "var(--danger)" : allDone ? "var(--leaf)" : inProgress ? "var(--mgr-lt)" : "var(--moss)";
               const allForms = [...briefings, ...dots, ...propInspections, ...eods].filter(f => f.session_id === session.id);
               const lastActivity = allForms.length > 0 ? Math.max(...allForms.map(f => new Date(f.created_at || 0).getTime())) : null;
 
@@ -5498,15 +5496,10 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
                         {dotFlagged ? "DOT Flagged" : "DOT Missing"}
                       </span>
                     )}
-                    {!missingDot && missingBriefing && (
-                      <span style={{ marginLeft:"auto", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, background:"rgba(160,96,16,0.12)", border:"1px solid var(--warn)", borderRadius:4, padding:"2px 8px", color:"var(--warn)", letterSpacing:1, textTransform:"uppercase" }}>
-                        Incomplete
-                      </span>
-                    )}
+                    
                   </div>
                   <div style={{ padding:"10px 14px", display:"flex", gap:8, flexWrap:"wrap" }}>
                     {[
-                      { label:"Briefing",                                          done:hasBriefing },
                       { label:"DOT",                                               done:hasDot, flagged:dotFlagged },
                       { label:`Property${propCount > 0 ? ` (${propCount})` : ""}`, done:hasProp },
                       { label:"EOD",                                               done:hasEod },
