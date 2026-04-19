@@ -2234,6 +2234,7 @@ function EditScheduleForm({ schedule, onBack, onSaved }) {
     start_date: schedule.start_date || "",
     end_date: schedule.end_date || "",
     price: schedule.price || "",
+    team_id: schedule.team_id || "",
   });
 
   const FREQUENCIES = [
@@ -2244,6 +2245,16 @@ function EditScheduleForm({ schedule, onBack, onSaved }) {
   ];
   const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const set = (k, v) => setFields(f => ({...f, [k]: v}));
+  const [teams, setTeams] = useState([]);
+  useEffect(() => {
+    supabase
+      .from("teams")
+      .select("id, name, abbreviation")
+      .eq("company_id", COMPANY_ID)
+      .eq("active", true)
+      .order("name")
+      .then(({ data }) => setTeams(data || []));
+  }, []);
 
   const handleSubmit = async () => {
     if(!fields.service_type || !fields.frequency || !fields.day_of_week || !fields.start_date) {
@@ -2301,6 +2312,15 @@ function EditScheduleForm({ schedule, onBack, onSaved }) {
             </div>
           </div>
         ))}
+        <label style={labelStyle}>Team</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {teams.map(team => (
+            <button key={team.id} onClick={()=>set("team_id", team.id)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.team_id===team.id?"var(--mgr)":"var(--moss)"}`,background:fields.team_id===team.id?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.team_id===team.id?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {team.abbreviation || team.name}
+            </button>
+          ))}
+        </div>
         <label style={labelStyle}>Frequency *</label>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
           {FREQUENCIES.map(f=>(
