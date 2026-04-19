@@ -2563,22 +2563,34 @@ function AddScheduleForm({ property, onBack, onSaved }) {
           <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{property.client_name}</div>
         </div>
       </div>
-<div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12,overflow:"hidden"}}>        <label style={labelStyle}>Services * (select all that apply)</label>
-        {SERVICE_GROUPS.map(group=>(
-          <div key={group.label.en} style={{marginBottom:10}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
+<div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12,overflow:"hidden"}}>        
+  <label style={labelStyle}>Services * (select all that apply)</label>
+        {SERVICE_CATEGORIES.map(cat => (
+          <div key={cat.id} style={{marginBottom:14}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{cat.label}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {group.ids.map(id=>{
-                const svc = SERVICE_TYPES.find(s=>s.id===id);
-                if(!svc) return null;
+              {cat.services.map(svc => {
+                const isSelected = selectedServices.includes(svc.id);
                 return (
                   <button key={svc.id} onClick={()=>toggleService(svc.id)}
-                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-                    {svc[lang]||svc.en}
+                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${isSelected?"var(--mgr)":"var(--moss)"}`,background:isSelected?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:isSelected?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                    {svc.label}
                   </button>
                 );
               })}
+              <button onClick={()=>toggleService(`${cat.id}_other`)}
+                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(`${cat.id}_other`)?"var(--warn)":"var(--moss)"}`,background:selectedServices.includes(`${cat.id}_other`)?"rgba(212,132,10,0.12)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(`${cat.id}_other`)?"var(--warn)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                Other
+              </button>
             </div>
+            {selectedServices.includes(`${cat.id}_other`) && (
+              <textarea
+                style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--warn)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:13,resize:"none",height:64,marginTop:8,boxSizing:"border-box"}}
+                placeholder={`Describe the ${cat.label} work...`}
+                value={serviceDescriptions[`${cat.id}_other`]||""}
+                onChange={e=>setServiceDescriptions(p=>({...p,[`${cat.id}_other`]:e.target.value}))}
+              />
+            )}
           </div>
         ))}
 
@@ -3260,22 +3272,33 @@ team_id: fields.team_id || null,
             </button>
           ))}
         </div>
-        <label style={labelStyle}>Services * (select all that apply)</label>
-        {SERVICE_GROUPS.map(group=>(
-          <div key={group.label.en} style={{marginBottom:10}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{group.label[lang]||group.label.en}</div>
+       <label style={labelStyle}>Services * (select all that apply)</label>
+        {SERVICE_CATEGORIES.map(cat => (
+          <div key={cat.id} style={{marginBottom:14}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{cat.label}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {group.ids.map(id=>{
-                const svc = SERVICE_TYPES.find(s=>s.id===id);
-                if(!svc) return null;
+              {cat.services.map(svc => {
+                const isSelected = selectedServices.includes(svc.id);
                 return (
                   <button key={svc.id} onClick={()=>toggleService(svc.id)}
-                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(svc.id)?"var(--mgr)":"var(--moss)"}`,background:selectedServices.includes(svc.id)?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(svc.id)?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-                    {svc[lang]||svc.en}
+                    style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${isSelected?"var(--mgr)":"var(--moss)"}`,background:isSelected?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:isSelected?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                    {svc.label}
                   </button>
                 );
               })}
+              <button onClick={()=>toggleService(`${cat.id}_other`)}
+                style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${selectedServices.includes(`${cat.id}_other`)?"var(--warn)":"var(--moss)"}`,background:selectedServices.includes(`${cat.id}_other`)?"rgba(212,132,10,0.12)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:selectedServices.includes(`${cat.id}_other`)?"var(--warn)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                Other
+              </button>
             </div>
+            {selectedServices.includes(`${cat.id}_other`) && (
+              <textarea
+                style={{width:"100%",background:"var(--bark2)",border:"1px solid var(--warn)",borderRadius:8,padding:"10px 12px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:13,resize:"none",height:64,marginTop:8,boxSizing:"border-box"}}
+                placeholder={`Describe the ${cat.label} work...`}
+                value={serviceDescriptions[`${cat.id}_other`]||""}
+                onChange={e=>setServiceDescriptions(p=>({...p,[`${cat.id}_other`]:e.target.value}))}
+              />
+            )}
           </div>
         ))}
         {SERVICE_TYPES.filter(s => s.hasDescription && selectedServices.includes(s.id)).map(svc=>(
