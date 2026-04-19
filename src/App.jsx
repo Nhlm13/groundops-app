@@ -5292,15 +5292,11 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
         style={{ background:"#5E7CE2", border:"none", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer", textTransform:"uppercase" }}>
         Today
       </button>
-      <button onClick={() => { setMapReady(false); fetchData(); }}
+     <button onClick={fetchAll} disabled={loading}
           style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer" }}>
           ↻ Refresh
         </button>
-      <button onClick={fetchAll} disabled={loading}
-        style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
-        {loading ? "…" : "Refresh"}
-      </button>
-    </div>
+      </div>
   );
 
   // Right rail — unassigned callout + upcoming jobs (desktop only)
