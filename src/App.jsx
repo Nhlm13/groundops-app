@@ -3672,6 +3672,7 @@ function ManagerJobsTab() {
   const [properties, setProperties] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [groupByTeam, setGroupByTeam] = useState(false);
   const [assignments, setAssignments] = useState({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("today"); // "today" | "tomorrow" | "carryover"
@@ -3946,6 +3947,10 @@ function ManagerJobsTab() {
           style={{ background:"#5E7CE2", border:"none", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer" }}>
           Today
         </button>
+        <button onClick={() => setGroupByTeam(v => !v)}
+          style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${groupByTeam?"var(--lime)":"var(--moss)"}`, background:groupByTeam?"rgba(74,109,32,0.15)":"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:groupByTeam?"var(--lime)":"var(--stone)", cursor:"pointer", fontWeight:600 }}>
+          {groupByTeam ? "✓ By Team" : "Group by Team"}
+        </button>
         <div style={{ display:"flex", gap:6, marginLeft:"auto" }}>
           {[
             { key:"today", label:"Today" },
@@ -3991,6 +3996,18 @@ function ManagerJobsTab() {
               <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
                 {view === "carryover" ? "No incomplete jobs — great work! 🎉" : "No jobs scheduled"}
               </div>
+            ) : groupByTeam ? (
+              teams.filter(team => displayJobs.some(j => j.team_id === team.id)).map(team => (
+                <div key={team.id} style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:2,color:"var(--mgr-lt)",borderBottom:"2px solid var(--mgr)",paddingBottom:4,marginBottom:8}}>
+                    {team.name}
+                    <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:"var(--stone)",marginLeft:10,fontWeight:400}}>
+                      {displayJobs.filter(j=>j.team_id===team.id).length} jobs
+                    </span>
+                  </div>
+                  {displayJobs.filter(j => j.team_id === team.id).map(job => <JobCard key={job.id} job={job}/>)}
+                </div>
+              ))
             ) : (
               displayJobs.map(job => <JobCard key={job.id} job={job}/>)
             )}
