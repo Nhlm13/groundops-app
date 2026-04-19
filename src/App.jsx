@@ -3878,27 +3878,23 @@ function ManagerJobsTab() {
           </div>
 
           {/* Map — always visible */}
-          {view === "carryover" && (
-            <div style={{ flex:"0 0 60%", display:"flex", flexDirection:"column" }}>
-              {activeCrews.length > 0 && (
-                <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
-                  <span style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>
-                    <span style={{ width:10, height:10, borderRadius:"50%", background:"#e05540", display:"inline-block" }}/>Unassigned
+          <div style={{ flex:"0 0 60%", display:"flex", flexDirection:"column" }}>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+              <span style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>
+                <span style={{ width:10, height:10, borderRadius:"50%", background:"#e05540", display:"inline-block" }}/>Unassigned
+              </span>
+              {activeCrews.map(crew => {
+                const idx = trucks.findIndex(t => t.id === crew.id);
+                return (
+                  <span key={crew.id} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>
+                    <span style={{ width:10, height:10, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/>
+                    {crew.name}
                   </span>
-                  {activeCrews.map(crew => {
-                    const idx = trucks.findIndex(t => t.id === crew.id);
-                    return (
-                      <span key={crew.id} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>
-                        <span style={{ width:10, height:10, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/>
-                        {crew.name}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
-              <div ref={mapRef} style={{ flex:1, borderRadius:10, overflow:"hidden", border:"1px solid var(--moss)", minHeight:400 }}/>
+                );
+              })}
             </div>
-          )}
+            <div ref={mapRef} style={{ flex:1, borderRadius:10, overflow:"hidden", border:"1px solid var(--moss)", minHeight:400 }}/>
+          </div>
         </div>
     </div>
   );
