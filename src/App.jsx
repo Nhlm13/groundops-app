@@ -3671,55 +3671,136 @@ function ManagerJobsTab() {
   const [jobs, setJobs] = useState([]);
   const [properties, setProperties] = useState([]);
   const [trucks, setTrucks] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [assignments, setAssignments] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [view, setView] = useState("today"); // "today" | "tomorrow" | "carryover"
   const [assigningJob, setAssigningJob] = useState(null);
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" })
+  );
+  const mapRef = useRef(null);
+  const mapInst = useRef(null);
+  const markersRef = useRef({});
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 
+  const CREW_COLORS = [
+    "#4472CA","#22a86e","#e05540","#d4bc4a","#9b59b6",
+    "#0e7490","#f97316","#14b8a6","#ec4899","#84cc16",
+    "#6366f1","#f43f5e"
+  ];
+
+  const fetchData = async () => {
+    setLoading(true);
+    const dateToFetch = view === "tomorrow" ? tomorrowStr : selectedDate;
+    const [
+      { data: jobData },
+      { data: propData },
+      { data: truckData },
+      { data: teamData },
+    ] = await Promise.all([
+      supabase.from("jobs").select("*").eq("company_id", COMPANY_ID)
+        .eq("date", view === "carryover" ? selectedDate : dateToFetch)
+        .order("sort_order"),
+      supabase.from("properties").select("id, address, client_id, lat, lng").eq("company_id", COMPANY_ID),
+      supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
+      supabase.from("teams").select("*").eq("company_id", COMPANY_ID).eq("active", true).order("name"),
+    ]);
+
+    let clientMap = {};
+    const { data: clientData } = await supabase.from("clients").select("id, name");
+    (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+    const mergedProps = (propData || []).map(p => ({
+      ...p, client_name: clientMap[p.client_id] || p.address,
+      city: p.address?.split(",")[1]?.trim() || "",
+    }));
+
+    const jobIds = (jobData || []).map(j => j.id);
+    let assignmentMap = {};
+    if (jobIds.length > 0) {
+      const { data: assignData } = await supabase
+        .from("job_assignments").select("*").in("job_id", jobIds);
+      (assignData || []).forEach(a => { assignmentMap[a.job_id] = a; });
+    }
+
+    setJobs(jobData || []);
+    setProperties(mergedProps);
+    setTrucks(truckData || []);
+    setTeams(teamData || []);
+    setAssignments(assignmentMap);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, [view, selectedDate]);
+
+  // Init map for carryover view
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    if (view !== "carryover") {
+      if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
+      return;
+    }
+    if (!mapRef.current || mapInst.current) return;
 
-      const [{ data: jobData }, { data: propData, error: propError }, { data: truckData }] = await Promise.all([
-        supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", today).order("sort_order"),
-        supabase.from("properties").select("id, address, service_types, client_id").eq("company_id", COMPANY_ID),
-        supabase.from("trucks").select("id, name").eq("company_id", COMPANY_ID).eq("active", true),
-      ]);
-
-      if (propError) console.warn("ManagerJobsTab properties error:", propError);
-
-      // Two-step client name lookup
-      let clientMap = {};
-      const { data: clientData, error: clientError } = await supabase
-        .from("clients")
-        .select("id, name");
-      if (clientError) console.warn("ManagerJobsTab clients error:", clientError);
-      (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
-      const mergedProps = (propData || []).map(p => ({
-        ...p,
-        client_name: clientMap[p.client_id] || p.address,
-      }));
-
-      const jobIds = (jobData || []).map(j => j.id);
-      let assignmentMap = {};
-      if (jobIds.length > 0) {
-        const { data: assignData } = await supabase
-          .from("job_assignments")
-          .select("*")
-          .in("job_id", jobIds);
-        (assignData || []).forEach(a => { assignmentMap[a.job_id] = a; });
-      }
-
-      setJobs(jobData || []);
-      setProperties(mergedProps);
-      setTrucks(truckData || []);
-      setAssignments(assignmentMap);
-      setLoading(false);
+    const initMap = () => {
+      mapInst.current = window.L.map(mapRef.current).setView([42.305, -71.52], 11);
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors"
+      }).addTo(mapInst.current);
     };
-    fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today]);
+
+    if (!window.L) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.onload = initMap;
+      document.head.appendChild(script);
+    } else {
+      setTimeout(initMap, 100);
+    }
+
+    return () => {
+      if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
+    };
+  }, [view]);
+
+  // Update map markers when jobs or assignments change
+  useEffect(() => {
+    if (view !== "carryover" || !mapInst.current) return;
+
+    // Clear old markers
+    Object.values(markersRef.current).forEach(m => m.remove());
+    markersRef.current = {};
+
+    const incompleteJobs = jobs.filter(j => j.status !== "completed" && j.status !== "carried_over");
+    const activeTruckIds = [...new Set(Object.values(assignments).map(a => a.truck_id).filter(Boolean))];
+
+    incompleteJobs.forEach(job => {
+      const prop = properties.find(p => p.id === job.property_id);
+      if (!prop?.lat || !prop?.lng) return;
+      const assignment = assignments[job.id];
+      const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
+      const color = assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "#e05540";
+      const truck = trucks.find(t => t.id === assignment?.truck_id);
+
+      const marker = window.L.circleMarker([prop.lat, prop.lng], {
+        radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9,
+      }).addTo(mapInst.current);
+
+      marker.bindPopup(`
+        <div style="font-family:'Barlow Condensed',sans-serif;min-width:160px;">
+          <div style="font-weight:700;font-size:14px;color:#0A369D;">${prop.client_name}</div>
+          <div style="font-size:12px;color:#666;margin-top:2px;">${prop.address}</div>
+          <div style="font-size:11px;margin-top:4px;color:${color};font-weight:600;">${truck ? truck.name : "Unassigned"}</div>
+        </div>
+      `);
+      markersRef.current[job.id] = marker;
+    });
+  }, [jobs, assignments, view, properties, trucks]);
 
   const assignJobToTruck = async (jobId, truckId) => {
     const existing = assignments[jobId];
@@ -3727,127 +3808,212 @@ function ManagerJobsTab() {
       await supabase.from("job_assignments").update({ truck_id: truckId }).eq("id", existing.id);
       setAssignments(prev => ({ ...prev, [jobId]: { ...existing, truck_id: truckId } }));
     } else {
-      const { data } = await supabase
-        .from("job_assignments")
-        .insert({ job_id: jobId, truck_id: truckId, crew_name: "" })
-        .select()
-        .single();
+      const { data } = await supabase.from("job_assignments")
+        .insert({ job_id: jobId, truck_id: truckId, crew_name: "" }).select().single();
       if (data) setAssignments(prev => ({ ...prev, [jobId]: data }));
     }
     setAssigningJob(null);
   };
 
-  const unassignJob = async (jobId) => {
-    const existing = assignments[jobId];
-    if (existing) {
-      await supabase.from("job_assignments").delete().eq("id", existing.id);
-      setAssignments(prev => { const next = { ...prev }; delete next[jobId]; return next; });
+  const carryOver = async (jobId) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (!job) return;
+    await supabase.from("jobs").insert({
+      company_id: COMPANY_ID,
+      property_id: job.property_id,
+      team_id: job.team_id,
+      schedule_id: job.schedule_id,
+      date: tomorrowStr,
+      status: "scheduled",
+      sort_order: job.sort_order,
+      notes: job.notes,
+      service_type: job.service_type,
+      service_types: job.service_types,
+      original_date: job.date,
+      carried_over: true,
+    });
+    await supabase.from("jobs").update({ status: "carried_over" }).eq("id", jobId);
+    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, status: "carried_over" } : j));
+    // Remove marker from map
+    if (markersRef.current[jobId]) {
+      markersRef.current[jobId].remove();
+      delete markersRef.current[jobId];
     }
-    setAssigningJob(null);
   };
 
-  const filteredJobs = jobs.filter(j => {
-    if (filter === "unassigned") return !assignments[j.id];
-    if (filter === "scheduled")  return j.status === "scheduled";
-    if (filter === "in_progress") return j.status === "in_progress";
-    if (filter === "completed")  return j.status === "completed";
-    return true;
-  });
+  const prop = (job) => properties.find(p => p.id === job.property_id);
 
-  const counts = {
-    unassigned:  jobs.filter(j => !assignments[j.id]).length,
-    scheduled:   jobs.filter(j => j.status === "scheduled").length,
-    in_progress: jobs.filter(j => j.status === "in_progress").length,
-    completed:   jobs.filter(j => j.status === "completed").length,
+  const displayJobs = view === "carryover"
+    ? jobs.filter(j => j.status !== "completed" && j.status !== "carried_over")
+    : jobs;
+
+  const unassignedCount = displayJobs.filter(j => !assignments[j.id]).length;
+
+  // Get active crews for legend
+  const activeTruckIds = [...new Set(Object.values(assignments).map(a => a.truck_id).filter(Boolean))];
+  const activeCrews = trucks.filter(t => activeTruckIds.includes(t.id));
+
+  const JobCard = ({ job }) => {
+    const p = prop(job);
+    const assignment = assignments[job.id];
+    const assignedTruck = trucks.find(t => t.id === assignment?.truck_id);
+    const team = teams.find(t => t.id === job.team_id);
+    const isAssigning = assigningJob === job.id;
+    const isCarried = job.status === "carried_over";
+    const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
+    const crewColor = assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "var(--warn)";
+
+    return (
+      <div style={{
+        background:"var(--bark)", border:`1px solid ${isCarried?"rgba(74,109,32,0.3)":"var(--moss)"}`,
+        borderLeft:`4px solid ${isCarried?"var(--leaf)":crewColor}`,
+        borderRadius:9, padding:"12px 14px", marginBottom:8,
+        opacity: isCarried ? 0.6 : 1,
+      }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:4 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {p?.client_name || "Unknown"}
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
+              {p?.city && (
+                <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4", letterSpacing:0.5 }}>
+                  📍 {p.city}
+                </span>
+              )}
+              {team && (
+                <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--mgr-lt)", background:"rgba(42,90,149,0.12)", borderRadius:4, padding:"2px 7px" }}>
+                  {team.abbreviation || team.name}
+                </span>
+              )}
+            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0, marginLeft:8 }}>
+            {isCarried ? (
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--leaf)", letterSpacing:1 }}>✓ Moved</span>
+            ) : (
+              <>
+                {assignedTruck && (
+                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:crewColor, fontWeight:700, letterSpacing:0.5 }}>
+                    {assignedTruck.name}
+                  </span>
+                )}
+                {!assignedTruck && (
+                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)" }}>Unassigned</span>
+                )}
+                <button onClick={() => setAssigningJob(isAssigning ? null : job.id)}
+                  style={{ padding:"4px 10px", borderRadius:6, border:"1px solid var(--mgr)", background:"none", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--mgr-lt)", cursor:"pointer", textTransform:"uppercase" }}>
+                  {assignedTruck ? "Change" : "Assign"}
+                </button>
+                {view === "carryover" && (
+                  <button onClick={() => carryOver(job.id)}
+                    style={{ padding:"4px 10px", borderRadius:6, border:"1px solid var(--warn)", background:"rgba(212,132,10,0.12)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--warn)", cursor:"pointer", textTransform:"uppercase", whiteSpace:"nowrap" }}>
+                    → Tomorrow
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {isAssigning && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8, paddingTop:8, borderTop:"1px solid var(--moss)", animation:"fadeUp 0.15s ease both" }}>
+            {trucks.map((truck, idx) => (
+              <button key={truck.id} onClick={() => assignJobToTruck(job.id, truck.id)}
+                style={{ padding:"5px 10px", borderRadius:6, border:`1.5px solid ${assignment?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"var(--moss)"}`, background:assignment?.truck_id===truck.id?`${CREW_COLORS[idx%CREW_COLORS.length]}22`:"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:assignment?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"var(--stone)", cursor:"pointer", fontWeight:600 }}>
+                {truck.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
-
-  if (loading) return (
-    <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
-      Loading...
-    </div>
-  );
 
   return (
-    <div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, marginBottom:14 }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      {/* Controls */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, flexWrap:"wrap" }}>
+        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
+          style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"8px 12px", color:"var(--cream)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, outline:"none", cursor:"pointer" }}/>
+        <button onClick={() => setSelectedDate(new Date().toLocaleDateString("en-CA", { timeZone:"America/New_York" }))}
+          style={{ background:"#5E7CE2", border:"none", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer" }}>
+          Today
+        </button>
+        <div style={{ display:"flex", gap:6, marginLeft:"auto" }}>
+          {[
+            { key:"today", label:"Today" },
+            { key:"tomorrow", label:"Tomorrow" },
+            { key:"carryover", label:`⚠ Carry Over${jobs.filter(j=>j.status!=="completed"&&j.status!=="carried_over").length>0?` (${jobs.filter(j=>j.status!=="completed"&&j.status!=="carried_over").length})`:""}` },
+          ].map(v => (
+            <button key={v.key} onClick={() => setView(v.key)}
+              style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${view===v.key?"var(--mgr)":"var(--moss)"}`, background:view===v.key?"rgba(42,90,149,0.15)":"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:view===v.key?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", fontWeight:600 }}>
+              {v.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:14 }}>
         {[
-          { key:"scheduled",   label:"Scheduled", color:"var(--stone)" },
-          { key:"unassigned",  label:"Unassigned", color:"var(--warn)" },
-          { key:"in_progress", label:"Active",    color:"#92B4F4" },
-          { key:"completed",   label:"Done",      color:"var(--leaf)" },
-        ].map(({ key, label, color }) => (
-          <div key={key}
-            style={{ background:"var(--bark)", border:`1px solid ${filter === key ? "var(--mgr)" : "var(--moss)"}`, borderRadius:8, padding:"8px", textAlign:"center", cursor:"pointer" }}
-            onClick={() => setFilter(filter === key ? "all" : key)}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color, lineHeight:1 }}>{counts[key]}</div>
+          { label:"Total Jobs", value:displayJobs.length, color:"var(--cream)" },
+          { label:"Unassigned", value:unassignedCount, color:unassignedCount>0?"var(--warn)":"var(--leaf)" },
+          { label:"Completed", value:jobs.filter(j=>j.status==="completed").length, color:"var(--leaf)" },
+        ].map(({ label, value, color }) => (
+          <div key={label} style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"8px", textAlign:"center" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color, lineHeight:1 }}>{value}</div>
             <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginTop:2 }}>{label}</div>
           </div>
         ))}
       </div>
 
-      {filteredJobs.length === 0 ? (
-        <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
-          No jobs
-        </div>
-      ) : filteredJobs.map(job => {
-        const prop = properties.find(p => p.id === job.property_id);
-        const assignment = assignments[job.id];
-        const assignedTruck = trucks.find(t => t.id === assignment?.truck_id);
-        const isAssigning = assigningJob === job.id;
-        const statusColor = job.status === "completed" ? "var(--leaf)" : job.status === "in_progress" ? "var(--lime)" : "var(--stone)";
-
-        return (
-          <div key={job.id}
-            style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:`4px solid ${statusColor}`, borderRadius:9, padding:"12px 14px", marginBottom:8, cursor:"pointer" }}
-            onClick={() => setAssigningJob(isAssigning ? null : job.id)}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)" }}>
-                {prop?.client_name || "Unknown"}
-              </div>
-              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, padding:"2px 8px", borderRadius:4, textTransform:"uppercase", background:"rgba(196,191,176,0.15)", color:statusColor }}>
-                {job.status.replace("_", " ")}
-              </span>
-            </div>
-            <div style={{ fontSize:12, color:"var(--stone)", marginBottom:4 }}>{prop?.address}</div>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              {job.service_types?.length > 0
-                ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--mgr-lt)", letterSpacing:0.5 }}>
-                    {job.service_types.map(id => getServiceLabel(id, "en")).join(" · ")}
-                  </span>
-                : <span/>
-              }
-              {assignedTruck
-                ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#92B4F4", letterSpacing:1 }}>🚛 {assignedTruck.name}</span>
-                : <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)", letterSpacing:1 }}>Unassigned</span>
-              }
-            </div>
-
-            {isAssigning && (
-              <div style={{ marginTop:10, borderTop:"1px solid var(--moss)", paddingTop:10, animation:"fadeUp 0.2s ease both" }}>
-                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:8 }}>
-                  Assign to Truck
-                </div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                  {trucks.map(truck => (
-                    <button key={truck.id}
-                      onClick={e => { e.stopPropagation(); assignJobToTruck(job.id, truck.id); }}
-                      style={{ padding:"6px 12px", borderRadius:6, border:`1.5px solid ${assignment?.truck_id === truck.id ? "var(--lime)" : "var(--moss)"}`, background:assignment?.truck_id === truck.id ? "rgba(74,109,32,0.15)" : "var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:assignment?.truck_id === truck.id ? "var(--lime)" : "var(--stone)", cursor:"pointer", fontWeight:600 }}>
-                      {truck.name}
-                    </button>
-                  ))}
-                  {assignment && (
-                    <button
-                      onClick={e => { e.stopPropagation(); unassignJob(job.id); }}
-                      style={{ padding:"6px 12px", borderRadius:6, border:"1.5px solid var(--danger)", background:"rgba(192,68,42,0.08)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--danger)", cursor:"pointer", fontWeight:600 }}>
-                      Remove
-                    </button>
-                  )}
+      {loading ? (
+        <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>Loading...</div>
+      ) : (
+        <div style={{ display:"flex", gap:16, flex:1, minHeight:0 }}>
+          {/* Job list */}
+          <div style={{ flex: view==="carryover" ? "0 0 40%" : "1", overflowY:"auto" }}>
+            {view === "carryover" && (
+              <div style={{ background:"rgba(212,132,10,0.08)", border:"1px solid rgba(212,132,10,0.3)", borderRadius:8, padding:"10px 14px", marginBottom:12 }}>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--warn)", letterSpacing:0.5 }}>
+                  ⚠ These jobs were not completed today. Move them to tomorrow or reassign as needed.
                 </div>
               </div>
             )}
+            {displayJobs.length === 0 ? (
+              <div style={{ textAlign:"center", padding:"48px 0", color:"var(--stone)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, textTransform:"uppercase" }}>
+                {view === "carryover" ? "No incomplete jobs — great work! 🎉" : "No jobs scheduled"}
+              </div>
+            ) : (
+              displayJobs.map(job => <JobCard key={job.id} job={job}/>)
+            )}
           </div>
-        );
-      })}
+
+          {/* Map — only in carryover view */}
+          {view === "carryover" && (
+            <div style={{ flex:"0 0 60%", display:"flex", flexDirection:"column" }}>
+              {activeCrews.length > 0 && (
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+                  <span style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>
+                    <span style={{ width:10, height:10, borderRadius:"50%", background:"#e05540", display:"inline-block" }}/>Unassigned
+                  </span>
+                  {activeCrews.map(crew => {
+                    const idx = trucks.findIndex(t => t.id === crew.id);
+                    return (
+                      <span key={crew.id} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>
+                        <span style={{ width:10, height:10, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/>
+                        {crew.name}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <div ref={mapRef} style={{ flex:1, borderRadius:10, overflow:"hidden", border:"1px solid var(--moss)", minHeight:400 }}/>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
