@@ -3519,6 +3519,7 @@ function CompletedJobsSummary({ jobs, formatSecs }) {
 // -- MANAGER JOBS TAB ---------------------------------------------------------
 function ManagerJobsTab() {
   const [jobs, setJobs] = useState([]);
+  const [mapReady, setMapReady] = useState(false);
   const [properties, setProperties] = useState([]);
   const [trucks, setTrucks] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -3600,6 +3601,7 @@ function ManagerJobsTab() {
       window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors"
       }).addTo(mapInst.current);
+      setMapReady(true);
     };
 
     if (!window.L) {
@@ -3624,7 +3626,7 @@ function ManagerJobsTab() {
   // Update map markers when jobs or assignments change
   useEffect(() => {
     if (view !== "carryover") return;
-    if (!mapInst.current) return;
+    if (!mapInst.current || !mapReady) return;
 
     // Clear old markers
     Object.values(markersRef.current).forEach(m => m.remove());
@@ -3657,7 +3659,7 @@ function ManagerJobsTab() {
       markersRef.current[job.id] = marker;
     });
 // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobs, assignments, view, properties, trucks]);
+  }, [jobs, assignments, view, properties, trucks, mapReady]);
   const assignJobToTruck = async (jobId, truckId) => {
     const existing = assignments[jobId];
     if (existing) {
@@ -3805,6 +3807,10 @@ function ManagerJobsTab() {
         <button onClick={() => setSelectedDate(new Date().toLocaleDateString("en-CA", { timeZone:"America/New_York" }))}
           style={{ background:"#5E7CE2", border:"none", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer" }}>
           Today
+        </button>
+        <button onClick={() => { setMapReady(false); fetchData(); }}
+          style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer" }}>
+          ↻ Refresh
         </button>
         <button onClick={() => setGroupByTeam(v => !v)}
           style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${groupByTeam?"var(--lime)":"var(--moss)"}`, background:groupByTeam?"rgba(74,109,32,0.15)":"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:groupByTeam?"var(--lime)":"var(--stone)", cursor:"pointer", fontWeight:600 }}>
@@ -5286,6 +5292,10 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
         style={{ background:"#5E7CE2", border:"none", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer", textTransform:"uppercase" }}>
         Today
       </button>
+      <button onClick={() => { setMapReady(false); fetchData(); }}
+          style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer" }}>
+          ↻ Refresh
+        </button>
       <button onClick={fetchAll} disabled={loading}
         style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", cursor:"pointer", letterSpacing:1, textTransform:"uppercase" }}>
         {loading ? "…" : "Refresh"}
