@@ -308,7 +308,7 @@ const Ic = ({ n, ...p }) => {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>{paths[n]}</svg>;
 };
 
-const TRUCKS = Array.from({ length: 20 }, (_, i) => ({ id: i+1, label: `Truck ${i+1}`, supabaseId: null }));
+const TRUCKS = Array.from({ length: 12 }, (_, i) => ({ id: i+1, label: `Crew ${i+1}`, supabaseId: null }));
 
 function useTrucks() {
   const [trucks, setTrucks] = useState(TRUCKS);
@@ -333,7 +333,7 @@ const CREW_NAME_KEY = "jj_crew_name";
 function loadCrewName() { try { return localStorage.getItem(CREW_NAME_KEY) || ""; } catch(e) { return ""; } }
 function saveCrewName(name) { try { localStorage.setItem(CREW_NAME_KEY, name); } catch(e) {} }
 const LANGS = { en:"en", es:"es", pt:"pt" };
-const FLAGS = { en:"🇺🇸", es:"🇲🇽", pt:"🇧🇷" };
+const FLAGS = { en:"🇺🇸", es:"🇬🇹", pt:"🇧🇷" };
 function detectLang() { try { const s=localStorage.getItem(LANG_KEY); if(s&&LANGS[s])return s; } catch(e){} const nav=(navigator.language||"en").toLowerCase(); if(nav.startsWith("pt"))return"pt"; if(nav.startsWith("es"))return"es"; return"en"; }
 function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 
