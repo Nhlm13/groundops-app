@@ -3629,7 +3629,7 @@ function ManagerJobsTab() {
     Object.values(markersRef.current).forEach(m => m.remove());
     markersRef.current = {};
 
-    const incompleteJobs = jobs.filter(j => j.status !== "completed" && j.status !== "carried_over");
+    const incompleteJobs = jobs;
     // eslint-disable-next-line no-unused-vars
     const activeCrews = trucks.filter(t =>
       Object.values(assignments).map(a => a.truck_id).includes(t.id)
@@ -3640,7 +3640,7 @@ function ManagerJobsTab() {
       if (!prop?.lat || !prop?.lng) return;
       const assignment = assignments[job.id];
       const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
-      const color = assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "#e05540";
+      const color = job.status === "completed" ? "#22c55e" : assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "#e05540";
       const truck = trucks.find(t => t.id === assignment?.truck_id);
       const marker = window.L.circleMarker([prop.lat, prop.lng], {
         radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9,
