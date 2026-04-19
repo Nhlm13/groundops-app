@@ -3737,15 +3737,15 @@ function ManagerJobsTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, [view, selectedDate]);
 
-  // Init map for carryover view
+ // Init map for carryover view
   useEffect(() => {
     if (view !== "carryover") {
       if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
       return;
     }
-    if (!mapRef.current || mapInst.current) return;
 
     const initMap = () => {
+      if (!mapRef.current || mapInst.current) return;
       mapInst.current = window.L.map(mapRef.current).setView([42.305, -71.52], 11);
       window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors"
@@ -3759,20 +3759,22 @@ function ManagerJobsTab() {
       document.head.appendChild(link);
       const script = document.createElement("script");
       script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = initMap;
+      script.onload = () => setTimeout(initMap, 500);
       document.head.appendChild(script);
     } else {
-      setTimeout(initMap, 300);
+      setTimeout(initMap, 500);
     }
 
     return () => {
       if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
     };
-  }, [view]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, mapRef.current]);
 
   // Update map markers when jobs or assignments change
   useEffect(() => {
-    if (view !== "carryover" || !mapInst.current) return;
+    if (view !== "carryover") return;
+    if (!mapInst.current) return;
 
     // Clear old markers
     Object.values(markersRef.current).forEach(m => m.remove());
@@ -3780,7 +3782,7 @@ function ManagerJobsTab() {
 
     const incompleteJobs = jobs.filter(j => j.status !== "completed" && j.status !== "carried_over");
     // eslint-disable-next-line no-unused-vars
-    const activeCrews = trucks.filter(t => 
+    const activeCrews = trucks.filter(t =>
       Object.values(assignments).map(a => a.truck_id).includes(t.id)
     );
 
@@ -3791,7 +3793,6 @@ function ManagerJobsTab() {
       const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
       const color = assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "#e05540";
       const truck = trucks.find(t => t.id === assignment?.truck_id);
-
       const marker = window.L.circleMarker([prop.lat, prop.lng], {
         radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9,
       }).addTo(mapInst.current);
