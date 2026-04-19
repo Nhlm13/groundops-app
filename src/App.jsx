@@ -3718,6 +3718,7 @@ function ManagerJobsTab() {
     const team = teams.find(t => t.id === job.team_id);
     const isAssigning = assigningJob === job.id;
     const isCarried = job.status === "carried_over";
+    const isCompleted = job.status === "completed";
     const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
     const crewColor = assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "var(--warn)";
 
@@ -3726,13 +3727,20 @@ function ManagerJobsTab() {
         background:"var(--bark)", border:`1px solid ${isCarried?"rgba(74,109,32,0.3)":"var(--moss)"}`,
         borderLeft:`4px solid ${isCarried?"var(--leaf)":crewColor}`,
         borderRadius:9, padding:"12px 14px", marginBottom:8,
-        opacity: isCarried ? 0.6 : 1,
+        opacity: isCarried ? 0.6 : isCompleted ? 0.75 : 1,
       }}>
         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:4 }}>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {p?.client_name || "Unknown"}
-            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color: isCompleted ? "var(--leaf)" : "var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {p?.client_name || "Unknown"}
+                </div>
+                {isCompleted && (
+                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--leaf)", background:"rgba(74,109,32,0.12)", border:"1px solid var(--leaf)", borderRadius:4, padding:"2px 8px", flexShrink:0, textTransform:"uppercase" }}>
+                    ✓ Done
+                  </span>
+                )}
+              </div>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
               {p?.city && (
                 <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4", letterSpacing:0.5 }}>
