@@ -929,11 +929,8 @@ function FlagSelector({ lang, setLang }) {
 
 // eslint-disable-next-line no-unused-vars
 const CONTACTS = [
-  {name:"Jonny",role:"General Manager",    initials:"JF",phone:"tel:+15085550001"},
-  {name:"Jon",  role:"Mowing Manager",     initials:"JG",phone:"tel:+15085550002"},
-  {name:"Tom",  role:"Residential Manager",initials:"TF",phone:"tel:+15085550003"},
-  {name:"Joel", role:"Commercial Manager", initials:"JS",phone:"tel:+15085550004"},
-  {name:"Katie",role:"Office Manager",     initials:"KR",phone:"tel:+15085550005"},
+  {name:"Jon",  role:"Mowing Manager",     initials:"JG",phone:"tel:+15086676953"},
+  {name:"Katie",role:"Office Manager",     initials:"KR",phone:"tel:+17748288668"},
   {name:"Nikki",role:"IT & App Support",   initials:"NS",phone:"tel:+15084048480"},
 ];
 
