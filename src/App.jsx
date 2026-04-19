@@ -5382,14 +5382,14 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 
         const { data: activeJobs } = await supabase
           .from("jobs")
-          .select("*, properties(address, client_id)")
+          .select("*, properties(address, client_id, clients(name))")
           .eq("company_id", COMPANY_ID)
           .eq("date", selectedDate)
           .eq("status", "in_progress");
 
         const { data: completedJobs } = await supabase
           .from("jobs")
-          .select("*, properties(address, client_id)")
+          .select("*, properties(address, client_id, clients(name))")
           .eq("company_id", COMPANY_ID)
           .eq("date", selectedDate)
           .eq("status", "completed");
@@ -5417,7 +5417,7 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 
         const enrich = (jobs) => jobs.map(job => ({
           ...job,
-          client_name: clientMap[job.properties?.client_id] || job.properties?.address || "Unknown",
+          client_name: job.properties?.clients?.name || clientMap[job.properties?.client_id] || job.properties?.address || "Unknown",
           timeLogs: timeLogs.filter(l => l.job_id === job.id),
           truck: trucks.find(t => t.id === jobAssignments.find(a => a.job_id === job.id)?.truck_id),
         }));
