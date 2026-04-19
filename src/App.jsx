@@ -3733,6 +3733,7 @@ function ManagerJobsTab() {
     setLoading(false);
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, [view, selectedDate]);
 
   // Init map for carryover view
@@ -3777,7 +3778,9 @@ function ManagerJobsTab() {
     markersRef.current = {};
 
     const incompleteJobs = jobs.filter(j => j.status !== "completed" && j.status !== "carried_over");
-    const activeTruckIds = [...new Set(Object.values(assignments).map(a => a.truck_id).filter(Boolean))];
+    const activeCrews = trucks.filter(t => 
+    Object.values(assignments).map(a => a.truck_id).includes(t.id)
+  );
 
     incompleteJobs.forEach(job => {
       const prop = properties.find(p => p.id === job.property_id);
@@ -3850,8 +3853,9 @@ function ManagerJobsTab() {
   const unassignedCount = displayJobs.filter(j => !assignments[j.id]).length;
 
   // Get active crews for legend
-  const activeTruckIds = [...new Set(Object.values(assignments).map(a => a.truck_id).filter(Boolean))];
-  const activeCrews = trucks.filter(t => activeTruckIds.includes(t.id));
+  const activeCrews = trucks.filter(t => 
+    Object.values(assignments).map(a => a.truck_id).includes(t.id)
+  );
 
   const JobCard = ({ job }) => {
     const p = prop(job);
