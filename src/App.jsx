@@ -1634,7 +1634,6 @@ function UniformGuideInline() {
   );
 }
 
-// -- CONTACTS TAB -------------------------------------------------------------
 function ContactsTab() {
   const t = useT();
   return (
@@ -1650,6 +1649,9 @@ function ContactsTab() {
             <div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{c.role}</div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:1,marginTop:4}}>{c.phone.replace("tel:+1","")}</div>
           </div>
+          <a href={c.phone} className="call-btn" style={{textDecoration:"none"}}>
+            <Ic n="phone"/>
+          </a>
         </div>
       ))}
     </div>
