@@ -366,15 +366,15 @@ function getServiceLabel(id, lang) {
 
 const T = {
   en: {
-    appSub:"Operations Center", selectTruck:"Select Your Truck", chooseTruck:"Choose a truck...",
-    makeMyTruck:"Make This My Truck", signInAs:t=>`Sign In as ${t}`,
-    notYourTruck:"Not your truck? Change it", truckToday:"Your truck from today",
+    appSub:"Operations Center", selectTruck:"Select Your Crew", chooseTruck:"Choose a crew...",
+    makeMyTruck:"Make This My Crew", signInAs:t=>`Sign In as ${t}`,
+notYourTruck:"Not your crew? Change it", truckToday:"Your crew from today",
     mgrZone:"Manager Zone", mgrPassword:"Password", enterMgrZone:"Enter Manager Zone",
     backToLogin:"← Back", signOut:"Sign Out",
     submitReceipt:"Submit a Receipt", receiptCard:"Receipt Submission", receiptSub:"Submit without logging into a truck",
     empResources:"Employee Resources", empResourcesSub:"Request time away & view company policies",
     backToResources:"Back to Employee Resources", back:"Back",
-    yourName:"Your Name", namePlaceholder:"First & Last name", truck:"Truck",
+    yourName:"Your Name", namePlaceholder:"First & Last name", truck:"Crew",
     division:"Division", maintenance:"Maintenance", construction:"Construction",
     receiptType:"Receipt Type", fuel:"Fuel", materials:"Materials", toolsSupplies:"Tools / Supplies", other:"Other",
     part1:"Part 1 — General Information", part2Fuel:"Part 2 — Fuel Details", part2Purchase:"Part 2 — Purchase Details",
