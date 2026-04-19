@@ -3588,13 +3588,10 @@ function ManagerJobsTab() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchData(); }, [view, selectedDate]);
 
- // Init map for carryover view
+ // Init map
   useEffect(() => {
-    if (view !== "carryover") {
-      if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
-      return;
-    }
-
+    if (!mapRef.current) return;
+    if (mapInst.current) return;
     const initMap = () => {
       if (!mapRef.current || mapInst.current) return;
       mapInst.current = window.L.map(mapRef.current).setView([42.305, -71.52], 11);
@@ -3621,11 +3618,10 @@ function ManagerJobsTab() {
       if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, mapRef.current]);
+  }, [mapRef.current]);
 
   // Update map markers when jobs or assignments change
   useEffect(() => {
-    if (view !== "carryover") return;
     if (!mapInst.current || !mapReady) return;
 
     const addMarkers = () => {
@@ -3662,7 +3658,7 @@ function ManagerJobsTab() {
     };
     setTimeout(addMarkers, 300);
 // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobs, assignments, view, properties, trucks, mapReady]);
+  }, [jobs, assignments, properties, trucks, mapReady]);
   const assignJobToTruck = async (jobId, truckId) => {
     const existing = assignments[jobId];
     if (existing) {
@@ -3852,7 +3848,7 @@ function ManagerJobsTab() {
       ) : (
         <div style={{ display:"flex", gap:16, flex:1, minHeight:0 }}>
           {/* Job list */}
-          <div style={{ flex: view==="carryover" ? "0 0 40%" : "1", overflowY:"auto" }}>
+          <div style={{ flex:"0 0 40%", overflowY:"auto" }}>
             {view === "carryover" && (
               <div style={{ background:"rgba(212,132,10,0.08)", border:"1px solid rgba(212,132,10,0.3)", borderRadius:8, padding:"10px 14px", marginBottom:12 }}>
                 <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--warn)", letterSpacing:0.5 }}>
@@ -3881,7 +3877,7 @@ function ManagerJobsTab() {
             )}
           </div>
 
-          {/* Map — only in carryover view */}
+          {/* Map — always visible */}
           {view === "carryover" && (
             <div style={{ flex:"0 0 60%", display:"flex", flexDirection:"column" }}>
               {activeCrews.length > 0 && (
@@ -3904,7 +3900,6 @@ function ManagerJobsTab() {
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }
