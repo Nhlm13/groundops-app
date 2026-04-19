@@ -1381,96 +1381,6 @@ function DOTWalkaroundForm({ truck, onBack, onDone, onOpenPropInspect }) {
   );
 }
 
-// -- DAILY BRIEFING FORM -------------------------------------------------------
-function DailyBriefingForm({ truck, onBack, onDone, onOpenDOT }) {
-  const t = useT();
-  const [name,       setName]       = useState(loadCrewName);
-  const [acked,      setAcked]      = useState(false);
-  const [nameErr,    setNameErr]    = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted,  setSubmitted]  = useState(false);
-  const [openSecs,   setOpenSecs]   = useState({s1:true,s2:false,s3:false,s4:false});
-  const tog = k => setOpenSecs(p=>({...p,[k]:!p[k]}));
-  const inputStyle = {width:"100%",background:"var(--bark2)",border:"1px solid var(--moss)",borderRadius:8,padding:"12px 14px",color:"var(--cream)",fontFamily:"'Barlow',sans-serif",fontSize:15};
-
-  const handleSubmit = async () => {
-    if(!name.trim()){setNameErr(true);return;}
-    saveCrewName(name.trim());
-    if(!acked)return;
-    setSubmitting(true);
-    try {
-      
-      const { error } = await supabase
-        .from("briefing_acknowledgments")
-        .insert({
-          company_id: COMPANY_ID,
-          session_id: truck.sessionId || null,
-          date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
-        })
-        .select()
-        .single();
-      if(error) console.warn("Briefing insert error", JSON.stringify(error));
-      setSubmitted(true);
-    } catch(e){
-      console.warn("Briefing caught error:", JSON.stringify(e));
-      setSubmitted(true);
-    }
-    setSubmitting(false);
-  };
-
-  const Section = ({sk,titleKey,items}) => {
-    const isOpen=openSecs[sk];
-    return (
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:9,marginBottom:8,overflow:"hidden"}}>
-        <div onClick={()=>tog(sk)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",cursor:"pointer",background:isOpen?"var(--bark2)":"var(--bark)",transition:"background 0.15s"}}>
-          <div style={{width:28,height:28,borderRadius:7,background:"rgba(74,109,32,0.12)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="clip" style={{width:13,height:13,color:"var(--leaf)"}}/></div>
-          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,color:"var(--cream)",flex:1}}>{t[titleKey]}</span>
-          <Ic n="chev" style={{width:14,height:14,color:"var(--stone)",transition:"transform 0.2s",transform:isOpen?"rotate(90deg)":"none"}}/>
-        </div>
-        {isOpen&&<div style={{padding:"4px 14px 14px",borderTop:"1px solid var(--moss)"}}>{items.map((item,i)=><div key={i} className="briefing-item">{item}</div>)}</div>}
-      </div>
-    );
-  };
-
-  if(submitted) return (
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 0 16px",animation:"fadeUp 0.3s ease both"}}>
-      <div style={{width:72,height:72,borderRadius:"50%",background:"rgba(74,109,32,0.15)",border:"2px solid var(--leaf)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Ic n="check" style={{width:36,height:36,color:"#92B4F4"}}/></div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#92B4F4",letterSpacing:3,marginBottom:2,textAlign:"center",lineHeight:1.1}}>{t.briefingCompleteTitle}</div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#92B4F4",letterSpacing:2,marginBottom:8,textAlign:"center"}}>{t.briefingCompleteSubtitle}</div>
-      <div style={{fontSize:12,color:"var(--stone)",marginBottom:24}}>{truck.label} · {name}</div>
-      <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%"}}>
-        <button onClick={onOpenDOT||onDone} style={{width:"100%",padding:"14px",background:"#5E7CE2",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:2,color:"var(--earth)",cursor:"pointer"}}>{t.performDOT}</button>
-        <button onClick={onDone} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.goHome}</button>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{animation:"fadeUp 0.3s ease both"}}>
-      <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderLeft:"4px solid var(--lime)",borderRadius:10,padding:"12px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:38,height:38,borderRadius:8,background:"var(--moss)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Ic n="book" style={{width:17,height:17,color:"#92B4F4"}}/></div>
-        <div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#92B4F4",letterSpacing:2,lineHeight:1}}>{t.dbTitle}</div><div style={{fontSize:12,color:"var(--stone)",marginTop:2}}>{t.dbSubtitle}</div></div>
-      </div>
-      <div style={{background:"var(--bark)",border:`1px solid ${nameErr?"var(--danger)":"var(--moss)"}`,borderRadius:10,padding:14,marginBottom:14}}>
-        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:nameErr?"var(--danger)":"var(--stone)",textTransform:"uppercase",marginBottom:6}}>{t.dbNameLabel}</div>
-        <input style={{...inputStyle,borderColor:nameErr?"var(--danger)":"var(--moss)"}} type="text" placeholder={t.namePlaceholder} value={name} onChange={e=>{setName(e.target.value);setNameErr(false);}}/>
-      </div>
-      <Section sk="s1" titleKey="dbSec1" items={t.dbItems1}/>
-      <Section sk="s2" titleKey="dbSec2" items={t.dbItems2}/>
-      <Section sk="s3" titleKey="dbSec3" items={t.dbItems3}/>
-      <Section sk="s4" titleKey="dbSec4" items={t.dbItems4}/>
-      <div className={`briefing-ack ${acked?"checked":""}`} onClick={()=>setAcked(a=>!a)} style={{marginTop:6}}>
-        <div className={`briefing-ack-box ${acked?"checked":""}`}>{acked&&<Ic n="check"/>}</div>
-        <span className="briefing-ack-label">{t.dbAckLabel}</span>
-      </div>
-      <button disabled={submitting||!acked||!name.trim()} onClick={handleSubmit}
-        style={{width:"100%",padding:"16px",marginTop:14,background:(!acked||!name.trim()||submitting)?"var(--moss)":"var(--lime)",border:"none",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:3,color:"var(--earth)",cursor:(!acked||!name.trim()||submitting)?"not-allowed":"pointer",marginBottom:8,transition:"background 0.2s"}}>
-        {submitting?t.dbSubmitting:t.dbSubmit}
-      </button>
-      <button onClick={onBack} style={{width:"100%",padding:"12px",background:"none",border:"1px solid var(--moss)",borderRadius:10,fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:2,color:"var(--stone)",cursor:"pointer"}}>{t.cancel}</button>
-    </div>
-  );
-}
 
 // -- VEHICLE GUIDELINES --------------------------------------------------------
 function VehicleGuideInline() {
@@ -1659,8 +1569,7 @@ function ContactsTab() {
 }
 
 // -- HOME TAB ------------------------------------------------------------------
-function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect, onOpenEOD, dotComplete, briefingComplete, propInspectCount, eodComplete }) {
-  const t   = useT();
+function HomeTab({ truck, division, onOpenDOT, onOpenPropInspect, onOpenEOD, dotComplete, propInspectCount, eodComplete }) {  const t   = useT();
   const day = getTodayStr();
   return (
     <div>
@@ -1670,17 +1579,6 @@ function HomeTab({ truck, division, onOpenDOT, onOpenBriefing, onOpenPropInspect
       </div>
       <div className="section-hd">{t.dailyForms}</div>
       <div className="action-cards-grid">
-        <div className="action-card" onClick={briefingComplete?undefined:onOpenBriefing} style={{opacity:briefingComplete?0.75:1,cursor:briefingComplete?"default":"pointer"}}>
-          <div className="action-card-icon" style={{background:briefingComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
-            <Ic n={briefingComplete?"check":"book"} style={{width:18,height:18,color:"#92B4F4"}}/>
-          </div>
-          <div className="action-card-info">
-            <div className="action-card-name">{t.dailyBriefing}</div>
-            <div className="action-card-desc">{t.dailyBriefingDesc}</div>
-            <span className={`status-chip ${briefingComplete?"chip-done":"chip-pending"}`}>{briefingComplete?t.done:t.pending}</span>
-          </div>
-          {!briefingComplete&&<div className="action-card-arrow"><Ic n="chev"/></div>}
-        </div>
         <div className="action-card" onClick={dotComplete?undefined:onOpenDOT} style={{opacity:dotComplete?0.75:1,cursor:dotComplete?"default":"pointer"}}>
           <div className="action-card-icon" style={{background:dotComplete?"rgba(74,109,32,0.2)":"var(--moss)"}}>
             <Ic n={dotComplete?"check":"dot"} style={{width:18,height:18,color:"#92B4F4"}}/>
@@ -1852,12 +1750,11 @@ function loadFormState(truckId) {
     return state;
   } catch(e) { return null; }
 }
-function saveFormState(truckId, dot, briefing, propCount, eod) {
+function saveFormState(truckId, dot, propCount, eod) {
   try {
     localStorage.setItem(getFormStateKey(truckId), JSON.stringify({
       date: getTodayDateStr(),
       dotComplete: dot,
-      briefingComplete: briefing,
       propInspectCount: propCount,
       eodComplete: eod,
     }));
@@ -2271,7 +2168,6 @@ function TruckHome({ truck, initialDivision, onLogout }) {
   const [tab,              setTab]             = useState("home");
   const [activeForm,       setActiveForm]      = useState(null);
   const [dotComplete,      setDotComplete]     = useState(saved?.dotComplete      || false);
-  const [briefingComplete, setBriefingComplete]= useState(saved?.briefingComplete || false);
   const [propInspectCount, setPropInspectCount]= useState(saved?.propInspectCount || 0);
   const [eodComplete,      setEodComplete]     = useState(saved?.eodComplete      || false);
   const [division]                             = useState(initialDivision||"");
@@ -2279,8 +2175,8 @@ function TruckHome({ truck, initialDivision, onLogout }) {
   const [weather,          setWeather]         = useState(null);
 
   useEffect(() => {
-    saveFormState(truck.id, dotComplete, briefingComplete, propInspectCount, eodComplete);
-  }, [dotComplete, briefingComplete, propInspectCount, eodComplete, truck.id]);
+    saveFormState(truck.id, dotComplete, propInspectCount, eodComplete);
+  }, [dotComplete, propInspectCount, eodComplete, truck.id]);
 
   useEffect(() => {
     fetch("https://api.open-meteo.com/v1/forecast?latitude=42.3057&longitude=-71.5232&current=temperature_2m,weathercode&daily=precipitation_probability_max&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1")
@@ -2322,11 +2218,9 @@ function TruckHome({ truck, initialDivision, onLogout }) {
         {tab==="home"&&!activeForm&&
           <HomeTab truck={truck} division={division}
             onOpenDOT={()=>setActiveForm("dot")}
-            onOpenBriefing={()=>setActiveForm("briefing")}
             onOpenPropInspect={()=>setActiveForm("propinspect")}
             onOpenEOD={()=>setActiveForm("eod")}
             dotComplete={dotComplete}
-            briefingComplete={briefingComplete}
             propInspectCount={propInspectCount}
             eodComplete={eodComplete}
           />
@@ -2336,13 +2230,6 @@ function TruckHome({ truck, initialDivision, onLogout }) {
           <DOTWalkaroundForm truck={truck} onBack={()=>setActiveForm(null)}
             onDone={()=>{setDotComplete(true);setActiveForm(null);}}
             onOpenPropInspect={()=>{setDotComplete(true);setActiveForm("propinspect");}}
-          /></div>
-        )}
-        {tab==="home"&&activeForm==="briefing"&&(
-          <div><button className="back-btn" style={{marginBottom:14}} onClick={()=>setActiveForm(null)}><Ic n="back"/> {t.back}</button>
-          <DailyBriefingForm truck={truck} onBack={()=>setActiveForm(null)}
-            onDone={()=>{setBriefingComplete(true);setActiveForm(null);}}
-            onOpenDOT={()=>{setBriefingComplete(true);setActiveForm("dot");}}
           /></div>
         )}
         {tab==="home"&&activeForm==="propinspect"&&(
