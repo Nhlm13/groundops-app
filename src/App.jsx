@@ -3590,18 +3590,18 @@ function ManagerJobsTab() {
 
  // Init map
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (loading) return;
     if (mapInst.current) return;
-    const initMap = () => {
-      const container = document.getElementById("manager-jobs-map");
-      if (!container || mapInst.current) return;
+    const container = document.getElementById("manager-jobs-map");
+    if (!container) return;
+    const doInit = () => {
+      if (mapInst.current) return;
       mapInst.current = window.L.map(container).setView([42.305, -71.52], 11);
       window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors"
       }).addTo(mapInst.current);
       setMapReady(true);
     };
-
     if (!window.L) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
@@ -3609,17 +3609,16 @@ function ManagerJobsTab() {
       document.head.appendChild(link);
       const script = document.createElement("script");
       script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = () => setTimeout(initMap, 500);
+      script.onload = () => setTimeout(doInit, 200);
       document.head.appendChild(script);
     } else {
-      setTimeout(initMap, 500);
+      setTimeout(doInit, 200);
     }
-
     return () => {
       if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loading]);
 
   // Update map markers when jobs or assignments change
   useEffect(() => {
