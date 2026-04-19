@@ -3035,6 +3035,7 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
     propertySearch: "",
     date: preselectedDate || new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
     notes: "",
+    team_id: "",
   });
 
   const set = (k, v) => setFields(f => ({...f, [k]: v}));
@@ -3042,6 +3043,16 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
     prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
   );
 
+  const [teams, setTeams] = useState([]);
+  useEffect(() => {
+    supabase
+      .from("teams")
+      .select("id, name, abbreviation")
+      .eq("company_id", COMPANY_ID)
+      .eq("active", true)
+      .order("name")
+      .then(({ data }) => setTeams(data || []));
+  }, []);
   useEffect(() => {
     const fetchProps = async () => {
       const { data: propData, error: propError } = await supabase
@@ -3084,6 +3095,7 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
         notes: fields.notes || null,
         service_type: selectedServices[0],
         service_types: selectedServices,
+team_id: fields.team_id || null,
         service_descriptions: serviceDescriptions,
       });
       if(error){ setError("Failed to save job."); setSubmitting(false); return; }
@@ -3140,7 +3152,16 @@ function AddOneTimeJobForm({ onBack, onSaved, preselectedDate }) {
 
         <label style={labelStyle}>Date *</label>
         <input style={{...inputStyle,boxSizing:"border-box"}} type="date" value={fields.date} onChange={e=>set("date",e.target.value)}/>
-
+        
+        <label style={labelStyle}>Team *</label>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {teams.map(team => (
+            <button key={team.id} onClick={()=>set("team_id", team.id)}
+              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.team_id===team.id?"var(--mgr)":"var(--moss)"}`,background:fields.team_id===team.id?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.team_id===team.id?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+              {team.abbreviation || team.name}
+            </button>
+          ))}
+        </div>
         <label style={labelStyle}>Services * (select all that apply)</label>
         {SERVICE_GROUPS.map(group=>(
           <div key={group.label.en} style={{marginBottom:10}}>
