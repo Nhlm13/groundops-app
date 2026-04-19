@@ -3642,9 +3642,22 @@ function ManagerJobsTab() {
       const truckIdx = trucks.findIndex(t => t.id === assignment?.truck_id);
       const color = job.status === "completed" ? "#22c55e" : assignment ? CREW_COLORS[truckIdx % CREW_COLORS.length] : "#e05540";
       const truck = trucks.find(t => t.id === assignment?.truck_id);
-      const marker = window.L.circleMarker([prop.lat, prop.lng], {
-        radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9,
-      }).addTo(mapInst.current);
+      const isInProgress = job.status === "in_progress";
+      const marker = isInProgress
+        ? window.L.marker([prop.lat, prop.lng], {
+            icon: window.L.divIcon({
+              className: "",
+              html: `<div style="position:relative;width:20px;height:20px;">
+                <div style="position:absolute;inset:0;border-radius:50%;background:${color};border:2px solid #fff;animation:pulse 1s infinite;"></div>
+                <div style="position:absolute;inset:-6px;border-radius:50%;border:3px solid ${color};opacity:0.4;animation:pulse 1s infinite;"></div>
+              </div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10],
+            })
+          }).addTo(mapInst.current)
+        : window.L.circleMarker([prop.lat, prop.lng], {
+            radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9,
+          }).addTo(mapInst.current);
 
       marker.bindPopup(`
         <div style="font-family:'Barlow Condensed',sans-serif;min-width:160px;">
