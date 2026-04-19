@@ -2120,20 +2120,18 @@ function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
 
         <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:11,letterSpacing:2,color:"var(--stone)",textTransform:"uppercase",marginBottom:8}}>{t.selectService}</div>
 
-        {SERVICE_GROUPS.map(group => (
-          <div key={group.label.en} style={{marginBottom:12}}>
-            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"#92B4F4",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{group.label[lang]||group.label.en}</div>
+        {SERVICE_CATEGORIES.map(cat => (
+          <div key={cat.id} style={{marginBottom:12}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,letterSpacing:2,color:"#92B4F4",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:4}}>{cat.label}</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {group.ids.map(id => {
-                const svc = SERVICE_TYPES.find(s => s.id === id);
-                if(!svc) return null;
+              {cat.services.map(svc => {
                 const isActive = activeServiceId === svc.id;
                 const secs = elapsed[svc.id] || 0;
                 return (
                   <button key={svc.id} onClick={()=>switchService(svc.id)}
                     style={{padding:"8px 12px",borderRadius:8,border:`2px solid ${isActive?"var(--lime)":"var(--moss)"}`,background:isActive?"rgba(74,109,32,0.2)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:12,color:isActive?"var(--lime)":"var(--stone)",cursor:"pointer",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:2,position:"relative"}}>
                     {isActive && <span style={{position:"absolute",top:3,right:5,width:7,height:7,borderRadius:"50%",background:"#5E7CE2",animation:"pulse 1s infinite"}}/>}
-                    <span>{svc[lang]||svc.en}</span>
+                    <span>{svc.label}</span>
                     {secs > 0 && <span style={{fontSize:10,color:isActive?"var(--lime)":"var(--stone)",letterSpacing:0.5}}>{formatTime(secs)}</span>}
                   </button>
                 );
@@ -4385,19 +4383,17 @@ function OfficeView({ onLogout }) {
 
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 6 }}>Services</div>
-            {SERVICE_GROUPS.map(group => (
-              <div key={group.label.en} style={{ marginBottom: 10 }}>
-                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 2, color: "#92B4F4", textTransform: "uppercase", marginBottom: 5, borderBottom: "1px solid #dde5f5", paddingBottom: 3 }}>{group.label.en}</div>
+            {SERVICE_CATEGORIES.map(cat => (
+              <div key={cat.id} style={{ marginBottom: 10 }}>
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 2, color: "#92B4F4", textTransform: "uppercase", marginBottom: 5, borderBottom: "1px solid #dde5f5", paddingBottom: 3 }}>{cat.label}</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {group.ids.map(id => {
-                    const svc = SERVICE_TYPES.find(s => s.id === id);
-                    if (!svc) return null;
+                  {cat.services.map(svc => {
                     const isSelected = editingJobServices.includes(svc.id);
                     return (
                       <button key={svc.id}
                         onClick={() => setEditingJobServices(prev => isSelected ? prev.filter(s => s !== svc.id) : [...prev, svc.id])}
                         style={{ padding: "5px 10px", borderRadius: 8, border: `1.5px solid ${isSelected ? "#4472CA" : "#dde5f5"}`, background: isSelected ? "rgba(68,114,202,0.1)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: isSelected ? "#0A369D" : "#4472CA", cursor: "pointer", fontWeight: isSelected ? 700 : 400 }}>
-                        {svc.en}
+                        {svc.label}
                       </button>
                     );
                   })}
