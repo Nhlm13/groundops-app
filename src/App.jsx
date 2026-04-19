@@ -1922,18 +1922,7 @@ function CompletedJobNoteEditor({ jobId }) {
 }
 
 // -- JOBS TAB -----------------------------------------------------------------
-const SERVICE_GROUPS = [
-  { label: { en: "Lawn & Grounds", es: "Césped y Jardín", pt: "Gramado e Jardim" },
-    ids: ["mowing","lawn_maintenance","edging","trimming","weeding"] },
-  { label: { en: "Planting & Beds", es: "Plantación y Arriates", pt: "Plantio e Canteiros" },
-    ids: ["pruning","mulching","planting"] },
-  { label: { en: "Irrigation", es: "Irrigación", pt: "Irrigação" },
-    ids: ["irrigation_startup","irrigation_blowout","irrigation_install"] },
-  { label: { en: "Projects", es: "Proyectos", pt: "Projetos" },
-    ids: ["construction","landscape_install","seasonal_cleanup","special_project"] },
-  { label: { en: "Lighting", es: "Iluminación", pt: "Iluminação" },
-    ids: ["lighting_install","lighting_takedown"] },
-];
+
 
 function JobsTab({ truck, onJobCountChange }) {  const lang = useLang();
   const t = useT();
