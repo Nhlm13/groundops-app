@@ -3762,7 +3762,7 @@ function ManagerJobsTab() {
       script.onload = initMap;
       document.head.appendChild(script);
     } else {
-      setTimeout(initMap, 100);
+      setTimeout(initMap, 300);
     }
 
     return () => {
