@@ -5380,30 +5380,28 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
       const fetchJobData = async () => {
         setJobsLoading(true);
 
-        const { data: activeJobs } = await supabase
-          .from("jobs")
-          .select("*, properties(address, client_id, clients(name))")
-          .eq("company_id", COMPANY_ID)
-          .eq("date", selectedDate)
-          .eq("status", "in_progress");
-
-        const { data: completedJobs } = await supabase
-          .from("jobs")
-          .select("*, properties(address, client_id, clients(name))")
-          .eq("company_id", COMPANY_ID)
-          .eq("date", selectedDate)
-          .eq("status", "completed");
+        const [{ data: activeJobs }, { data: completedJobs }] = await Promise.all([
+          supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "in_progress"),
+          supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", selectedDate).eq("status", "completed"),
+        ]);
 
         const allJobs = [...(activeJobs || []), ...(completedJobs || [])];
         const allJobIds = allJobs.map(j => j.id);
+        const propIds = [...new Set(allJobs.map(j => j.property_id).filter(Boolean))];
 
-        // Two-step client name lookup
+        let propMap = {};
         let clientMap = {};
-        const { data: clientData, error: clientError } = await supabase
-          .from("clients")
-          .select("id, name");
-        if (clientError) console.warn("ActivityTab clients error:", clientError);
-        (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+
+        if (propIds.length > 0) {
+          const { data: propData } = await supabase.from("properties").select("id, address, client_id").in("id", propIds);
+          const clientIds = [...new Set((propData || []).map(p => p.client_id).filter(Boolean))];
+          if (clientIds.length > 0) {
+            const { data: clientData } = await supabase.from("clients").select("id, name").in("id", clientIds);
+            (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+          }
+          (propData || []).forEach(p => { propMap[p.id] = { ...p, client_name: clientMap[p.client_id] || p.address }; });
+        }
+
         let timeLogs = [];
         let jobAssignments = [];
         if (allJobIds.length > 0) {
@@ -5417,7 +5415,8 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 
         const enrich = (jobs) => jobs.map(job => ({
           ...job,
-          client_name: job.properties?.clients?.name || clientMap[job.properties?.client_id] || job.properties?.address || "Unknown",
+          properties: propMap[job.property_id] || null,
+          client_name: propMap[job.property_id]?.client_name || "Unknown",
           timeLogs: timeLogs.filter(l => l.job_id === job.id),
           truck: trucks.find(t => t.id === jobAssignments.find(a => a.job_id === job.id)?.truck_id),
         }));
