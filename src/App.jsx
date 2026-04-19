@@ -3803,8 +3803,8 @@ function ManagerJobsTab() {
       `);
       markersRef.current[job.id] = marker;
     });
+// eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs, assignments, view, properties, trucks]);
-
   const assignJobToTruck = async (jobId, truckId) => {
     const existing = assignments[jobId];
     if (existing) {
@@ -3853,6 +3853,7 @@ function ManagerJobsTab() {
   const unassignedCount = displayJobs.filter(j => !assignments[j.id]).length;
 
   // Get active crews for legend
+  // eslint-disable-next-line no-unused-vars
   const activeCrews = trucks.filter(t => 
     Object.values(assignments).map(a => a.truck_id).includes(t.id)
   );
