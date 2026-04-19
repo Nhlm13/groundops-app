@@ -338,23 +338,97 @@ function detectLang() { try { const s=localStorage.getItem(LANG_KEY); if(s&&LANG
 function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 
 // -- TRANSLATIONS --------------------------------------------------------------
-const SERVICE_TYPES = [
-{ id: "mowing", en: "Mowing", es: "Corte", pt: "Corte" },
-{ id: "lawn_maintenance", en: "Lawn Maintenance", es: "Mantenimiento de Césped", pt: "Manutenção de Gramado" },  { id: "edging",           en: "Edging",                    es: "Bordeado",              pt: "Bordeamento" },
-  { id: "trimming",         en: "Trimming",                  es: "Recorte",               pt: "Aparação" },
-  { id: "weeding",          en: "Weeding",                   es: "Deshierbe",             pt: "Capina" },
-  { id: "pruning",          en: "Pruning",                   es: "Poda",                  pt: "Poda" },
-  { id: "mulching",         en: "Mulching",                  es: "Mantillo",              pt: "Cobertura" },
-  { id: "planting",         en: "Planting",                  es: "Plantación",            pt: "Plantio" },
-  { id: "construction",     en: "Construction",              es: "Construcción",          pt: "Construção",     hasDescription: true },
-  { id: "landscape_install",en: "Landscape Install",         es: "Instalación Paisajismo",pt: "Instalação Paisagismo" },
-  { id: "irrigation_startup",en: "Irrigation — Start-Up",   es: "Irrigación — Apertura", pt: "Irrigação — Abertura" },
-  { id: "irrigation_blowout",en: "Irrigation — Blow-Out",   es: "Irrigación — Cierre",   pt: "Irrigação — Fechamento" },
-  { id: "irrigation_install",en: "Irrigation — Installation",es: "Irrigación — Instalación",pt: "Irrigação — Instalação" },
-  { id: "seasonal_cleanup", en: "Seasonal Cleanup",          es: "Limpieza Estacional",   pt: "Limpeza Sazonal",   hasDescription: true },
-  { id: "special_project",  en: "Special Project",           es: "Proyecto Especial",     pt: "Projeto Especial",  hasDescription: true },
-  { id: "lighting_install", en: "Lighting — Installation",   es: "Iluminación — Instalación", pt: "Iluminação — Instalação" },
-  { id: "lighting_takedown",en: "Lighting — Takedown",       es: "Iluminación — Desmontaje",  pt: "Iluminação — Desmontagem" },
+const SERVICE_CATEGORIES = [
+  {
+    id: "lawn_care", label: "Lawn Care",
+    services: [
+      { id: "mowing", label: "Mowing" },
+      { id: "fertilizer", label: "Fertilizer" },
+      { id: "aeration", label: "Aeration" },
+      { id: "hydroseeding", label: "Hydroseeding" },
+    ]
+  },
+  {
+    id: "lawn_pest", label: "Lawn Pest Control",
+    services: [
+      { id: "mosquito_tick", label: "Mosquito & Tick Spray" },
+      { id: "grub_control", label: "Grub Control" },
+    ]
+  },
+  {
+    id: "irrigation", label: "Irrigation",
+    services: [
+      { id: "irrigation_startup", label: "Startup" },
+      { id: "irrigation_blowout", label: "Blowout" },
+      { id: "irrigation_install", label: "Install" },
+      { id: "irrigation_repair", label: "Repair" },
+    ]
+  },
+  {
+    id: "property_care", label: "Property Care",
+    services: [
+      { id: "spring_cleanup", label: "Spring Cleanup" },
+      { id: "fall_cleanup", label: "Fall Cleanup" },
+      { id: "mulching", label: "Mulching" },
+      { id: "edging", label: "Edging" },
+      { id: "pruning", label: "Pruning" },
+    ]
+  },
+  {
+    id: "fine_gardening", label: "Fine Gardening",
+    services: [
+      { id: "weeding", label: "Weeding" },
+      { id: "deadheading", label: "Deadheading" },
+      { id: "perennial_shrub_fert", label: "Perennial & Shrub Fertilization" },
+      { id: "seasonal_containers", label: "Seasonal Containers" },
+    ]
+  },
+  {
+    id: "garden_planting", label: "Garden & Planting",
+    services: [
+      { id: "new_plantings", label: "New Plantings" },
+      { id: "screening", label: "Screening" },
+      { id: "vegetable_gardens", label: "Vegetable Gardens" },
+    ]
+  },
+  {
+    id: "landscape_construction", label: "Landscape Design & Construction",
+    services: [
+      { id: "landscape_design", label: "Design" },
+      { id: "construction", label: "Construction" },
+      { id: "hardscape", label: "Hardscape" },
+      { id: "patios", label: "Patios" },
+      { id: "walkways", label: "Walkways" },
+      { id: "retaining_walls", label: "Retaining Walls" },
+      { id: "masonry", label: "Masonry" },
+      { id: "grading", label: "Grading" },
+      { id: "excavation", label: "Excavation" },
+      { id: "trenching", label: "Trenching" },
+    ]
+  },
+  {
+    id: "lighting", label: "Lighting",
+    services: [
+      { id: "lv_lighting", label: "Low Voltage Landscape Lighting" },
+    ]
+  },
+  {
+    id: "seasonal_decor", label: "Seasonal Decor",
+    services: [
+      { id: "holiday_lighting", label: "Holiday Lighting" },
+      { id: "wreaths", label: "Wreaths" },
+      { id: "lit_garlands", label: "Lit Garlands" },
+      { id: "tree_lighting", label: "Tree Lighting" },
+      { id: "holiday_containers", label: "Holiday Containers" },
+    ]
+  },
+  {
+    id: "winter_services", label: "Winter Services",
+    services: [
+      { id: "plowing", label: "Plowing" },
+      { id: "salting", label: "Salting" },
+    ]
+  },
 ];
 
 // eslint-disable-next-line no-unused-vars
