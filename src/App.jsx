@@ -2726,7 +2726,7 @@ function AddPropertyForm({ onBack, onSaved }) {
         <label style={labelStyle}>Client Email</label>
         <input style={inputStyle} type="email" placeholder="client@email.com" value={fields.client_email} onChange={e=>set("client_email",e.target.value)}/>
       </div>
-
+</div>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--stone)",marginBottom:10}}>Billing</div>
         <label style={labelStyle}>Billing Contact (if different)</label>
