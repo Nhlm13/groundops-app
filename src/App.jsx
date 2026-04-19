@@ -3896,6 +3896,7 @@ function ManagerJobsTab() {
             <div ref={mapRef} style={{ flex:1, borderRadius:10, overflow:"hidden", border:"1px solid var(--moss)", minHeight:400 }}/>
           </div>
         </div>
+      )}
     </div>
   );
 }
