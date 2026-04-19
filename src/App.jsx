@@ -3778,9 +3778,10 @@ function ManagerJobsTab() {
     markersRef.current = {};
 
     const incompleteJobs = jobs.filter(j => j.status !== "completed" && j.status !== "carried_over");
+    // eslint-disable-next-line no-unused-vars
     const activeCrews = trucks.filter(t => 
-    Object.values(assignments).map(a => a.truck_id).includes(t.id)
-  );
+      Object.values(assignments).map(a => a.truck_id).includes(t.id)
+    );
 
     incompleteJobs.forEach(job => {
       const prop = properties.find(p => p.id === job.property_id);
