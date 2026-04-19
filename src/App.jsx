@@ -3586,7 +3586,11 @@ function ManagerJobsTab() {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { fetchData(); }, [view, selectedDate]);
+  useEffect(() => { 
+    fetchData();
+    const interval = setInterval(fetchData, 60000);
+    return () => clearInterval(interval);
+  }, [view, selectedDate]);
 
  // Init map
   useEffect(() => {
