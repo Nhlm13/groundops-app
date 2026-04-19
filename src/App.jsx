@@ -430,7 +430,17 @@ const SERVICE_CATEGORIES = [
     ]
   },
 ];
+const SERVICE_TYPES = SERVICE_CATEGORIES.flatMap(c =>
+  c.services.map(s => ({ ...s, en: s.label, es: s.label, pt: s.label }))
+);
 
+function getServiceLabel(id, lang) {
+  for (const cat of SERVICE_CATEGORIES) {
+    const svc = cat.services.find(s => s.id === id);
+    if (svc) return svc.label;
+  }
+  return id;
+}
 // eslint-disable-next-line no-unused-vars
 function getServiceLabel(id, lang) {
   const s = SERVICE_TYPES.find(t => t.id === id);
