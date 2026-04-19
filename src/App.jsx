@@ -3593,8 +3593,9 @@ function ManagerJobsTab() {
     if (!mapRef.current) return;
     if (mapInst.current) return;
     const initMap = () => {
-      if (!mapRef.current || mapInst.current) return;
-      mapInst.current = window.L.map(mapRef.current).setView([42.305, -71.52], 11);
+      const container = document.getElementById("manager-jobs-map");
+      if (!container || mapInst.current) return;
+      mapInst.current = window.L.map(container).setView([42.305, -71.52], 11);
       window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors"
       }).addTo(mapInst.current);
@@ -3893,7 +3894,7 @@ function ManagerJobsTab() {
                 );
               })}
             </div>
-            <div ref={mapRef} style={{ flex:1, borderRadius:10, overflow:"hidden", border:"1px solid var(--moss)", minHeight:400 }}/>
+            <div ref={mapRef} id="manager-jobs-map" style={{ flex:1, borderRadius:10, overflow:"hidden", border:"1px solid var(--moss)", minHeight:400, background:"var(--bark2)" }}/>
           </div>
         </div>
       )}
