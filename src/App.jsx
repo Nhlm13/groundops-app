@@ -441,12 +441,7 @@ function getServiceLabel(id, lang) {
   }
   return id;
 }
-// eslint-disable-next-line no-unused-vars
-function getServiceLabel(id, lang) {
-  const s = SERVICE_TYPES.find(t => t.id === id);
-  if(!s) return id;
-  return s[lang] || s.en;
-}
+
 
 const T = {
   en: {
