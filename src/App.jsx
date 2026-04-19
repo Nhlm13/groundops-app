@@ -3618,7 +3618,7 @@ function ManagerJobsTab() {
       if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapRef.current]);
+  }, []);
 
   // Update map markers when jobs or assignments change
   useEffect(() => {
