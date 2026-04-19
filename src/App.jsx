@@ -2236,7 +2236,6 @@ function EditScheduleForm({ schedule, onBack, onSaved }) {
     price: schedule.price || "",
   });
 
-  const SERVICE_TYPES = ["Mowing", "Fine Gardening", "Irrigation", "Fertilization", "Cleanup", "Mulching", "Other"];
   const FREQUENCIES = [
     {label:"Weekly", value:"weekly"},
     {label:"Biweekly", value:"biweekly"},
@@ -2289,14 +2288,19 @@ function EditScheduleForm({ schedule, onBack, onSaved }) {
       </div>
       <div style={{background:"var(--bark)",border:"1px solid var(--moss)",borderRadius:10,padding:14,marginBottom:12}}>
         <label style={labelStyle}>Service Type *</label>
-        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:10}}>
-          {SERVICE_TYPES.map(type=>(
-            <button key={type} onClick={()=>set("service_type",type)}
-              style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.service_type===type?"var(--mgr)":"var(--moss)"}`,background:fields.service_type===type?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.service_type===type?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
-              {type}
-            </button>
-          ))}
-        </div>
+        {SERVICE_CATEGORIES.map(cat => (
+          <div key={cat.id} style={{marginBottom:14}}>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,letterSpacing:2,color:"var(--mgr-lt)",textTransform:"uppercase",marginBottom:6,borderBottom:"1px solid var(--moss)",paddingBottom:3}}>{cat.label}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {cat.services.map(svc => (
+                <button key={svc.id} onClick={()=>set("service_type",svc.id)}
+                  style={{padding:"8px 14px",borderRadius:8,border:`1.5px solid ${fields.service_type===svc.id?"var(--mgr)":"var(--moss)"}`,background:fields.service_type===svc.id?"rgba(42,90,149,0.15)":"var(--bark2)",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13,color:fields.service_type===svc.id?"var(--mgr-lt)":"var(--stone)",cursor:"pointer",fontWeight:600}}>
+                  {svc.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
         <label style={labelStyle}>Frequency *</label>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
           {FREQUENCIES.map(f=>(
