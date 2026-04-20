@@ -4244,6 +4244,7 @@ function OfficeView({ onLogout }) {
   });
 
   const STATUSES = [
+    { key: "",               label: "New",            color: "#8a9bb0", bg: "rgba(138,155,176,0.15)" },
     { key: "created ticket", label: "Ticket Created", color: "#d4bc4a", bg: "rgba(212,188,74,0.12)"  },
     { key: "visit planned",  label: "Visit Planned",  color: "#9b59b6", bg: "rgba(155,89,182,0.12)"  },
     { key: "estimate sent",  label: "Estimate Sent",  color: "#4472CA", bg: "rgba(68,114,202,0.12)"  },
@@ -4828,7 +4829,7 @@ function OfficeView({ onLogout }) {
             </div>
 
             {/* Status summary blocks */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, padding:"12px 16px", background:"#162238", borderBottom:"1px solid rgba(68,114,202,0.2)", flexShrink:0 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:6, padding:"12px 16px", background:"#162238", borderBottom:"1px solid rgba(68,114,202,0.2)", flexShrink:0 }}>
               {STATUSES.map(status => {
                 const count = requests.filter(r => r.status === status.key).length;
                 return (
