@@ -4216,6 +4216,7 @@ function CustomerMap({ onClose }) {
 function OfficeView({ onLogout }) {
   const [showMap, setShowMap] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [collapsedStatuses, setCollapsedStatuses] = useState({});
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("board");
@@ -4821,25 +4822,41 @@ function OfficeView({ onLogout }) {
                     {p === "all" ? "All" : p}
                   </button>
                 ))}
-                <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#92B4F4", letterSpacing: 1 }}>{filtered.length} leads</span>
+               <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#92B4F4", letterSpacing: 1 }}>{filtered.length} leads</span>
               </div>
             </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, padding:"12px 16px", background:"#162238", borderBottom:"1px solid rgba(68,114,202,0.2)", flexShrink:0 }}>
+              {STATUSES.map(status => {
+                const count = requests.filter(r => r.status === status.key).length;
+                return (
+                  <div key={status.key} onClick={() => setCollapsedStatuses(prev => ({ ...prev, [status.key]: false }))}
+                    style={{ background: status.bg, border:`1px solid ${status.color}55`, borderRadius:8, padding:"8px", textAlign:"center", cursor:"pointer" }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:status.color, lineHeight:1 }}>{count}</div>
+                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:status.color, textTransform:"uppercase", marginTop:2, opacity:0.8 }}>{status.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+            
             <div style={{ overflowY: "auto", flex: 1, padding: "16px 16px 40px" }}>
               {loading ? (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "#92B4F4", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 14, letterSpacing: 1, textTransform: "uppercase" }}>Loading...</div>
               ) : (
                 STATUSES.map(status => {
                   const group = filtered.filter(r => r.status === status.key);
+                  const isCollapsed = !!collapsedStatuses[status.key];
                   return (
                     <div key={status.key} style={{ marginBottom: 24 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div onClick={() => setCollapsedStatuses(prev => ({ ...prev, [status.key]: !prev[status.key] }))}
+                        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, cursor: "pointer", userSelect: "none" }}>
                         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: status.color, textTransform: "uppercase" }}>{status.label}</div>
                         <div style={{ background: status.bg, border: `1px solid ${status.color}55`, borderRadius: 10, padding: "1px 8px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: status.color, letterSpacing: 1 }}>{group.length}</div>
                         <div style={{ flex: 1, height: 1, background: "rgba(68,114,202,0.2)" }}></div>
+                        <span style={{ color: status.color, fontSize: 10, transform: isCollapsed ? "rotate(0deg)" : "rotate(90deg)", transition: "transform 0.2s", display: "inline-block" }}>▶</span>
                       </div>
-                      {group.length === 0 ? (
+                      {!isCollapsed && group.length === 0 ? (
                         <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#4472CA55", letterSpacing: 1, padding: "4px 0" }}>No leads</div>
-                      ) : group.map(r => (
+                      ) : !isCollapsed && group.map(r => (
                         <div key={r.id} onClick={() => { setSelected(r); setView("detail"); }}
                           style={{ background: "#fff", border: "1px solid #dde5f5", borderLeft: `4px solid ${status.color}`, borderRadius: 10, padding: "14px", marginBottom: 8, cursor: "pointer" }}
                           onMouseEnter={e => e.currentTarget.style.background = "#f0f4ff"}
