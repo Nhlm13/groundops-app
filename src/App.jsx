@@ -453,12 +453,6 @@ function getServiceLabel(id, lang = "en") {
   return id;
 }
 
-function getCategoryLabel(cat, lang = "en") {
-  if (lang === "es") return cat.label_es || cat.label;
-  if (lang === "pt") return cat.label_pt || cat.label;
-  return cat.label;
-}
-
 
 const T = {
   en: {
