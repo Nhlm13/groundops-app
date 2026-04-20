@@ -4248,7 +4248,6 @@ function OfficeView({ onLogout }) {
     { key: "schedule",       label: "Scheduled",      color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
     { key: "completed",      label: "Completed",      color: "#0e7490", bg: "rgba(14,116,144,0.12)"  },
   ];
-  ];
 
   const TRUCK_COLORS = ["#4472CA","#22a86e","#d4bc4a","#e05540","#9b59b6","#5E7CE2","#0A369D","#92B4F4"];
 
