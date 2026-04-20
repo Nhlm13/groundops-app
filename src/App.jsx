@@ -4218,6 +4218,7 @@ function OfficeView({ onLogout }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [collapsedStatuses, setCollapsedStatuses] = useState({});
   const [requests, setRequests] = useState([]);
+  const statusRefs = useRef({});
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("board");
   const [selected, setSelected] = useState(null);
@@ -4822,14 +4823,19 @@ function OfficeView({ onLogout }) {
                     {p === "all" ? "All" : p}
                   </button>
                 ))}
-               <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#92B4F4", letterSpacing: 1 }}>{filtered.length} leads</span>
+                <span style={{ marginLeft: "auto", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "#92B4F4", letterSpacing: 1 }}>{filtered.length} leads</span>
               </div>
             </div>
+
+            {/* Status summary blocks */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, padding:"12px 16px", background:"#162238", borderBottom:"1px solid rgba(68,114,202,0.2)", flexShrink:0 }}>
               {STATUSES.map(status => {
                 const count = requests.filter(r => r.status === status.key).length;
                 return (
-                  <div key={status.key} onClick={() => setCollapsedStatuses(prev => ({ ...prev, [status.key]: false }))}
+                  <div key={status.key} onClick={() => {
+                    setCollapsedStatuses(prev => ({ ...prev, [status.key]: false }));
+                    setTimeout(() => statusRefs.current[status.key]?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                  }}
                     style={{ background: status.bg, border:`1px solid ${status.color}55`, borderRadius:8, padding:"8px", textAlign:"center", cursor:"pointer" }}>
                     <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:status.color, lineHeight:1 }}>{count}</div>
                     <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:status.color, textTransform:"uppercase", marginTop:2, opacity:0.8 }}>{status.label}</div>
@@ -4837,7 +4843,7 @@ function OfficeView({ onLogout }) {
                 );
               })}
             </div>
-            
+
             <div style={{ overflowY: "auto", flex: 1, padding: "16px 16px 40px" }}>
               {loading ? (
                 <div style={{ textAlign: "center", padding: "48px 0", color: "#92B4F4", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 14, letterSpacing: 1, textTransform: "uppercase" }}>Loading...</div>
@@ -4846,7 +4852,7 @@ function OfficeView({ onLogout }) {
                   const group = filtered.filter(r => r.status === status.key);
                   const isCollapsed = !!collapsedStatuses[status.key];
                   return (
-                    <div key={status.key} style={{ marginBottom: 24 }}>
+                    <div key={status.key} ref={el => statusRefs.current[status.key] = el} style={{ marginBottom: 24 }}>
                       <div onClick={() => setCollapsedStatuses(prev => ({ ...prev, [status.key]: !prev[status.key] }))}
                         style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, cursor: "pointer", userSelect: "none" }}>
                         <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: status.color, textTransform: "uppercase" }}>{status.label}</div>
@@ -4876,6 +4882,7 @@ function OfficeView({ onLogout }) {
                           <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, color: "#4472CA", letterSpacing: 1, marginBottom: 2 }}>{r.task}</div>
                           {r.phone && <div style={{ fontSize: 12, color: "#22a86e", marginBottom: 2 }}>📞 {r.phone}</div>}
                           <div style={{ fontSize: 12, color: "#888", marginBottom: r.notes ? 3 : 0 }}>📍 {r.address}</div>
+                          {r.milestone && <div style={{ fontSize: 11, color: "#4472CA", fontStyle: "italic", marginTop: 2 }}>🏁 {r.milestone}</div>}
                           {r.notes && <div style={{ fontSize: 11, color: "#aaa", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes}</div>}
                           <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
                             {STATUSES.filter(s => s.key !== r.status).map(s => (
