@@ -4215,6 +4215,7 @@ function CustomerMap({ onClose }) {
 // -- OFFICE VIEW ---------------------------------------------------------------
 function OfficeView({ onLogout }) {
   const [showMap, setShowMap] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("board");
@@ -4300,7 +4301,7 @@ function OfficeView({ onLogout }) {
     if (!window.confirm("Delete this request?")) return;
     await supabase.from("requests").delete().eq("id", id);
     setRequests(prev => prev.filter(r => r.id !== id));
-    setView("board");
+    setView("board"); setSidebarCollapsed(false);;
     setSelected(null);
   };
 
@@ -4325,7 +4326,7 @@ function OfficeView({ onLogout }) {
       priority: "", awaiting_estimate: false,
       status: "", notes: "", source: "phone",
     });
-    setView("board");
+    setView("board"); setSidebarCollapsed(false);
     setSaving(false);
   };
 
@@ -4343,8 +4344,7 @@ function OfficeView({ onLogout }) {
       notes: selected.notes,
     }).eq("id", selected.id);
     setRequests(prev => prev.map(r => r.id === selected.id ? selected : r));
-    setView("board");
-    setSaving(false);
+    setView("board"); setSidebarCollapsed(false);    setSaving(false);
   };
 
   const convertToProperty = async () => {
@@ -4552,13 +4552,21 @@ function OfficeView({ onLogout }) {
     });
 
     return (
-      <div style={{ width: 220, minWidth: 220, background: "#0d1635", borderRight: "1px solid rgba(68,114,202,0.2)", display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
-        <div style={{ padding: "12px 14px 10px", borderBottom: "1px solid rgba(68,114,202,0.2)", flexShrink: 0 }}>
-          <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#CFDEE7", textTransform: "uppercase" }}>Schedule</div>
-          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 1, textTransform: "uppercase", marginTop: 1 }}>Next 7 days — click to expand</div>
+      <div style={{ width: sidebarCollapsed ? 32 : 220, minWidth: sidebarCollapsed ? 32 : 220, background: "#0d1635", borderRight: "1px solid rgba(68,114,202,0.2)", display: "flex", flexDirection: "column", height: "100%", transition: "width 0.2s ease", overflow: "hidden" }}>
+        <div style={{ padding: "12px 8px 10px", borderBottom: "1px solid rgba(68,114,202,0.2)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: sidebarCollapsed ? "center" : "space-between" }}>
+          {!sidebarCollapsed && (
+            <div>
+              <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#CFDEE7", textTransform: "uppercase" }}>Schedule</div>
+              <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 1, textTransform: "uppercase", marginTop: 1 }}>Next 7 days — click to expand</div>
+            </div>
+          )}
+          <button onClick={() => setSidebarCollapsed(v => !v)}
+            style={{ background: "none", border: "1px solid rgba(68,114,202,0.3)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#92B4F4", fontSize: 12, flexShrink: 0, lineHeight: 1 }}>
+            {sidebarCollapsed ? "▶" : "◀"}
+          </button>
         </div>
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {days.map(({ dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday }) => {
+          {!sidebarCollapsed && days.map(({ dateStr, dayName, dateLabel, dayJobs, count, countColor, countBg, isToday }) => {
             const isExpanded = !!expandedDays[dateStr];
             const visibleJobs = isExpanded ? dayJobs : dayJobs.slice(0, 2);
             return (
@@ -4645,8 +4653,7 @@ function OfficeView({ onLogout }) {
             </div>
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <button onClick={() => setView("board")} style={{ background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:6, padding:"5px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>← Board</button>
-            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
+          <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:6, padding:"5px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>← Board</button>            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
           </div>
         </div>
         <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
@@ -4654,7 +4661,7 @@ function OfficeView({ onLogout }) {
           <div style={{ flex:1, overflowY:"auto", padding:"16px" }}>
             <input type="text" placeholder="Search properties..." value={propertySearch} onChange={e => setPropertySearch(e.target.value)}
               style={{ width:"100%", background:"#0d1635", border:"1px solid #4472CA44", borderRadius:8, padding:"9px 12px", color:"#CFDEE7", fontFamily:"'Barlow',sans-serif", fontSize:14, boxSizing:"border-box", marginBottom:12, outline:"none" }}/>
-            <PropertiesTab searchQuery={propertySearch} />
+            <PropertiesTab searchQuery={propertySearch} key="office-properties" />
           </div>
         </div>
       </div>
@@ -4669,8 +4676,7 @@ function OfficeView({ onLogout }) {
         <Topbar title="Calendar" right={
           <>
             <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
-            <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>
-            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
+            <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
           </>
         } />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -4690,8 +4696,7 @@ function OfficeView({ onLogout }) {
       {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
       <div className="screen" style={{ background: "#1e2d4a" }}>
         <Topbar title="Create Lead" right={
-          <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Cancel</button>
-        } />
+        <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Cancel</button>        } />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <ScheduleSidebar />
           <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
@@ -4764,8 +4769,7 @@ function OfficeView({ onLogout }) {
         {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
         <div className="screen" style={{ background: "#1e2d4a" }}>
           <Topbar title={selected.name} right={
-            <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 10px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Back</button>
-          } />
+          <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 10px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Back</button>          } />
           <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
             <ScheduleSidebar />
             <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column" }}>
@@ -4844,9 +4848,8 @@ function OfficeView({ onLogout }) {
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
-            <button onClick={() => setView("calendar")} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Calendar</button>
-            <button onClick={() => setView("properties")} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Properties</button>
-            <button onClick={() => setView("add")} style={{ background: "#4472CA", border: "none", borderRadius: 8, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#fff", cursor: "pointer" }}>+ Create Lead</button>
+            <button onClick={() => { setView("calendar"); setSidebarCollapsed(true); }} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Calendar</button>
+            <button onClick={() => { setView("properties"); setSidebarCollapsed(true); }} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Properties</button>            <button onClick={() => setView("add")} style={{ background: "#4472CA", border: "none", borderRadius: 8, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#fff", cursor: "pointer" }}>+ Create Lead</button>
             <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"7px 14px", fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
           </div>
         </div>
