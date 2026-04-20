@@ -4236,15 +4236,9 @@ function OfficeView({ onLogout }) {
   const [savingJob, setSavingJob] = useState(false);
   const [propertySearch, setPropertySearch] = useState("");
   const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    task: "",
-    priority: "",
-    awaiting_estimate: false,
-    status: "",
-    notes: "",
-    source: "phone",
+    name: "", phone: "", address: "", task: "",
+    priority: "", awaiting_estimate: false,
+    status: "", notes: "", source: "phone",
   });
 
   const STATUSES = [
@@ -4258,11 +4252,7 @@ function OfficeView({ onLogout }) {
 
   const fetchRequests = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("requests")
-      .select("*")
-      .eq("company_id", COMPANY_ID)
-      .order("created_at", { ascending: false });
+    const { data } = await supabase.from("requests").select("*").eq("company_id", COMPANY_ID).order("created_at", { ascending: false });
     setRequests(data || []);
     setLoading(false);
   };
@@ -4301,7 +4291,8 @@ function OfficeView({ onLogout }) {
     if (!window.confirm("Delete this request?")) return;
     await supabase.from("requests").delete().eq("id", id);
     setRequests(prev => prev.filter(r => r.id !== id));
-    setView("board"); setSidebarCollapsed(false);;
+    setView("board");
+    setSidebarCollapsed(false);
     setSelected(null);
   };
 
@@ -4310,23 +4301,14 @@ function OfficeView({ onLogout }) {
     setSaving(true);
     const { data } = await supabase.from("requests").insert({
       company_id: COMPANY_ID,
-      name: form.name,
-      phone: form.phone,
-      address: form.address,
-      task: form.task,
-      priority: form.priority,
-      awaiting_estimate: form.awaiting_estimate,
-      status: form.status,
-      notes: form.notes,
-      source: form.source,
+      name: form.name, phone: form.phone, address: form.address, task: form.task,
+      priority: form.priority, awaiting_estimate: form.awaiting_estimate,
+      status: form.status, notes: form.notes, source: form.source,
     }).select().single();
     if (data) setRequests(prev => [data, ...prev]);
-    setForm({
-      name: "", phone: "", address: "", task: "",
-      priority: "", awaiting_estimate: false,
-      status: "", notes: "", source: "phone",
-    });
-    setView("board"); setSidebarCollapsed(false);
+    setForm({ name: "", phone: "", address: "", task: "", priority: "", awaiting_estimate: false, status: "", notes: "", source: "phone" });
+    setView("board");
+    setSidebarCollapsed(false);
     setSaving(false);
   };
 
@@ -4334,50 +4316,31 @@ function OfficeView({ onLogout }) {
     if (!selected) return;
     setSaving(true);
     await supabase.from("requests").update({
-      name: selected.name,
-      phone: selected.phone,
-      address: selected.address,
-      task: selected.task,
-      priority: selected.priority,
+      name: selected.name, phone: selected.phone, address: selected.address,
+      task: selected.task, priority: selected.priority,
       awaiting_estimate: selected.awaiting_estimate,
-      status: selected.status,
-      notes: selected.notes,
+      status: selected.status, notes: selected.notes,
     }).eq("id", selected.id);
     setRequests(prev => prev.map(r => r.id === selected.id ? selected : r));
-    setView("board"); setSidebarCollapsed(false);    setSaving(false);
+    setView("board");
+    setSidebarCollapsed(false);
+    setSaving(false);
   };
 
   const convertToProperty = async () => {
     if (!selected) return;
     setConverting(true);
-    const { data: clientData, error: clientError } = await supabase
-      .from("clients")
-      .insert({
-        company_id: COMPANY_ID,
-        name: selected.name,
-        email: selected.billing_email || null,
-        phone: selected.phone || null,
-      }).select().single();
-    if (clientError) {
-      alert("Error creating client record. Please try again.");
-      setConverting(false);
-      return;
-    }
+    const { data: clientData, error: clientError } = await supabase.from("clients").insert({
+      company_id: COMPANY_ID, name: selected.name,
+      email: selected.billing_email || null, phone: selected.phone || null,
+    }).select().single();
+    if (clientError) { alert("Error creating client record. Please try again."); setConverting(false); return; }
     const { error: propError } = await supabase.from("properties").insert({
-      company_id: COMPANY_ID,
-      client_id: clientData.id,
-      address: selected.address,
-      service_notes: selected.notes || null,
-      active: true,
-      property_type: "residential",
-      base_service_price: 0,
+      company_id: COMPANY_ID, client_id: clientData.id, address: selected.address,
+      service_notes: selected.notes || null, active: true, property_type: "residential", base_service_price: 0,
     });
-    if (!propError) {
-      await updateStatus(selected.id, "schedule");
-      alert(`${selected.name} has been added as a property!`);
-    } else {
-      alert("Error creating property. Client was created but property failed.");
-    }
+    if (!propError) { await updateStatus(selected.id, "schedule"); alert(`${selected.name} has been added as a property!`); }
+    else { alert("Error creating property. Client was created but property failed."); }
     setConverting(false);
   };
 
@@ -4404,23 +4367,14 @@ function OfficeView({ onLogout }) {
           await supabase.from("job_assignments").update({ truck_id: editingJobTruck }).eq("id", existingAssignment.id);
           setAssignments(prev => prev.map(a => a.id === existingAssignment.id ? { ...a, truck_id: editingJobTruck } : a));
         } else {
-          const { data } = await supabase.from("job_assignments").insert({
-            job_id: editingJob.id,
-            truck_id: editingJobTruck,
-            crew_name: "",
-          }).select().single();
+          const { data } = await supabase.from("job_assignments").insert({ job_id: editingJob.id, truck_id: editingJobTruck, crew_name: "" }).select().single();
           if (data) setAssignments(prev => [...prev, data]);
         }
       } else if (existingAssignment) {
         await supabase.from("job_assignments").delete().eq("id", existingAssignment.id);
         setAssignments(prev => prev.filter(a => a.id !== existingAssignment.id));
       }
-      setSchedule(prev => prev.map(j => j.id === editingJob.id ? {
-        ...j,
-        service_type: editingJobServices[0] || null,
-        service_types: editingJobServices,
-        notes: editingJobNotes || null,
-      } : j));
+      setSchedule(prev => prev.map(j => j.id === editingJob.id ? { ...j, service_type: editingJobServices[0] || null, service_types: editingJobServices, notes: editingJobNotes || null } : j));
       setEditingJob(null);
     } catch (e) { console.warn(e); }
     setSavingJob(false);
@@ -4439,18 +4393,8 @@ function OfficeView({ onLogout }) {
   const inputStyle = { width: "100%", background: "#0d1635", border: "1px solid #4472CA44", borderRadius: 8, padding: "12px 14px", color: "#CFDEE7", fontFamily: "'Barlow',sans-serif", fontSize: 15, boxSizing: "border-box" };
   const labelStyle = { fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 4, display: "block" };
 
-  const PriorityBadge = ({ priority }) => {
-    if (!priority) return null;
-    const colors = { High: "#e05540", Mid: "#d4bc4a" };
-    return (
-      <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 1, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", background: `${colors[priority]}22`, color: colors[priority], border: `1px solid ${colors[priority]}55`, flexShrink: 0 }}>
-        {priority}
-      </span>
-    );
-  };
-
-  const Topbar = ({ title, right }) => (
-    <div style={{ background: "#162238", borderBottom: "3px solid #4472CA", padding: "12px 16px", paddingTop: "calc(12px + env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
+  const TopBar = ({ title, right }) => (
+    <div style={{ background: "#162238", borderBottom: "3px solid #4472CA", padding: "12px 16px", paddingTop: "calc(12px + env(safe-area-inset-top))", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <img src="/TotalFlo.svg" alt="TotalFlo" style={{ width: 28, height: 28, objectFit: "contain" }} />
         <div>
@@ -4462,15 +4406,23 @@ function OfficeView({ onLogout }) {
     </div>
   );
 
+  const PriorityBadge = ({ priority }) => {
+    if (!priority) return null;
+    const colors = { High: "#e05540", Mid: "#d4bc4a" };
+    return (
+      <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, letterSpacing: 1, padding: "2px 7px", borderRadius: 4, textTransform: "uppercase", background: `${colors[priority]}22`, color: colors[priority], border: `1px solid ${colors[priority]}55`, flexShrink: 0 }}>
+        {priority}
+      </span>
+    );
+  };
+
   const JobEditModal = () => {
     if (!editingJob) return null;
     const prop = properties.find(p => p.id === editingJob.property_id);
     const clientName = prop?.clients?.name || "Job";
     return (
-      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
-        onClick={() => setEditingJob(null)}>
-        <div style={{ background: "#fff", borderRadius: 12, padding: 20, width: "100%", maxWidth: 480, maxHeight: "80vh", overflowY: "auto" }}
-          onClick={e => e.stopPropagation()}>
+      <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }} onClick={() => setEditingJob(null)}>
+        <div style={{ background: "#fff", borderRadius: 12, padding: 20, width: "100%", maxWidth: 480, maxHeight: "80vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <div>
               <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, color: "#0A369D", letterSpacing: 2, lineHeight: 1 }}>{clientName}</div>
@@ -4484,15 +4436,9 @@ function OfficeView({ onLogout }) {
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 6 }}>Assigned Crew</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              <button onClick={() => setEditingJobTruck("")}
-                style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${!editingJobTruck ? "#e05540" : "#dde5f5"}`, background: !editingJobTruck ? "rgba(224,85,64,0.08)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: !editingJobTruck ? "#e05540" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
-                Unassigned
-              </button>
+              <button onClick={() => setEditingJobTruck("")} style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${!editingJobTruck ? "#e05540" : "#dde5f5"}`, background: !editingJobTruck ? "rgba(224,85,64,0.08)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: !editingJobTruck ? "#e05540" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>Unassigned</button>
               {trucks.map(truck => (
-                <button key={truck.id} onClick={() => setEditingJobTruck(truck.id)}
-                  style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${editingJobTruck === truck.id ? "#4472CA" : "#dde5f5"}`, background: editingJobTruck === truck.id ? "rgba(68,114,202,0.1)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: editingJobTruck === truck.id ? "#0A369D" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>
-                  {truck.name}
-                </button>
+                <button key={truck.id} onClick={() => setEditingJobTruck(truck.id)} style={{ padding: "6px 12px", borderRadius: 8, border: `1.5px solid ${editingJobTruck === truck.id ? "#4472CA" : "#dde5f5"}`, background: editingJobTruck === truck.id ? "rgba(68,114,202,0.1)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: editingJobTruck === truck.id ? "#0A369D" : "#4472CA", cursor: "pointer", fontWeight: 600 }}>{truck.name}</button>
               ))}
             </div>
           </div>
@@ -4505,8 +4451,7 @@ function OfficeView({ onLogout }) {
                   {cat.services.map(svc => {
                     const isSelected = editingJobServices.includes(svc.id);
                     return (
-                      <button key={svc.id}
-                        onClick={() => setEditingJobServices(prev => isSelected ? prev.filter(s => s !== svc.id) : [...prev, svc.id])}
+                      <button key={svc.id} onClick={() => setEditingJobServices(prev => isSelected ? prev.filter(s => s !== svc.id) : [...prev, svc.id])}
                         style={{ padding: "5px 10px", borderRadius: 8, border: `1.5px solid ${isSelected ? "#4472CA" : "#dde5f5"}`, background: isSelected ? "rgba(68,114,202,0.1)" : "#f8faff", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: isSelected ? "#0A369D" : "#4472CA", cursor: "pointer", fontWeight: isSelected ? 700 : 400 }}>
                         {svc.label}
                       </button>
@@ -4518,18 +4463,11 @@ function OfficeView({ onLogout }) {
           </div>
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, letterSpacing: 2, color: "#4472CA", textTransform: "uppercase", marginBottom: 6 }}>Notes</div>
-            <textarea value={editingJobNotes} onChange={e => setEditingJobNotes(e.target.value)} placeholder="Any notes for this job..."
-              style={{ width: "100%", background: "#f0f4ff", border: "1px solid #dde5f5", borderRadius: 8, padding: "10px 12px", color: "#0A369D", fontFamily: "'Barlow',sans-serif", fontSize: 14, resize: "none", height: 72, boxSizing: "border-box", outline: "none" }}/>
+            <textarea value={editingJobNotes} onChange={e => setEditingJobNotes(e.target.value)} placeholder="Any notes for this job..." style={{ width: "100%", background: "#f0f4ff", border: "1px solid #dde5f5", borderRadius: 8, padding: "10px 12px", color: "#0A369D", fontFamily: "'Barlow',sans-serif", fontSize: 14, resize: "none", height: 72, boxSizing: "border-box", outline: "none" }}/>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => deleteJob(editingJob.id)}
-              style={{ padding: "10px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>
-              Remove Job
-            </button>
-            <button disabled={savingJob} onClick={saveJob}
-              style={{ flex: 1, padding: "10px", background: savingJob ? "#92B4F4" : "#0A369D", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: savingJob ? "not-allowed" : "pointer" }}>
-              {savingJob ? "Saving..." : "Save Changes"}
-            </button>
+            <button onClick={() => deleteJob(editingJob.id)} style={{ padding: "10px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>Remove Job</button>
+            <button disabled={savingJob} onClick={saveJob} style={{ flex: 1, padding: "10px", background: savingJob ? "#92B4F4" : "#0A369D", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: savingJob ? "not-allowed" : "pointer" }}>{savingJob ? "Saving..." : "Save Changes"}</button>
           </div>
         </div>
       </div>
@@ -4560,8 +4498,7 @@ function OfficeView({ onLogout }) {
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 10, color: "#92B4F4", letterSpacing: 1, textTransform: "uppercase", marginTop: 1 }}>Next 7 days — click to expand</div>
             </div>
           )}
-          <button onClick={() => setSidebarCollapsed(v => !v)}
-            style={{ background: "none", border: "1px solid rgba(68,114,202,0.3)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#92B4F4", fontSize: 12, flexShrink: 0, lineHeight: 1 }}>
+          <button onClick={() => setSidebarCollapsed(v => !v)} style={{ background: "none", border: "1px solid rgba(68,114,202,0.3)", borderRadius: 6, padding: "4px 8px", cursor: "pointer", color: "#92B4F4", fontSize: 12, flexShrink: 0, lineHeight: 1 }}>
             {sidebarCollapsed ? "▶" : "◀"}
           </button>
         </div>
@@ -4644,66 +4581,59 @@ function OfficeView({ onLogout }) {
       <JobEditModal />
       {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
       <div className="screen" style={{ background: "#1e2d4a" }}>
-        <div style={{ background:"#162238", borderBottom:"3px solid #4472CA", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <img src="/TotalFlo.svg" alt="TotalFlo" style={{ width:28, height:28, objectFit:"contain" }}/>
-            <div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"#CFDEE7", letterSpacing:2, lineHeight:1 }}>Office View</div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, color:"#92B4F4", letterSpacing:1, textTransform:"uppercase", marginTop:1 }}>Properties</div>
-            </div>
-          </div>
-          <div style={{ display:"flex", gap:8 }}>
-          <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:6, padding:"5px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>← Board</button>            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
-          </div>
-        </div>
-        <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
+        <TopBar title="Properties" right={
+          <>
+            <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>
+            <button onClick={onLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Out</button>
+          </>
+        } />
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <ScheduleSidebar />
-          <div style={{ flex:1, overflowY:"auto", padding:"16px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
             <input type="text" placeholder="Search properties..." value={propertySearch} onChange={e => setPropertySearch(e.target.value)}
-              style={{ width:"100%", background:"#0d1635", border:"1px solid #4472CA44", borderRadius:8, padding:"9px 12px", color:"#CFDEE7", fontFamily:"'Barlow',sans-serif", fontSize:14, boxSizing:"border-box", marginBottom:12, outline:"none" }}/>
+              style={{ width: "100%", background: "#0d1635", border: "1px solid #4472CA44", borderRadius: 8, padding: "9px 12px", color: "#CFDEE7", fontFamily: "'Barlow',sans-serif", fontSize: 14, boxSizing: "border-box", marginBottom: 12, outline: "none" }}/>
             <PropertiesTab searchQuery={propertySearch} key="office-properties" />
           </div>
         </div>
       </div>
     </>
   );
- // -- CALENDAR VIEW --
+
+  // -- CALENDAR VIEW --
   if (view === "calendar") return (
     <>
       <JobEditModal />
       {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
       <div className="screen" style={{ background: "#1e2d4a" }}>
-        <div style={{ background:"#162238", borderBottom:"3px solid #4472CA", padding:"12px 16px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <img src="/TotalFlo.svg" alt="TotalFlo" style={{ width:28, height:28, objectFit:"contain" }}/>
-            <div>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"#CFDEE7", letterSpacing:2, lineHeight:1 }}>Office View</div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, color:"#92B4F4", letterSpacing:1, textTransform:"uppercase", marginTop:1 }}>Calendar</div>
-            </div>
-          </div>
-          <div style={{ display:"flex", gap:8 }}>
-            <button onClick={() => setShowMap(true)} style={{ background:"rgba(68,114,202,0.2)", border:"1px solid rgba(68,114,202,0.4)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"#92B4F4", cursor:"pointer" }}>Map</button>
-            <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:6, padding:"5px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>← Board</button>
-            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
-          </div>
-        </div>
-        <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
+        <TopBar title="Calendar" right={
+          <>
+            <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
+            <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>
+            <button onClick={onLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Out</button>
+          </>
+        } />
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <ScheduleSidebar />
-          <div style={{ flex:1, overflowY:"auto", padding:"16px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
             <CalendarTab />
           </div>
         </div>
       </div>
     </>
   );
+
   // -- ADD / CREATE LEAD FORM --
   if (view === "add") return (
     <>
       <JobEditModal />
       {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
       <div className="screen" style={{ background: "#1e2d4a" }}>
-        <Topbar title="Create Lead" right={
-        <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Cancel</button>        } />
+        <TopBar title="Create Lead" right={
+          <>
+            <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Cancel</button>
+            <button onClick={onLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Out</button>
+          </>
+        } />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <ScheduleSidebar />
           <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
@@ -4775,8 +4705,12 @@ function OfficeView({ onLogout }) {
         <JobEditModal />
         {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
         <div className="screen" style={{ background: "#1e2d4a" }}>
-          <Topbar title={selected.name} right={
-          <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 10px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Back</button>          } />
+          <TopBar title={selected.name} right={
+            <>
+              <button onClick={() => { setView("board"); setSidebarCollapsed(false); }} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 10px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Back</button>
+              <button onClick={onLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Out</button>
+            </>
+          } />
           <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
             <ScheduleSidebar />
             <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column" }}>
@@ -4823,14 +4757,8 @@ function OfficeView({ onLogout }) {
                 </button>
               )}
               <div style={{ position: "sticky", bottom: 0, background: "#1e2d4a", borderTop: "1px solid rgba(68,114,202,0.2)", padding: "12px 16px", display: "flex", gap: 8, marginTop: "auto" }}>
-                <button onClick={() => deleteRequest(selected.id)}
-                  style={{ padding: "12px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>
-                  Delete
-                </button>
-                <button disabled={saving} onClick={saveEdit}
-                  style={{ flex: 1, padding: "12px", background: saving ? "#92B4F4" : "#4472CA", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: saving ? "not-allowed" : "pointer" }}>
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
+                <button onClick={() => deleteRequest(selected.id)} style={{ padding: "12px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>Delete</button>
+                <button disabled={saving} onClick={saveEdit} style={{ flex: 1, padding: "12px", background: saving ? "#92B4F4" : "#4472CA", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Saving..." : "Save Changes"}</button>
               </div>
             </div>
           </div>
@@ -4856,11 +4784,11 @@ function OfficeView({ onLogout }) {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
             <button onClick={() => { setView("calendar"); setSidebarCollapsed(true); }} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Calendar</button>
-            <button onClick={() => { setView("properties"); setSidebarCollapsed(true); }} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Properties</button>            <button onClick={() => setView("add")} style={{ background: "#4472CA", border: "none", borderRadius: 8, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#fff", cursor: "pointer" }}>+ Create Lead</button>
-            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"7px 14px", fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
+            <button onClick={() => { setView("properties"); setSidebarCollapsed(true); }} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Properties</button>
+            <button onClick={() => setView("add")} style={{ background: "#4472CA", border: "none", borderRadius: 8, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#fff", cursor: "pointer" }}>+ Create Lead</button>
+            <button onClick={onLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Out</button>
           </div>
         </div>
-
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <ScheduleSidebar />
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
