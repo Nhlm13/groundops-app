@@ -340,106 +340,123 @@ function saveLang(l) { try{localStorage.setItem(LANG_KEY,l);}catch(e){} }
 // -- TRANSLATIONS --------------------------------------------------------------
 const SERVICE_CATEGORIES = [
   {
-    id: "lawn_care", label: "Lawn Care",
+    id: "lawn_care",
+    label: "Lawn Care", label_es: "Cuidado del Césped", label_pt: "Cuidado do Gramado",
     services: [
-      { id: "mowing", label: "Mowing" },
-      { id: "fertilizer", label: "Fertilizer" },
-      { id: "aeration", label: "Aeration" },
-      { id: "hydroseeding", label: "Hydroseeding" },
+      { id: "mowing",       label: "Mowing",       es: "Corte de Césped",     pt: "Corte de Grama" },
+      { id: "fertilizer",   label: "Fertilizer",   es: "Fertilización",       pt: "Fertilização" },
+      { id: "aeration",     label: "Aeration",     es: "Aireación",           pt: "Aeração" },
+      { id: "hydroseeding", label: "Hydroseeding", es: "Hidrosiembra",        pt: "Hidrossemeadura" },
     ]
   },
   {
-    id: "lawn_pest", label: "Lawn Pest Control",
+    id: "lawn_pest",
+    label: "Lawn Pest Control", label_es: "Control de Plagas", label_pt: "Controle de Pragas",
     services: [
-      { id: "mosquito_tick", label: "Mosquito & Tick Spray" },
-      { id: "grub_control", label: "Grub Control" },
+      { id: "mosquito_tick", label: "Mosquito & Tick Spray", es: "Fumigación de Mosquitos y Garrapatas", pt: "Pulverização de Mosquitos e Carrapatos" },
+      { id: "grub_control",  label: "Grub Control",          es: "Control de Gusanos",                   pt: "Controle de Larvas" },
     ]
   },
   {
-    id: "irrigation", label: "Irrigation",
+    id: "irrigation",
+    label: "Irrigation", label_es: "Irrigación", label_pt: "Irrigação",
     services: [
-      { id: "irrigation_startup", label: "Startup" },
-      { id: "irrigation_blowout", label: "Blowout" },
-      { id: "irrigation_install", label: "Install" },
-      { id: "irrigation_repair", label: "Repair" },
+      { id: "irrigation_startup",  label: "Startup",  es: "Arranque de Sistema",  pt: "Abertura do Sistema" },
+      { id: "irrigation_blowout",  label: "Blowout",  es: "Cierre de Sistema",    pt: "Fechamento do Sistema" },
+      { id: "irrigation_install",  label: "Install",  es: "Instalación",          pt: "Instalação" },
+      { id: "irrigation_repair",   label: "Repair",   es: "Reparación",           pt: "Reparo" },
     ]
   },
   {
-    id: "property_care", label: "Property Care",
+    id: "property_care",
+    label: "Property Care", label_es: "Cuidado de Propiedad", label_pt: "Cuidado da Propriedade",
     services: [
-      { id: "spring_cleanup", label: "Spring Cleanup" },
-      { id: "fall_cleanup", label: "Fall Cleanup" },
-      { id: "mulching", label: "Mulching" },
-      { id: "edging", label: "Edging" },
-      { id: "pruning", label: "Pruning" },
+      { id: "spring_cleanup", label: "Spring Cleanup", es: "Limpieza de Primavera", pt: "Limpeza de Primavera" },
+      { id: "fall_cleanup",   label: "Fall Cleanup",   es: "Limpieza de Otoño",    pt: "Limpeza de Outono" },
+      { id: "mulching",       label: "Mulching",       es: "Cobertura de Suelo",   pt: "Cobertura do Solo" },
+      { id: "edging",         label: "Edging",         es: "Bordeado",             pt: "Bordadura" },
+      { id: "pruning",        label: "Pruning",        es: "Poda",                 pt: "Poda" },
     ]
   },
   {
-    id: "fine_gardening", label: "Fine Gardening",
+    id: "fine_gardening",
+    label: "Fine Gardening", label_es: "Jardinería Fina", label_pt: "Jardinagem Fina",
     services: [
-      { id: "weeding", label: "Weeding" },
-      { id: "deadheading", label: "Deadheading" },
-      { id: "perennial_shrub_fert", label: "Perennial & Shrub Fertilization" },
-      { id: "seasonal_containers", label: "Seasonal Containers" },
+      { id: "weeding",               label: "Weeding",                        es: "Deshierbe",                              pt: "Capina" },
+      { id: "deadheading",           label: "Deadheading",                    es: "Eliminación de Flores Secas",            pt: "Remoção de Flores Murchas" },
+      { id: "perennial_shrub_fert",  label: "Perennial & Shrub Fertilization", es: "Fertilización de Arbustos y Perennes",  pt: "Fertilização de Arbustos e Perenes" },
+      { id: "seasonal_containers",   label: "Seasonal Containers",            es: "Macetas de Temporada",                   pt: "Vasos Sazonais" },
     ]
   },
   {
-    id: "garden_planting", label: "Garden & Planting",
+    id: "garden_planting",
+    label: "Garden & Planting", label_es: "Jardín y Plantación", label_pt: "Jardim e Plantio",
     services: [
-      { id: "new_plantings", label: "New Plantings" },
-      { id: "screening", label: "Screening" },
-      { id: "vegetable_gardens", label: "Vegetable Gardens" },
+      { id: "new_plantings",     label: "New Plantings",    es: "Nuevas Plantaciones", pt: "Novos Plantios" },
+      { id: "screening",         label: "Screening",        es: "Pantallas Verdes",    pt: "Telas Verdes" },
+      { id: "vegetable_gardens", label: "Vegetable Gardens", es: "Huertos",            pt: "Hortas" },
     ]
   },
   {
-    id: "landscape_construction", label: "Landscape Design & Construction",
+    id: "landscape_construction",
+    label: "Landscape Design & Construction", label_es: "Diseño y Construcción de Paisajes", label_pt: "Design e Construção de Paisagismo",
     services: [
-      { id: "landscape_design", label: "Design" },
-      { id: "construction", label: "Construction" },
-      { id: "hardscape", label: "Hardscape" },
-      { id: "patios", label: "Patios" },
-      { id: "walkways", label: "Walkways" },
-      { id: "retaining_walls", label: "Retaining Walls" },
-      { id: "masonry", label: "Masonry" },
-      { id: "grading", label: "Grading" },
-      { id: "excavation", label: "Excavation" },
-      { id: "trenching", label: "Trenching" },
+      { id: "landscape_design", label: "Design",          es: "Diseño",            pt: "Design" },
+      { id: "construction",     label: "Construction",    es: "Construcción",      pt: "Construção" },
+      { id: "hardscape",        label: "Hardscape",       es: "Paisajismo Duro",   pt: "Paisagismo Duro" },
+      { id: "patios",           label: "Patios",          es: "Patios",            pt: "Pátios" },
+      { id: "walkways",         label: "Walkways",        es: "Senderos",          pt: "Caminhos" },
+      { id: "retaining_walls",  label: "Retaining Walls", es: "Muros de Contención", pt: "Muros de Contenção" },
+      { id: "masonry",          label: "Masonry",         es: "Albañilería",       pt: "Alvenaria" },
+      { id: "grading",          label: "Grading",         es: "Nivelación",        pt: "Nivelamento" },
+      { id: "excavation",       label: "Excavation",      es: "Excavación",        pt: "Escavação" },
+      { id: "trenching",        label: "Trenching",       es: "Zanjas",            pt: "Valas" },
     ]
   },
   {
-    id: "lighting", label: "Lighting",
+    id: "lighting",
+    label: "Lighting", label_es: "Iluminación", label_pt: "Iluminação",
     services: [
-      { id: "lv_lighting", label: "Low Voltage Landscape Lighting" },
+      { id: "lv_lighting", label: "Low Voltage Landscape Lighting", es: "Iluminación de Bajo Voltaje", pt: "Iluminação de Baixa Tensão" },
     ]
   },
   {
-    id: "seasonal_decor", label: "Seasonal Decor",
+    id: "seasonal_decor",
+    label: "Seasonal Decor", label_es: "Decoración de Temporada", label_pt: "Decoração Sazonal",
     services: [
-      { id: "holiday_lighting", label: "Holiday Lighting" },
-      { id: "wreaths", label: "Wreaths" },
-      { id: "lit_garlands", label: "Lit Garlands" },
-      { id: "tree_lighting", label: "Tree Lighting" },
-      { id: "holiday_containers", label: "Holiday Containers" },
+      { id: "holiday_lighting",   label: "Holiday Lighting",   es: "Luces Navideñas",       pt: "Luzes de Natal" },
+      { id: "wreaths",            label: "Wreaths",            es: "Coronas Decorativas",    pt: "Grinaldas" },
+      { id: "lit_garlands",       label: "Lit Garlands",       es: "Guirnaldas Iluminadas",  pt: "Guirlandas Iluminadas" },
+      { id: "tree_lighting",      label: "Tree Lighting",      es: "Iluminación de Árboles", pt: "Iluminação de Árvores" },
+      { id: "holiday_containers", label: "Holiday Containers", es: "Macetas Navideñas",      pt: "Vasos Natalinos" },
     ]
   },
   {
-    id: "winter_services", label: "Winter Services",
+    id: "winter_services",
+    label: "Winter Services", label_es: "Servicios de Invierno", label_pt: "Serviços de Inverno",
     services: [
-      { id: "plowing", label: "Plowing" },
-      { id: "salting", label: "Salting" },
+      { id: "plowing",  label: "Plowing",  es: "Remoción de Nieve", pt: "Remoção de Neve" },
+      { id: "salting",  label: "Salting",  es: "Salado",            pt: "Salagem" },
     ]
   },
 ];
+
 const SERVICE_TYPES = SERVICE_CATEGORIES.flatMap(c =>
-  c.services.map(s => ({ ...s, en: s.label, es: s.label, pt: s.label }))
+  c.services.map(s => ({ ...s, en: s.label }))
 );
 
-function getServiceLabel(id, lang) {
+function getServiceLabel(id, lang = "en") {
   for (const cat of SERVICE_CATEGORIES) {
     const svc = cat.services.find(s => s.id === id);
-    if (svc) return svc.label;
+    if (svc) return (lang === "es" ? svc.es : lang === "pt" ? svc.pt : svc.label) || svc.label;
   }
   return id;
+}
+
+function getCategoryLabel(cat, lang = "en") {
+  if (lang === "es") return cat.label_es || cat.label;
+  if (lang === "pt") return cat.label_pt || cat.label;
+  return cat.label;
 }
 
 
