@@ -4238,14 +4238,16 @@ function OfficeView({ onLogout }) {
   const [form, setForm] = useState({
     name: "", phone: "", address: "", task: "",
     priority: "", awaiting_estimate: false,
-    status: "", notes: "", source: "phone",
+    status: "", notes: "", source: "phone", milestone: "",
   });
 
   const STATUSES = [
-    { key: "",               label: "New",            color: "#8a9bb0", bg: "rgba(138,155,176,0.15)" },
     { key: "created ticket", label: "Ticket Created", color: "#d4bc4a", bg: "rgba(212,188,74,0.12)"  },
+    { key: "visit planned",  label: "Visit Planned",  color: "#9b59b6", bg: "rgba(155,89,182,0.12)"  },
     { key: "estimate sent",  label: "Estimate Sent",  color: "#4472CA", bg: "rgba(68,114,202,0.12)"  },
     { key: "schedule",       label: "Scheduled",      color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
+    { key: "completed",      label: "Completed",      color: "#0e7490", bg: "rgba(14,116,144,0.12)"  },
+  ];
   ];
 
   const TRUCK_COLORS = ["#4472CA","#22a86e","#d4bc4a","#e05540","#9b59b6","#5E7CE2","#0A369D","#92B4F4"];
@@ -4304,6 +4306,7 @@ function OfficeView({ onLogout }) {
       name: form.name, phone: form.phone, address: form.address, task: form.task,
       priority: form.priority, awaiting_estimate: form.awaiting_estimate,
       status: form.status, notes: form.notes, source: form.source,
+      milestone: form.milestone || null,
     }).select().single();
     if (data) setRequests(prev => [data, ...prev]);
     setForm({ name: "", phone: "", address: "", task: "", priority: "", awaiting_estimate: false, status: "", notes: "", source: "phone" });
@@ -4319,7 +4322,9 @@ function OfficeView({ onLogout }) {
       name: selected.name, phone: selected.phone, address: selected.address,
       task: selected.task, priority: selected.priority,
       awaiting_estimate: selected.awaiting_estimate,
-      status: selected.status, notes: selected.notes,
+      status: selected.status,
+      notes: selected.notes,
+      milestone: selected.milestone || null,
     }).eq("id", selected.id);
     setRequests(prev => prev.map(r => r.id === selected.id ? selected : r));
     setView("board");
@@ -4695,6 +4700,8 @@ function OfficeView({ onLogout }) {
                   <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: "#0A369D" }}>Awaiting Estimate</span>
                 </label>
               </div>
+              <label style={labelStyle}>Milestone</label>
+              <input style={{ ...inputStyle, marginBottom: 10 }} value={form.milestone || ""} onChange={e => setForm(f => ({ ...f, milestone: e.target.value }))} placeholder="e.g. Met with client, Estimate approved, Contract signed"/>
               <label style={labelStyle}>Notes</label>
               <textarea style={{ ...inputStyle, resize: "none", height: 80 }} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Any details from the call..."/>
             </div>
@@ -4758,6 +4765,8 @@ function OfficeView({ onLogout }) {
                     <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 13, color: "#0A369D" }}>Awaiting Estimate</span>
                   </label>
                 </div>
+                <label style={labelStyle}>Milestone</label>
+                <input style={{ ...inputStyle, marginBottom: 10 }} value={selected.milestone || ""} onChange={e => setSelected(s => ({ ...s, milestone: e.target.value }))} placeholder="e.g. Met with client, Estimate approved, Contract signed"/>
                 <label style={labelStyle}>Notes</label>
                 <textarea style={{ ...inputStyle, resize: "none", height: 100 }} value={selected.notes || ""} onChange={e => setSelected(s => ({ ...s, notes: e.target.value }))}/>
               </div>
