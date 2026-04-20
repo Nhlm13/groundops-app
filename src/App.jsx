@@ -4233,6 +4233,7 @@ function OfficeView({ onLogout }) {
   const [editingJobTruck, setEditingJobTruck] = useState("");
   const [editingJobNotes, setEditingJobNotes] = useState("");
   const [savingJob, setSavingJob] = useState(false);
+  const [propertySearch, setPropertySearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -4641,7 +4642,9 @@ function OfficeView({ onLogout }) {
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <ScheduleSidebar />
           <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
-            <PropertiesTab />
+            <input type="text" placeholder="Search properties..." value={propertySearch} onChange={e => setPropertySearch(e.target.value)}
+              style={{ width:"100%", background:"#0d1635", border:"1px solid #4472CA44", borderRadius:8, padding:"9px 12px", color:"#CFDEE7", fontFamily:"'Barlow',sans-serif", fontSize:14, boxSizing:"border-box", marginBottom:12, outline:"none" }}/>
+            <PropertiesTab searchQuery={propertySearch} />
           </div>
         </div>
       </div>
