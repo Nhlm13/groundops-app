@@ -4636,12 +4636,22 @@ function OfficeView({ onLogout }) {
       <JobEditModal />
       {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
       <div className="screen" style={{ background: "#1e2d4a" }}>
-        <Topbar title="Properties" right={
-          <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>
-        } />
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ background:"#162238", borderBottom:"3px solid #4472CA", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <img src="/TotalFlo.svg" alt="TotalFlo" style={{ width:28, height:28, objectFit:"contain" }}/>
+            <div>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:18, color:"#CFDEE7", letterSpacing:2, lineHeight:1 }}>Office View</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, color:"#92B4F4", letterSpacing:1, textTransform:"uppercase", marginTop:1 }}>Properties</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={() => setView("board")} style={{ background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:6, padding:"5px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>← Board</button>
+            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
+          </div>
+        </div>
+        <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
           <ScheduleSidebar />
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px" }}>
             <input type="text" placeholder="Search properties..." value={propertySearch} onChange={e => setPropertySearch(e.target.value)}
               style={{ width:"100%", background:"#0d1635", border:"1px solid #4472CA44", borderRadius:8, padding:"9px 12px", color:"#CFDEE7", fontFamily:"'Barlow',sans-serif", fontSize:14, boxSizing:"border-box", marginBottom:12, outline:"none" }}/>
             <PropertiesTab searchQuery={propertySearch} />
