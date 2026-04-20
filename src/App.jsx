@@ -4629,6 +4629,24 @@ function OfficeView({ onLogout }) {
     );
   };
 
+  // -- PROPERTIES VIEW --
+  if (view === "properties") return (
+    <>
+      <JobEditModal />
+      {showMap && <CustomerMap onClose={() => setShowMap(false)} />}
+      <div className="screen" style={{ background: "#1e2d4a" }}>
+        <Topbar title="Properties" right={
+          <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>
+        } />
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <ScheduleSidebar />
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+            <PropertiesTab />
+          </div>
+        </div>
+      </div>
+    </>
+  );
   // -- CALENDAR VIEW --
   if (view === "calendar") return (
     <>
@@ -4639,6 +4657,7 @@ function OfficeView({ onLogout }) {
           <>
             <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
             <button onClick={() => setView("board")} style={{ background: "none", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 12, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>← Board</button>
+            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"5px 12px", fontFamily:"'Bebas Neue',sans-serif", fontSize:13, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
           </>
         } />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -4813,7 +4832,9 @@ function OfficeView({ onLogout }) {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => setShowMap(true)} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Map</button>
             <button onClick={() => setView("calendar")} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Calendar</button>
+            <button onClick={() => setView("properties")} style={{ background: "rgba(68,114,202,0.2)", border: "1px solid rgba(68,114,202,0.4)", borderRadius: 6, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#92B4F4", cursor: "pointer" }}>Properties</button>
             <button onClick={() => setView("add")} style={{ background: "#4472CA", border: "none", borderRadius: 8, padding: "7px 14px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 2, color: "#fff", cursor: "pointer" }}>+ Create Lead</button>
+            <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"7px 14px", fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"rgba(255,255,255,0.5)", cursor:"pointer" }}>Out</button>
           </div>
         </div>
 
