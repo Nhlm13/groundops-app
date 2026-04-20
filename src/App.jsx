@@ -3433,7 +3433,8 @@ function CalendarTab() {
                       {dayJobs.slice(0, 3).map((job, ji) => {
                         const prop        = properties.find(p => p.id === job.property_id);
                         const serviceType = job.service_type || prop?.service_types?.[0] || "Other";
-                        const color       = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
+                        // eslint-disable-next-line no-unused-vars
+                        const color = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
                         return (
                           <div key={ji} className="calendar-event"
                             style={{ background:"#c5d8f0", borderRadius:3, padding:"1px 4px", marginBottom:1, overflow:"hidden" }}>
