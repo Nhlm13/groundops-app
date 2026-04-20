@@ -3298,13 +3298,13 @@ function CalendarTab() {
   }, [currentMonth]);
 
   const SERVICE_COLORS = {
-    "Mowing":         "#4a6d20",
-    "Fine Gardening": "#2a5a95",
-    "Irrigation":     "#0e7490",
-    "Fertilization":  "#a06010",
-    "Cleanup":        "#7a6845",
-    "Mulching":       "#6b4e2a",
-    "Other":          "#6a6658",
+    "Mowing":         "#4472CA",
+    "Fine Gardening": "#4472CA",
+    "Irrigation":     "#4472CA",
+    "Fertilization":  "#4472CA",
+    "Cleanup":        "#4472CA",
+    "Mulching":       "#4472CA",
+    "Other":          "#4472CA",
   };
 
   const assignJobToTruck = async (jobId, truckId) => {
@@ -3425,7 +3425,7 @@ function CalendarTab() {
                     <div key={day}
                       onClick={() => setSelectedDay(isSelected ? null : dateStr)}
                       className="calendar-day"
-                      style={{ minHeight:56, background:isSelected ? "rgba(42,90,149,0.15)" : isToday ? "rgba(74,109,32,0.1)" : "var(--bark)", border:`1px solid ${isSelected ? "var(--mgr)" : isToday ? "var(--leaf)" : "var(--moss)"}`, borderRadius:6, padding:"4px", cursor:dayJobs.length > 0 || isToday ? "pointer" : "default", transition:"background 0.15s" }}>
+                      style={{ minHeight:56, background:isSelected ? "#dbeafe" : isToday ? "#eff6ff" : "#ffffff", border:`1px solid ${isSelected ? "#4472CA" : isToday ? "#4472CA" : "#c5d8f0"}`, borderRadius:6, padding:"4px", cursor:dayJobs.length > 0 || isToday ? "pointer" : "default", transition:"background 0.15s" }}>
                       <div className="calendar-day-num"
                         style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:700, color:isToday ? "var(--lime)" : isSelected ? "var(--mgr-lt)" : "var(--stone)", marginBottom:2 }}>
                         {day}
@@ -3436,17 +3436,17 @@ function CalendarTab() {
                         const color       = SERVICE_COLORS[serviceType] || SERVICE_COLORS.Other;
                         return (
                           <div key={ji} className="calendar-event"
-                            style={{ background:color, borderRadius:3, padding:"1px 4px", marginBottom:1, overflow:"hidden" }}>
-                            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:0.3 }}>
+                            style={{ background:"#c5d8f0", borderRadius:3, padding:"1px 4px", marginBottom:1, overflow:"hidden" }}>
+                            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"#0A369D", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:0.3 }}>
                               {prop?.client_name || "Job"}
                             </div>
                           </div>
                         );
                       })}
                       {dayJobs.length > 3 && (
-                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"var(--stone)", letterSpacing:0.3 }}>
-                          +{dayJobs.length - 3} more
-                        </div>
+                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:9, color:"#0A369D", letterSpacing:0.3 }}>
+                        +{dayJobs.length - 3} more
+                      </div>
                       )}
                     </div>
                   );
