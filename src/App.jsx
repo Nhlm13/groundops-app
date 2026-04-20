@@ -4587,12 +4587,16 @@ function OfficeView({ onLogout }) {
             <button onClick={onLogout} style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 12px", fontFamily: "'Bebas Neue',sans-serif", fontSize: 13, letterSpacing: 2, color: "rgba(255,255,255,0.5)", cursor: "pointer" }}>Out</button>
           </>
         } />
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", minHeight: 0 }}>
           <ScheduleSidebar />
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
-            <input type="text" placeholder="Search properties..." value={propertySearch} onChange={e => setPropertySearch(e.target.value)}
-              style={{ width: "100%", background: "#0d1635", border: "1px solid #4472CA44", borderRadius: 8, padding: "9px 12px", color: "#CFDEE7", fontFamily: "'Barlow',sans-serif", fontSize: 14, boxSizing: "border-box", marginBottom: 12, outline: "none" }}/>
-            <PropertiesTab searchQuery={propertySearch} key="office-properties" />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ padding: "12px 16px 8px", background: "#162238", borderBottom: "1px solid rgba(68,114,202,0.2)", flexShrink: 0 }}>
+              <input type="text" placeholder="Search properties..." value={propertySearch} onChange={e => setPropertySearch(e.target.value)}
+                style={{ width: "100%", background: "#0d1635", border: "1px solid #4472CA44", borderRadius: 8, padding: "9px 12px", color: "#CFDEE7", fontFamily: "'Barlow',sans-serif", fontSize: 14, boxSizing: "border-box", outline: "none" }}/>
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+              <PropertiesTab searchQuery={propertySearch} key="office-properties" />
+            </div>
           </div>
         </div>
       </div>
