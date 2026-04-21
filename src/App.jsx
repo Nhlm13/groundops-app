@@ -6342,6 +6342,232 @@ function GMPlannerView({ onLogout }) {
     </div>
   );
 }
+
+// -- MANAGER JOBS VIEW --------------------------------------------------------
+function ManagerJobsView({ serviceTypes }) {
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const [jobs, setJobs] = useState([]);
+  const [properties, setProperties] = useState({});
+  const [trucks, setTrucks] = useState({});
+  const [assignments, setAssignments] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [dateRange, setDateRange] = useState("today");
+
+  const getDateRange = () => {
+    const today = new Date();
+    const end = new Date();
+    if (dateRange === "today") { end.setDate(today.getDate()); }
+    else if (dateRange === "week") { end.setDate(today.getDate() + 7); }
+    else { end.setDate(today.getDate() + 30); }
+    return {
+      start: todayStr,
+      end: end.toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
+    };
+  };
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    const { start, end } = getDateRange();
+    const { data: jobData } = await supabase
+      .from("jobs")
+      .select("*")
+      .eq("company_id", COMPANY_ID)
+      .gte("date", start)
+      .lte("date", end)
+      .in("service_type", serviceTypes)
+      .order("date");
+
+    const { data: propData } = await supabase
+      .from("properties")
+      .select("id, address, client_id, lat, lng")
+      .eq("company_id", COMPANY_ID);
+
+    const { data: clientData } = await supabase
+      .from("clients").select("id, name");
+
+    const { data: truckData } = await supabase
+      .from("trucks").select("id, name")
+      .eq("company_id", COMPANY_ID).eq("active", true);
+
+    const clientMap = {};
+    (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+    const propMap = {};
+    (propData || []).forEach(p => {
+      propMap[p.id] = { ...p, client_name: clientMap[p.client_id] || p.address, city: p.address?.split(",")[1]?.trim() || "" };
+    });
+    const truckMap = {};
+    (truckData || []).forEach(t => { truckMap[t.id] = t.name; });
+
+    const jobIds = (jobData || []).map(j => j.id);
+    let aMap = {};
+    if (jobIds.length > 0) {
+      const { data: aData } = await supabase
+        .from("job_assignments").select("*").in("job_id", jobIds);
+      (aData || []).forEach(a => { aMap[a.job_id] = a; });
+    }
+
+    setJobs(jobData || []);
+    setProperties(propMap);
+    setTrucks(truckMap);
+    setAssignments(aMap);
+    setLoading(false);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchJobs(); }, [dateRange]);
+
+  const formatDate = (ds) => {
+    const [y, m, d] = ds.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = Math.round((date - today) / 86400000);
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Tomorrow";
+    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  const formatService = (s) => {
+    if (!s) return "General";
+    return s.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const STATUS_COLOR = {
+    completed:  { bg: "rgba(106,184,32,0.12)", color: "var(--leaf)", label: "✓ Done" },
+    in_progress:{ bg: "rgba(212,132,10,0.12)",  color: "var(--warn)", label: "In Progress" },
+    scheduled:  { bg: "rgba(138,170,112,0.1)",  color: "var(--stone)", label: "Scheduled" },
+    carried_over:{ bg: "rgba(42,90,149,0.1)",   color: "var(--mgr-lt)", label: "Carried Over" },
+  };
+
+  // Group by date
+  const byDate = {};
+  jobs.forEach(j => {
+    if (!byDate[j.date]) byDate[j.date] = [];
+    byDate[j.date].push(j);
+  });
+  const dates = Object.keys(byDate).sort();
+
+  const totalToday = jobs.filter(j => j.date === todayStr).length;
+  const doneToday = jobs.filter(j => j.date === todayStr && j.status === "completed").length;
+  const pending = jobs.filter(j => j.status === "scheduled" || j.status === "carried_over").length;
+
+  if (loading) return (
+    <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>Loading...</div>
+  );
+
+  if (selectedJob) {
+    const prop = properties[selectedJob.property_id];
+    const st = STATUS_COLOR[selectedJob.status] || STATUS_COLOR.scheduled;
+    const truck = assignments[selectedJob.id] ? trucks[assignments[selectedJob.id].truck_id] : null;
+    return (
+      <div style={{ animation:"fadeUp 0.2s ease both" }}>
+        <button onClick={() => setSelectedJob(null)} style={{ background:"none", border:"none", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, padding:0, marginBottom:16, display:"flex", alignItems:"center", gap:6 }}>
+          ← Back
+        </button>
+        <div style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:"4px solid var(--mgr-lt)", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"var(--cream)", letterSpacing:1, lineHeight:1 }}>{prop?.client_name || "Unknown"}</div>
+          {prop?.address && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#92B4F4", marginTop:4 }}>📍 {prop.address}</div>}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8, flexWrap:"wrap" }}>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, padding:"3px 10px", borderRadius:4, background:st.bg, color:st.color }}>{st.label}</span>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>{formatDate(selectedJob.date)}</span>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>{formatService(selectedJob.service_type)}</span>
+          </div>
+        </div>
+        {truck && (
+          <div style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:9, padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:16 }}>🚛</span>
+            <div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>Assigned Crew</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"var(--cream)" }}>{truck}</div>
+            </div>
+          </div>
+        )}
+        {selectedJob.notes && (
+          <div style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:9, padding:"11px 14px", marginBottom:8 }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginBottom:4 }}>Notes</div>
+            <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:13, color:"var(--cream)", lineHeight:1.5 }}>{selectedJob.notes}</div>
+          </div>
+        )}
+        {prop?.address && (
+          <a href={`https://maps.apple.com/?q=${encodeURIComponent(prop.address)}`} target="_blank" rel="noopener noreferrer"
+            style={{ display:"block", width:"100%", padding:"12px", background:"rgba(42,90,149,0.15)", border:"1px solid var(--mgr)", borderRadius:9, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"var(--mgr-lt)", textAlign:"center", textDecoration:"none", marginTop:8 }}>
+            📍 Open in Maps
+          </a>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Stats */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:14 }}>
+        {[
+          { label:"Today", value:totalToday, color:"var(--cream)" },
+          { label:"Done", value:doneToday, color:"var(--leaf)" },
+          { label:"Pending", value:pending, color:pending>0?"var(--warn)":"var(--leaf)" },
+        ].map(s => (
+          <div key={s.label} style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"8px", textAlign:"center" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:s.color, lineHeight:1 }}>{s.value}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginTop:1 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Date range filter */}
+      <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+        {[{ key:"today", label:"Today" }, { key:"week", label:"Next 7 Days" }, { key:"month", label:"This Month" }].map(r => (
+          <button key={r.key} onClick={() => setDateRange(r.key)}
+            style={{ flex:1, padding:"7px 4px", borderRadius:8, border:`1.5px solid ${dateRange===r.key?"var(--mgr)":"var(--moss)"}`, background:dateRange===r.key?"rgba(42,90,149,0.15)":"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:0.5, color:dateRange===r.key?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", fontWeight:600 }}>
+            {r.label}
+          </button>
+        ))}
+      </div>
+
+      {jobs.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>
+          No jobs in this period
+        </div>
+      ) : (
+        dates.map(date => (
+          <div key={date} style={{ marginBottom:18 }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:date===todayStr?"var(--lime)":"var(--stone)", textTransform:"uppercase", marginBottom:8, display:"flex", alignItems:"center", gap:8 }}>
+              {formatDate(date)}
+              <span style={{ flex:1, height:1, background:"var(--moss)", display:"block" }}/>
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, fontWeight:400 }}>{byDate[date].length} job{byDate[date].length!==1?"s":""}</span>
+            </div>
+            {byDate[date].map(job => {
+              const prop = properties[job.property_id];
+              const st = STATUS_COLOR[job.status] || STATUS_COLOR.scheduled;
+              const truck = assignments[job.id] ? trucks[assignments[job.id].truck_id] : null;
+              return (
+                <div key={job.id} onClick={() => setSelectedJob(job)}
+                  style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:`4px solid ${st.color}`, borderRadius:9, padding:"11px 14px", marginBottom:7, cursor:"pointer", transition:"background 0.15s" }}>
+                  <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {prop?.client_name || "Unknown"}
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2, flexWrap:"wrap" }}>
+                        {prop?.city && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4" }}>📍 {prop.city}</span>}
+                        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>{formatService(job.service_type)}</span>
+                        {truck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>🚛 {truck}</span>}
+                      </div>
+                    </div>
+                    <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:"3px 8px", borderRadius:4, background:st.bg, color:st.color, flexShrink:0, letterSpacing:0.5 }}>{st.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
 function PropertyManagerView({ onLogout }) {
   const [tab, setTab] = useState("jobs");
@@ -6363,10 +6589,8 @@ function PropertyManagerView({ onLogout }) {
       </div>
       <div style={{ flex:1, overflow:"auto", padding:"16px", paddingBottom:40 }}>
         {tab === "jobs" && (
-          <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", lineHeight:1.8 }}>
-            Jobs assigned to your crews will appear here
-          </div>
-        )}
+  <ManagerJobsView serviceTypes={["mowing","Mowing","edging","Fine Gardening","lawn_maintenance","mulching","seasonal_cleanup","seasonal_containers","spring_cleanup","weeding","irrigation_startup"]}/>
+)}
         {tab === "properties" && (
           <>
             <input
@@ -6406,10 +6630,8 @@ function ConstructionManagerView({ onLogout }) {
       </div>
       <div style={{ flex:1, overflow:"auto", padding:"16px", paddingBottom:40 }}>
         {tab === "jobs" && (
-          <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", lineHeight:1.8 }}>
-            Construction jobs assigned to your crews will appear here
-          </div>
-        )}
+  <ManagerJobsView serviceTypes={["construction","landscape_install","planting"]}/>
+)}
         {tab === "properties" && (
           <>
             <input
