@@ -5823,7 +5823,22 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
       if (user) {
         setUserId(user.id);
         const stored = localStorage.getItem(`gcal_token_${user.id}`);
-        if (stored) setToken(stored);
+        const expiry = localStorage.getItem(`gcal_token_expiry_${user.id}`);
+        if (stored && expiry && Date.now() < parseInt(expiry) - 60000) {
+          // Token still valid — use it
+          setToken(stored);
+        } else if (stored) {
+          // Token expired — try silent refresh once GIS is ready
+          setUserId(user.id);
+          const tryRefresh = () => {
+            if (tokenClientRef.current) {
+              tokenClientRef.current.requestAccessToken({ prompt: "" });
+            } else {
+              setTimeout(tryRefresh, 500);
+            }
+          };
+          setTimeout(tryRefresh, 1000);
+        }
       }
     });
   }, []);
@@ -5847,10 +5862,20 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
       scope: GCAL_SCOPE,
       callback: (resp) => {
         if (resp.error) { setError("Sign-in failed. Please try again."); return; }
-        if (userId) localStorage.setItem(`gcal_token_${userId}`, resp.access_token);
+        const expiry = Date.now() + (resp.expires_in || 3600) * 1000;
+        if (userId) {
+          localStorage.setItem(`gcal_token_${userId}`, resp.access_token);
+          localStorage.setItem(`gcal_token_expiry_${userId}`, expiry.toString());
+        }
         setToken(resp.access_token);
       },
     });
+  };
+
+  const silentRefresh = () => {
+    if (tokenClientRef.current) {
+      tokenClientRef.current.requestAccessToken({ prompt: "" });
+    }
   };
 
   const signIn = () => {
@@ -5868,6 +5893,14 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   useEffect(() => { if (token) fetchAll(); }, [token]); // eslint-disable-line
 
   const fetchAll = async () => {
+    // Silently refresh token if expiring within 5 minutes
+    if (userId) {
+      const expiry = localStorage.getItem(`gcal_token_expiry_${userId}`);
+      if (expiry && Date.now() > parseInt(expiry) - 300000) {
+        silentRefresh();
+        return;
+      }
+    }
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
