@@ -5926,7 +5926,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const formatTime = (dt) => { if (!dt) return ""; return new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }); };
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const EVENT_COLORS = { personal: "#2563eb", company: "#16a34a" };
-  const getEventColor = (ev) => ev._source === "company" ? EVENT_COLORS.company : EVENT_COLORS.personal;
+const getEventColor = (ev) => ev._calendarColor || "#2563eb";
 
   const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", color:"#0A2540", fontFamily:"'Barlow',sans-serif", fontSize:15, outline:"none", marginBottom:12, boxSizing:"border-box" };
   const labelStyle = { fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1.5, color:"#64748b", textTransform:"uppercase", marginBottom:5, display:"block" };
@@ -5971,12 +5971,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
           ))}
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          <span style={{ display:"flex", alignItems:"center", gap:5, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b" }}>
-            <span style={{ width:12, height:12, borderRadius:"50%", background:EVENT_COLORS.company, display:"inline-block" }}/> J&J Operations
-          </span>
-          <span style={{ display:"flex", alignItems:"center", gap:5, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b" }}>
-            <span style={{ width:12, height:12, borderRadius:"50%", background:EVENT_COLORS.personal, display:"inline-block" }}/> My Calendar
-          </span>
+          <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b" }}>All calendars shown</span>
           <button onClick={fetchEvents} style={{ padding:"7px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", cursor:"pointer" }}>↻ Refresh</button>
           <button onClick={() => setView("create")} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#1e40af", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, letterSpacing:0.5, color:"#fff", cursor:"pointer" }}>+ New Event</button>
           <button onClick={signOut} style={{ padding:"7px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#94a3b8", cursor:"pointer" }}>Disconnect</button>
