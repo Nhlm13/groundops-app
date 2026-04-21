@@ -5730,6 +5730,277 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 }
 
 // -- LOGIN ---------------------------------------------------------------------
+
+// -- GOOGLE CALENDAR TAB -------------------------------------------------------
+const GCAL_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "694192444632-h52s8hrb6nbaao5bu6gbg7j0pn270a4f.apps.googleusercontent.com";
+const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar";
+
+function GoogleCalendarTab() {
+  const [token, setToken] = useState(() => localStorage.getItem("gcal_token") || null);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [view, setView] = useState("week"); // "week" | "day" | "create"
+  const [selectedDay, setSelectedDay] = useState(new Date());
+  const [creating, setCreating] = useState(false);
+  const [newEvent, setNewEvent] = useState({ title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }), startTime: "08:00", endTime: "09:00", description: "", allDay: false });
+  const tokenClientRef = useRef(null);
+
+  // Load GIS script
+  useEffect(() => {
+    if (window.google?.accounts) { initTokenClient(); return; }
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.onload = initTokenClient;
+    document.head.appendChild(script);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const initTokenClient = () => {
+    tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+      client_id: GCAL_CLIENT_ID,
+      scope: GCAL_SCOPE,
+      callback: (resp) => {
+        if (resp.error) { setError("Sign-in failed. Please try again."); return; }
+        localStorage.setItem("gcal_token", resp.access_token);
+        setToken(resp.access_token);
+      },
+    });
+  };
+
+  const signIn = () => {
+    setError(null);
+    if (tokenClientRef.current) tokenClientRef.current.requestAccessToken();
+    else setError("Google sign-in not ready yet. Please wait a moment and try again.");
+  };
+
+  const signOut = () => {
+    if (token) window.google?.accounts?.oauth2?.revoke(token);
+    localStorage.removeItem("gcal_token");
+    setToken(null);
+    setEvents([]);
+  };
+
+  // Fetch events whenever token changes
+  useEffect(() => {
+    if (!token) return;
+    fetchEvents();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const fetchEvents = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const now = new Date();
+      const start = new Date(now); start.setDate(now.getDate() - 1);
+      const end = new Date(now); end.setDate(now.getDate() + 30);
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=100`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.status === 401) { signOut(); return; }
+      const data = await res.json();
+      setEvents(data.items || []);
+    } catch (e) { setError("Failed to load events."); }
+    setLoading(false);
+  };
+
+  const createEvent = async () => {
+    setCreating(true);
+    setError(null);
+    try {
+      const body = newEvent.allDay
+        ? { summary: newEvent.title, description: newEvent.description, start: { date: newEvent.date }, end: { date: newEvent.date } }
+        : { summary: newEvent.title, description: newEvent.description, start: { dateTime: `${newEvent.date}T${newEvent.startTime}:00`, timeZone: "America/New_York" }, end: { dateTime: `${newEvent.date}T${newEvent.endTime}:00`, timeZone: "America/New_York" } };
+      const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.status === 401) { signOut(); return; }
+      await fetchEvents();
+      setView("week");
+      setNewEvent({ title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }), startTime: "08:00", endTime: "09:00", description: "", allDay: false });
+    } catch (e) { setError("Failed to create event."); }
+    setCreating(false);
+  };
+
+  // Build week days
+  const getWeekDays = () => {
+    const days = [];
+    const start = new Date();
+    start.setDate(start.getDate() - start.getDay() + 1); // Monday
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  };
+
+  const getEventsForDay = (date) => {
+    const ds = date.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    return events.filter(e => {
+      const eDate = e.start?.date || e.start?.dateTime?.slice(0, 10);
+      return eDate === ds;
+    });
+  };
+
+  const formatTime = (dt) => {
+    if (!dt) return "";
+    const d = new Date(dt);
+    return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  };
+
+  const isToday = (date) => {
+    const t = new Date();
+    return date.toDateString() === t.toDateString();
+  };
+
+  const EVENT_COLORS = ["#4472CA","#22a86e","#e05540","#d4bc4a","#9b59b6","#0e7490","#f97316","#14b8a6"];
+
+  const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:10 };
+  const labelStyle = { fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1.5, color:"var(--stone)", textTransform:"uppercase", marginBottom:4, display:"block" };
+
+  // Not signed in
+  if (!token) return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", textAlign:"center" }}>
+      <div style={{ width:64, height:64, borderRadius:16, background:"rgba(42,90,149,0.15)", border:"1px solid var(--mgr)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:20, fontSize:28 }}>📅</div>
+      <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"var(--mgr-lt)", letterSpacing:3, marginBottom:8 }}>Google Calendar</div>
+      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, color:"var(--stone)", marginBottom:24, lineHeight:1.6, maxWidth:280 }}>Connect your Google Workspace calendar to view and create events directly in TotalFlo.</div>
+      {error && <div style={{ background:"rgba(224,85,64,0.12)", border:"1px solid var(--danger)", borderRadius:8, padding:"10px 14px", marginBottom:14, fontSize:13, color:"var(--danger)", width:"100%" }}>{error}</div>}
+      <button onClick={signIn} style={{ padding:"14px 28px", background:"var(--mgr)", border:"none", borderRadius:10, fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", gap:10 }}>
+        <span style={{ fontSize:16 }}>G</span> Connect Google Calendar
+      </button>
+    </div>
+  );
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      {/* Toolbar */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:8 }}>
+        <div style={{ display:"flex", gap:6 }}>
+          {["week","day"].map(v => (
+            <button key={v} onClick={() => setView(v)}
+              style={{ padding:"6px 14px", borderRadius:8, border:`1.5px solid ${view===v?"var(--mgr)":"var(--moss)"}`, background:view===v?"rgba(42,90,149,0.15)":"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:view===v?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", fontWeight:600, textTransform:"capitalize" }}>
+              {v}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex", gap:6 }}>
+          <button onClick={fetchEvents} style={{ padding:"6px 12px", borderRadius:8, border:"1px solid var(--moss)", background:"none", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)", cursor:"pointer" }}>↻ Refresh</button>
+          <button onClick={() => setView("create")} style={{ padding:"6px 14px", borderRadius:8, border:"none", background:"var(--mgr)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:"#fff", cursor:"pointer", fontWeight:600 }}>+ New Event</button>
+          <button onClick={signOut} style={{ padding:"6px 10px", borderRadius:8, border:"1px solid var(--moss)", background:"none", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", cursor:"pointer" }}>Disconnect</button>
+        </div>
+      </div>
+
+      {error && <div style={{ background:"rgba(224,85,64,0.12)", border:"1px solid var(--danger)", borderRadius:8, padding:"10px 14px", marginBottom:12, fontSize:13, color:"var(--danger)" }}>{error}</div>}
+
+      {loading && <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>Loading events...</div>}
+
+      {/* WEEK VIEW */}
+      {!loading && view === "week" && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6, flex:1 }}>
+          {getWeekDays().map((day, idx) => {
+            const dayEvents = getEventsForDay(day);
+            const today = isToday(day);
+            return (
+              <div key={idx} style={{ background:today?"rgba(42,90,149,0.08)":"var(--bark)", border:`1px solid ${today?"var(--mgr)":"var(--moss)"}`, borderRadius:9, padding:"8px 6px", minHeight:120, cursor:"pointer" }}
+                onClick={() => { setSelectedDay(day); setView("day"); }}>
+                <div style={{ textAlign:"center", marginBottom:6 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>
+                    {day.toLocaleDateString("en-US", { weekday:"short" })}
+                  </div>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:today?"var(--mgr-lt)":"var(--cream)", lineHeight:1 }}>
+                    {day.getDate()}
+                  </div>
+                </div>
+                {dayEvents.slice(0, 3).map((ev, i) => (
+                  <div key={ev.id} style={{ background:`${EVENT_COLORS[i%EVENT_COLORS.length]}22`, border:`1px solid ${EVENT_COLORS[i%EVENT_COLORS.length]}66`, borderLeft:`3px solid ${EVENT_COLORS[i%EVENT_COLORS.length]}`, borderRadius:4, padding:"2px 5px", marginBottom:3, fontSize:10, color:"var(--cream)", fontFamily:"'Barlow Condensed',sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {ev.summary || "(No title)"}
+                  </div>
+                ))}
+                {dayEvents.length > 3 && (
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, color:"var(--stone)", paddingLeft:2 }}>+{dayEvents.length - 3} more</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* DAY VIEW */}
+      {!loading && view === "day" && (
+        <div style={{ flex:1, overflowY:"auto" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+            <button onClick={() => setView("week")} style={{ background:"none", border:"none", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, padding:0 }}>← Week</button>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--mgr-lt)", letterSpacing:2 }}>
+              {selectedDay.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" })}
+            </div>
+            <button onClick={() => { const d = new Date(selectedDay); d.setDate(d.getDate()-1); setSelectedDay(d); }} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"4px 10px", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12 }}>←</button>
+            <button onClick={() => { const d = new Date(selectedDay); d.setDate(d.getDate()+1); setSelectedDay(d); }} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"4px 10px", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12 }}>→</button>
+          </div>
+          {getEventsForDay(selectedDay).length === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>
+              No events — <span onClick={() => setView("create")} style={{ color:"var(--mgr-lt)", cursor:"pointer", textDecoration:"underline" }}>Add one</span>
+            </div>
+          ) : (
+            getEventsForDay(selectedDay).map((ev, i) => (
+              <div key={ev.id} style={{ background:"var(--bark)", border:`1px solid var(--moss)`, borderLeft:`4px solid ${EVENT_COLORS[i%EVENT_COLORS.length]}`, borderRadius:9, padding:"12px 14px", marginBottom:8 }}>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", marginBottom:4 }}>{ev.summary || "(No title)"}</div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>
+                  {ev.start?.date ? "All day" : `${formatTime(ev.start?.dateTime)} → ${formatTime(ev.end?.dateTime)}`}
+                </div>
+                {ev.description && <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:12, color:"var(--stone)", marginTop:6, lineHeight:1.5 }}>{ev.description}</div>}
+                {ev.location && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4", marginTop:4 }}>📍 {ev.location}</div>}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* CREATE EVENT */}
+      {view === "create" && (
+        <div style={{ flex:1, overflowY:"auto" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+            <button onClick={() => setView("week")} style={{ background:"none", border:"none", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, padding:0 }}>← Back</button>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--mgr-lt)", letterSpacing:2 }}>New Event</div>
+          </div>
+          <label style={labelStyle}>Event Title</label>
+          <input style={inputStyle} placeholder="e.g. Site visit — 14 Oak St" value={newEvent.title} onChange={e => setNewEvent(p => ({...p, title: e.target.value}))}/>
+          <label style={labelStyle}>Date</label>
+          <input style={inputStyle} type="date" value={newEvent.date} onChange={e => setNewEvent(p => ({...p, date: e.target.value}))}/>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+            <label style={{ ...labelStyle, margin:0, cursor:"pointer", display:"flex", alignItems:"center", gap:6 }}>
+              <input type="checkbox" checked={newEvent.allDay} onChange={e => setNewEvent(p => ({...p, allDay: e.target.checked}))} style={{ width:16, height:16 }}/>
+              All day
+            </label>
+          </div>
+          {!newEvent.allDay && (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div>
+                <label style={labelStyle}>Start time</label>
+                <input style={inputStyle} type="time" value={newEvent.startTime} onChange={e => setNewEvent(p => ({...p, startTime: e.target.value}))}/>
+              </div>
+              <div>
+                <label style={labelStyle}>End time</label>
+                <input style={inputStyle} type="time" value={newEvent.endTime} onChange={e => setNewEvent(p => ({...p, endTime: e.target.value}))}/>
+              </div>
+            </div>
+          )}
+          <label style={labelStyle}>Description (optional)</label>
+          <textarea style={{...inputStyle, height:80, resize:"vertical"}} placeholder="Notes, address, instructions..." value={newEvent.description} onChange={e => setNewEvent(p => ({...p, description: e.target.value}))}/>
+          {error && <div style={{ background:"rgba(224,85,64,0.12)", border:"1px solid var(--danger)", borderRadius:8, padding:"10px 14px", marginBottom:12, fontSize:13, color:"var(--danger)" }}>{error}</div>}
+          <button onClick={createEvent} disabled={!newEvent.title || creating}
+            style={{ width:"100%", padding:14, background:!newEvent.title||creating?"var(--moss)":"var(--mgr)", border:"none", borderRadius:10, fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3, color:"#fff", cursor:!newEvent.title||creating?"not-allowed":"pointer", transition:"background 0.2s" }}>
+            {creating ? "Creating..." : "Create Event"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // -- GM PLANNER VIEW -----------------------------------------------------------
 function GMPlannerView({ onLogout }) {
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -5967,6 +6238,7 @@ function GMPlannerView({ onLogout }) {
           { key:"carryover", label:`⚠ Carry Over${incomplete.length>0?` (${incomplete.length})`:""}` },
           { key:"plan",      label:`📋 Plan ${formatDate(planDate)}` },
           { key:"done",      label:`✓ Done Today (${completedToday.length})` },
+          { key:"calendar",  label:`📅 Calendar` },
         ].map(p => (
           <button key={p.key} onClick={() => setPanel(p.key)} style={{ flex:1, padding:"10px 8px", background:"none", border:"none", borderBottom:`3px solid ${panel===p.key?"var(--mgr-lt)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:panel===p.key?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", whiteSpace:"nowrap" }}>{p.label}</button>
         ))}
@@ -6058,11 +6330,18 @@ function GMPlannerView({ onLogout }) {
             }
           </div>
         )}
+
+        {/* CALENDAR */}
+        {panel === "calendar" && (
+          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 80px" }}>
+            <GoogleCalendarTab/>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
-
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
 function PropertyManagerView({ onLogout }) {
   const [tab, setTab] = useState("jobs");
@@ -6078,7 +6357,7 @@ function PropertyManagerView({ onLogout }) {
         <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
       </div>
       <div style={{ display:"flex", background:"var(--bark)", borderBottom:"2px solid var(--moss)" }}>
-        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }].map(t => (
+        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"var(--lime)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"var(--lime)":"var(--stone)", cursor:"pointer" }}>{t.label}</button>
         ))}
       </div>
@@ -6089,17 +6368,18 @@ function PropertyManagerView({ onLogout }) {
           </div>
         )}
         {tab === "properties" && (
-  <>
-    <input
-      type="text"
-      placeholder="Search name or address..."
-      value={propSearch}
-      onChange={e => setPropSearch(e.target.value)}
-      style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
-    />
-    <PropertiesTab searchQuery={propSearch}/>
-  </>
-)}
+          <>
+            <input
+              type="text"
+              placeholder="Search name or address..."
+              value={propSearch}
+              onChange={e => setPropSearch(e.target.value)}
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
+            />
+            <PropertiesTab searchQuery={propSearch}/>
+          </>
+        )}
+        {tab === "calendar" && <div style={{ padding:"0 0 40px" }}><GoogleCalendarTab/></div>}
       </div>
     </div>
   );
@@ -6120,7 +6400,7 @@ function ConstructionManagerView({ onLogout }) {
         <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
       </div>
       <div style={{ display:"flex", background:"var(--bark)", borderBottom:"2px solid var(--moss)" }}>
-        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }].map(t => (
+        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"var(--warn)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"var(--warn)":"var(--stone)", cursor:"pointer" }}>{t.label}</button>
         ))}
       </div>
@@ -6131,17 +6411,18 @@ function ConstructionManagerView({ onLogout }) {
           </div>
         )}
         {tab === "properties" && (
-  <>
-    <input
-      type="text"
-      placeholder="Search name or address..."
-      value={propSearch}
-      onChange={e => setPropSearch(e.target.value)}
-      style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
-    />
-    <PropertiesTab searchQuery={propSearch}/>
-  </>
-)}
+          <>
+            <input
+              type="text"
+              placeholder="Search name or address..."
+              value={propSearch}
+              onChange={e => setPropSearch(e.target.value)}
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
+            />
+            <PropertiesTab searchQuery={propSearch}/>
+          </>
+        )}
+        {tab === "calendar" && <div style={{ padding:"0 0 40px" }}><GoogleCalendarTab/></div>}
       </div>
     </div>
   );
