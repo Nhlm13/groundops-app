@@ -6066,6 +6066,7 @@ function GMPlannerView({ onLogout }) {
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
 function PropertyManagerView({ onLogout }) {
   const [tab, setTab] = useState("jobs");
+  const [propSearch, setPropSearch] = useState("");
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
@@ -6087,7 +6088,18 @@ function PropertyManagerView({ onLogout }) {
             Jobs assigned to your crews will appear here
           </div>
         )}
-        {tab === "properties" && <PropertiesTab/>}
+        {tab === "properties" && (
+  <>
+    <input
+      type="text"
+      placeholder="Search name or address..."
+      value={propSearch}
+      onChange={e => setPropSearch(e.target.value)}
+      style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
+    />
+    <PropertiesTab searchQuery={propSearch}/>
+  </>
+)}
       </div>
     </div>
   );
@@ -6096,6 +6108,7 @@ function PropertyManagerView({ onLogout }) {
 // -- CONSTRUCTION MANAGER VIEW -------------------------------------------------
 function ConstructionManagerView({ onLogout }) {
   const [tab, setTab] = useState("jobs");
+  const [propSearch, setPropSearch] = useState("");
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
@@ -6117,7 +6130,18 @@ function ConstructionManagerView({ onLogout }) {
             Construction jobs assigned to your crews will appear here
           </div>
         )}
-        {tab === "properties" && <PropertiesTab/>}
+        {tab === "properties" && (
+  <>
+    <input
+      type="text"
+      placeholder="Search name or address..."
+      value={propSearch}
+      onChange={e => setPropSearch(e.target.value)}
+      style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
+    />
+    <PropertiesTab searchQuery={propSearch}/>
+  </>
+)}
       </div>
     </div>
   );
