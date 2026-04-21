@@ -116,6 +116,36 @@ body { background: var(--earth); font-family: 'Barlow', sans-serif; color: var(-
 .return-btn { padding:7px 11px; background:none; border:1px solid var(--leaf); border-radius:8px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:var(--lime); cursor:pointer; white-space:nowrap; }
 .co-qty-badge { background:var(--moss); border-radius:6px; padding:2px 7px; font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--lime); }
 
+/* ── MANAGER DESKTOP THEME ── */
+.mgr-desktop { background:#f0f4f8; min-height:100dvh; font-family:'Barlow',sans-serif; color:#0A2540; }
+.mgr-desktop .mgr-topbar-d { background:#0A2540; border-bottom:3px solid #2563eb; padding:12px 24px 10px; padding-top:calc(12px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+.mgr-desktop .mgr-topbar-d h1 { font-family:'Bebas Neue',sans-serif; font-size:24px; color:#fff; letter-spacing:3px; margin:0; }
+.mgr-desktop .mgr-topbar-d .mgr-sub { font-family:'Barlow Condensed',sans-serif; font-size:11px; color:#93c5fd; letter-spacing:1.5px; text-transform:uppercase; margin-top:2px; }
+.mgr-desktop .mgr-tab-bar { background:#fff; border-bottom:2px solid #e2e8f0; display:flex; }
+.mgr-desktop .mgr-tab-btn { flex:1; padding:12px 8px; background:none; border:none; border-bottom:3px solid transparent; font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; color:#64748b; cursor:pointer; transition:color 0.15s; }
+.mgr-desktop .mgr-tab-btn.active { color:#1e40af; border-bottom-color:#2563eb; }
+.mgr-desktop .mgr-card { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:14px 16px; margin-bottom:8px; cursor:pointer; transition:box-shadow 0.15s; }
+.mgr-desktop .mgr-card:hover { box-shadow:0 2px 8px rgba(10,37,64,0.1); }
+.mgr-desktop .mgr-card-title { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; color:#0A2540; }
+.mgr-desktop .mgr-card-sub { font-family:'Barlow Condensed',sans-serif; font-size:12px; color:#64748b; margin-top:2px; }
+.mgr-desktop .mgr-stat { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; text-align:center; }
+.mgr-desktop .mgr-stat-val { font-family:'Bebas Neue',sans-serif; font-size:24px; color:#0A2540; line-height:1; }
+.mgr-desktop .mgr-stat-label { font-family:'Barlow Condensed',sans-serif; font-size:10px; letter-spacing:1px; color:#64748b; text-transform:uppercase; margin-top:2px; }
+.mgr-desktop .mgr-section-hd { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:#64748b; text-transform:uppercase; margin:16px 0 8px; display:flex; align-items:center; gap:8px; }
+.mgr-desktop .mgr-section-hd::after { content:''; flex:1; height:1px; background:#e2e8f0; }
+.mgr-desktop .mgr-input { width:100%; padding:10px 14px; border-radius:8px; border:1px solid #e2e8f0; background:#fff; color:#0A2540; font-family:'Barlow',sans-serif; font-size:14px; outline:none; margin-bottom:10px; }
+.mgr-desktop .mgr-input:focus { border-color:#2563eb; }
+.mgr-desktop .mgr-btn-primary { padding:10px 20px; background:#1e40af; border:none; border-radius:8px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:#fff; cursor:pointer; transition:background 0.15s; }
+.mgr-desktop .mgr-btn-primary:hover { background:#1d4ed8; }
+.mgr-desktop .mgr-btn-secondary { padding:8px 16px; background:none; border:1px solid #e2e8f0; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-size:12px; color:#64748b; cursor:pointer; }
+.mgr-desktop .mgr-btn-secondary:hover { background:#f0f4f8; }
+.mgr-desktop .badge { font-family:'Barlow Condensed',sans-serif; font-size:11px; padding:3px 9px; border-radius:4px; font-weight:600; letter-spacing:0.5px; }
+.mgr-desktop .badge-scheduled { background:#f1f5f9; color:#64748b; }
+.mgr-desktop .badge-done { background:#dcfce7; color:#166534; }
+.mgr-desktop .badge-progress { background:#fef9c3; color:#854d0e; }
+.mgr-desktop .badge-warn { background:#fef9c3; color:#854d0e; }
+.mgr-desktop .badge-info { background:#dbeafe; color:#1e40af; }
+.mgr-desktop .out-btn { background:none; border:1px solid rgba(255,255,255,0.3); border-radius:6px; padding:6px 12px; font-family:'Barlow Condensed',sans-serif; font-size:11px; letter-spacing:1px; color:#fff; cursor:pointer; text-transform:uppercase; }
 .mgr-topbar { background:#1a2030; border-bottom:3px solid var(--mgr); padding:12px 16px 10px; padding-top:calc(12px + env(safe-area-inset-top)); display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
 .mgr-topbar-title { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--mgr-lt); letter-spacing:2px; }
 .mgr-badge { font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--mgr-lt); background:rgba(74,122,181,0.2); border:1px solid var(--mgr); border-radius:20px; padding:4px 10px; }
@@ -6091,7 +6121,7 @@ function GMPlannerView({ onLogout }) {
       const color = a ? CREW_COLORS[tIdx % CREW_COLORS.length] : "#e05540";
       const truckName = trucks.find(t => t.id === a?.truck_id)?.name || "Unassigned";
       const marker = window.L.circleMarker([prop.lat, prop.lng], { radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9 }).addTo(mapInst.current);
-      marker.bindPopup(`<div style="font-family:'Barlow Condensed',sans-serif;min-width:150px;"><div style="font-weight:700;font-size:14px;color:#0A369D;">${prop.client_name}</div><div style="font-size:12px;color:#666;margin-top:2px;">${prop.city || prop.address}</div><div style="font-size:11px;margin-top:4px;color:${color};font-weight:600;">${truckName}</div></div>`);
+      marker.bindPopup(`<div style="font-family:'Barlow Condensed',sans-serif;min-width:150px;"><div style="font-weight:700;font-size:14px;color:#0A2540;">${prop.client_name}</div><div style="font-size:12px;color:#64748b;margin-top:2px;">${prop.city || prop.address}</div><div style="font-size:11px;margin-top:4px;color:${color};font-weight:600;">${truckName}</div></div>`);
       markersRef.current[job.id] = marker;
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6150,34 +6180,34 @@ function GMPlannerView({ onLogout }) {
     const a = assignments[job.id];
     const assignedTruck = trucks.find(t => t.id === a?.truck_id);
     const tIdx = trucks.findIndex(t => t.id === a?.truck_id);
-    const crewColor = a ? CREW_COLORS[tIdx % CREW_COLORS.length] : "var(--warn)";
+    const crewColor = a ? CREW_COLORS[tIdx % CREW_COLORS.length] : "#f59e0b";
     const isAssigning = assigningJob === job.id;
     const isPushing = pushing[job.id];
     const alreadyPushed = job.status === "carried_over";
     return (
-      <div style={{ background:"var(--bark)", border:`1px solid var(--moss)`, borderLeft:`4px solid ${alreadyPushed?"var(--leaf)":crewColor}`, borderRadius:9, padding:"11px 14px", marginBottom:7, opacity:alreadyPushed?0.55:1, transition:"opacity 0.2s" }}>
+      <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:`4px solid ${alreadyPushed?"#16a34a":crewColor}`, borderRadius:9, padding:"11px 14px", marginBottom:7, opacity:alreadyPushed?0.55:1, transition:"opacity 0.2s" }}>
         <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name || "Unknown"}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"#0A2540", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name || "Unknown"}</div>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
-              {prop?.city && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4" }}>📍 {prop.city}</span>}
+              {prop?.city && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#2563eb" }}>📍 {prop.city}</span>}
               {showAssign && assignedTruck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:crewColor, fontWeight:700 }}>{assignedTruck.name}</span>}
-              {showAssign && !assignedTruck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)" }}>Unassigned</span>}
+              {showAssign && !assignedTruck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#f59e0b" }}>Unassigned</span>}
             </div>
           </div>
           <div style={{ display:"flex", gap:6, flexShrink:0, alignItems:"center" }}>
             {showPush && (alreadyPushed
-              ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--leaf)" }}>✓ Pushed</span>
-              : <button onClick={() => pushToDate(job)} disabled={isPushing} style={{ padding:"5px 11px", borderRadius:6, border:"1px solid var(--warn)", background:"rgba(212,132,10,0.12)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)", cursor:isPushing?"not-allowed":"pointer", whiteSpace:"nowrap" }}>{isPushing ? "..." : `→ ${formatDate(planDate)}`}</button>
+              ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#16a34a" }}>✓ Pushed</span>
+              : <button onClick={() => pushToDate(job)} disabled={isPushing} style={{ padding:"5px 11px", borderRadius:6, border:"1px solid #f59e0b", background:"#fef9c3", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#92400e", cursor:isPushing?"not-allowed":"pointer", whiteSpace:"nowrap" }}>{isPushing ? "..." : `→ ${formatDate(planDate)}`}</button>
             )}
-            {showAssign && <button onClick={() => setAssigningJob(isAssigning ? null : job.id)} style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${isAssigning?"var(--mgr-lt)":"var(--mgr)"}`, background:isAssigning?"rgba(42,90,149,0.2)":"none", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--mgr-lt)", cursor:"pointer" }}>{assignedTruck ? "Change" : "Assign"}</button>}
-            {showAssign && assignedTruck && <button onClick={() => unassignCrew(job.id)} style={{ width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, border:"1px solid var(--moss)", background:"none", color:"var(--stone)", cursor:"pointer", fontSize:13 }}>×</button>}
+            {showAssign && <button onClick={() => setAssigningJob(isAssigning ? null : job.id)} style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${isAssigning?"#1d4ed8":"#93c5fd"}`, background:isAssigning?"#dbeafe":"#f0f4f8", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#1e40af", cursor:"pointer" }}>{assignedTruck ? "Change" : "Assign"}</button>}
+            {showAssign && assignedTruck && <button onClick={() => unassignCrew(job.id)} style={{ width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, border:"1px solid #e2e8f0", background:"none", color:"#94a3b8", cursor:"pointer", fontSize:13 }}>×</button>}
           </div>
         </div>
         {isAssigning && (
-          <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:9, paddingTop:9, borderTop:"1px solid var(--moss)", animation:"fadeUp 0.15s ease both" }}>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:9, paddingTop:9, borderTop:"1px solid #e2e8f0", animation:"fadeUp 0.15s ease both" }}>
             {trucks.map((truck, idx) => (
-              <button key={truck.id} onClick={() => assignCrew(job.id, truck.id)} style={{ padding:"5px 10px", borderRadius:6, border:`1.5px solid ${a?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"var(--moss)"}`, background:a?.truck_id===truck.id?`${CREW_COLORS[idx%CREW_COLORS.length]}22`:"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:a?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"var(--stone)", cursor:"pointer", fontWeight:600 }}>{truck.name}</button>
+              <button key={truck.id} onClick={() => assignCrew(job.id, truck.id)} style={{ padding:"5px 10px", borderRadius:6, border:`1.5px solid ${a?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"#e2e8f0"}`, background:a?.truck_id===truck.id?`${CREW_COLORS[idx%CREW_COLORS.length]}22`:"#f8fafc", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:a?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"#64748b", cursor:"pointer", fontWeight:600 }}>{truck.name}</button>
             ))}
           </div>
         )}
@@ -6186,61 +6216,62 @@ function GMPlannerView({ onLogout }) {
   };
 
   if (loading) return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
-      <div style={{ background:"#1a2030", borderBottom:"3px solid var(--mgr)", padding:"12px 20px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))" }}>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"var(--mgr-lt)", letterSpacing:3 }}>GM Planner</div>
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"#f0f4f8" }}>
+      <div style={{ background:"#0A2540", borderBottom:"3px solid #2563eb", padding:"14px 24px 12px", paddingTop:"calc(14px + env(safe-area-inset-top))" }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#fff", letterSpacing:3 }}>GM Planner</div>
       </div>
-      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>Loading...</div>
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"#64748b", textTransform:"uppercase" }}>Loading...</div>
     </div>
   );
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)", overflow:"hidden" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"#f0f4f8", overflow:"hidden" }}>
+
       {/* Top bar */}
-      <div style={{ background:"#1a2030", borderBottom:"3px solid var(--mgr)", padding:"12px 20px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+      <div style={{ background:"#0A2540", borderBottom:"3px solid #2563eb", padding:"12px 24px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"var(--mgr-lt)", letterSpacing:3, lineHeight:1 }}>GM Planner</div>
-          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>
-            {incomplete.length > 0 && <span style={{ color:"var(--warn)" }}>⚠ {incomplete.length} need carry-over · </span>}
-            {unassignedCount > 0 ? <span style={{ color:"var(--warn)" }}>{unassignedCount} unassigned</span> : <span style={{ color:"var(--leaf)" }}>All assigned ✓</span>}
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#fff", letterSpacing:3, lineHeight:1 }}>GM Planner</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#93c5fd", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>
+            {incomplete.length > 0 && <span style={{ color:"#fbbf24" }}>⚠ {incomplete.length} need carry-over · </span>}
+            {unassignedCount > 0 ? <span style={{ color:"#fbbf24" }}>{unassignedCount} unassigned</span> : <span style={{ color:"#86efac" }}>All assigned ✓</span>}
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6, background:"var(--bark)", border:"1px solid var(--mgr)", borderRadius:8, padding:"5px 10px" }}>
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1, textTransform:"uppercase" }}>Plan for</span>
-            <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} style={{ background:"none", border:"none", color:"var(--mgr-lt)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, outline:"none", cursor:"pointer" }}/>
-            {planDate !== tomorrowStr && <button onClick={() => setPlanDate(tomorrowStr)} style={{ background:"none", border:"none", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:0 }}>Tomorrow</button>}
+          <div style={{ display:"flex", alignItems:"center", gap:6, background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 12px" }}>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#93c5fd", letterSpacing:1, textTransform:"uppercase" }}>Plan for</span>
+            <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} style={{ background:"none", border:"none", color:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, outline:"none", cursor:"pointer" }}/>
+            {planDate !== tomorrowStr && <button onClick={() => setPlanDate(tomorrowStr)} style={{ background:"none", border:"none", color:"#93c5fd", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:0 }}>Tomorrow</button>}
           </div>
-          <button onClick={fetchData} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--stone)", cursor:"pointer" }}>↻</button>
-          <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
+          <button onClick={fetchData} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#fff", cursor:"pointer" }}>↻</button>
+          <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.3)", borderRadius:6, padding:"6px 12px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer", textTransform:"uppercase" }}>Sign Out</button>
         </div>
       </div>
 
       {/* Stat bar */}
-      <div style={{ display:"flex", gap:8, padding:"10px 16px", background:"var(--bark2)", borderBottom:"1px solid var(--moss)", overflowX:"auto" }}>
+      <div style={{ display:"flex", gap:8, padding:"12px 20px", background:"#fff", borderBottom:"1px solid #e2e8f0", overflowX:"auto" }}>
         {[
-          { label:"Carry Over", value:incomplete.length, color:incomplete.length>0?"var(--warn)":"var(--leaf)" },
-          { label:`${formatDate(planDate)} total`, value:planJobs.length, color:"var(--cream)" },
-          { label:"Unassigned", value:unassignedCount, color:unassignedCount>0?"var(--warn)":"var(--leaf)" },
-          { label:"Crews active", value:activeTrucks.length, color:"var(--mgr-lt)" },
-          { label:"Done today", value:completedToday.length, color:"var(--leaf)" },
+          { label:"Carry Over", value:incomplete.length, color:incomplete.length>0?"#dc2626":"#16a34a" },
+          { label:`${formatDate(planDate)} total`, value:planJobs.length, color:"#0A2540" },
+          { label:"Unassigned", value:unassignedCount, color:unassignedCount>0?"#d97706":"#16a34a" },
+          { label:"Crews active", value:activeTrucks.length, color:"#1e40af" },
+          { label:"Done today", value:completedToday.length, color:"#16a34a" },
         ].map(s => (
-          <div key={s.label} style={{ flexShrink:0, background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"7px 14px", textAlign:"center", minWidth:80 }}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:s.color, lineHeight:1 }}>{s.value}</div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginTop:1 }}>{s.label}</div>
+          <div key={s.label} style={{ flexShrink:0, background:"#f8fafc", border:"1px solid #e2e8f0", borderRadius:8, padding:"8px 16px", textAlign:"center", minWidth:90 }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:s.color, lineHeight:1 }}>{s.value}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"#64748b", textTransform:"uppercase", marginTop:2 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Panel tabs */}
-      <div style={{ display:"flex", borderBottom:"2px solid var(--moss)", background:"var(--bark)" }}>
+      <div style={{ display:"flex", background:"#fff", borderBottom:"2px solid #e2e8f0" }}>
         {[
           { key:"carryover", label:`⚠ Carry Over${incomplete.length>0?` (${incomplete.length})`:""}` },
           { key:"plan",      label:`📋 Plan ${formatDate(planDate)}` },
           { key:"done",      label:`✓ Done Today (${completedToday.length})` },
           { key:"calendar",  label:`📅 Calendar` },
         ].map(p => (
-          <button key={p.key} onClick={() => setPanel(p.key)} style={{ flex:1, padding:"10px 8px", background:"none", border:"none", borderBottom:`3px solid ${panel===p.key?"var(--mgr-lt)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:panel===p.key?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", whiteSpace:"nowrap" }}>{p.label}</button>
+          <button key={p.key} onClick={() => setPanel(p.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${panel===p.key?"#2563eb":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:panel===p.key?"#1e40af":"#64748b", cursor:"pointer", whiteSpace:"nowrap", transition:"color 0.15s" }}>{p.label}</button>
         ))}
       </div>
 
@@ -6248,17 +6279,17 @@ function GMPlannerView({ onLogout }) {
 
         {/* CARRY OVER */}
         {panel === "carryover" && (
-          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 80px" }}>
-            <div style={{ background:"rgba(212,132,10,0.08)", border:"1px solid rgba(212,132,10,0.3)", borderRadius:9, padding:"11px 14px", marginBottom:14 }}>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--warn)", lineHeight:1.5 }}>These jobs were not completed today. Push them to {formatDate(planDate)} or skip them.</div>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px 80px" }}>
+            <div style={{ background:"#fef9c3", border:"1px solid #fbbf24", borderRadius:9, padding:"11px 14px", marginBottom:14 }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#92400e", lineHeight:1.5 }}>These jobs were not completed today. Push them to {formatDate(planDate)} or skip them.</div>
             </div>
             {incomplete.length === 0
-              ? <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, letterSpacing:2, color:"var(--leaf)", textTransform:"uppercase" }}>🎉 All jobs completed today!</div>
+              ? <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, letterSpacing:2, color:"#16a34a", textTransform:"uppercase" }}>🎉 All jobs completed today!</div>
               : incomplete.map(job => <JobRow key={job.id} job={job} showPush={true}/>)
             }
             {todayJobs.filter(j => j.status==="carried_over").length > 0 && (
               <>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", margin:"18px 0 10px", display:"flex", alignItems:"center", gap:8 }}>Already Pushed <span style={{ flex:1, height:1, background:"var(--moss)", display:"block" }}/></div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"#64748b", textTransform:"uppercase", margin:"18px 0 10px", display:"flex", alignItems:"center", gap:8 }}>Already Pushed <span style={{ flex:1, height:1, background:"#e2e8f0", display:"block" }}/></div>
                 {todayJobs.filter(j => j.status==="carried_over").map(job => <JobRow key={job.id} job={job} showPush={true}/>)}
               </>
             )}
@@ -6269,42 +6300,49 @@ function GMPlannerView({ onLogout }) {
         {panel === "plan" && (
           <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
             {/* Left: job list */}
-            <div style={{ width:280, flexShrink:0, overflowY:"auto", borderRight:"1px solid var(--moss)", padding:"12px 14px" }}>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:10, display:"flex", alignItems:"center", gap:8 }}>{formatDate(planDate)} <span style={{ flex:1, height:1, background:"var(--moss)", display:"block" }}/></div>
+            <div style={{ width:290, flexShrink:0, overflowY:"auto", borderRight:"1px solid #e2e8f0", padding:"14px 16px", background:"#f8fafc" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"#64748b", textTransform:"uppercase", marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>{formatDate(planDate)} <span style={{ flex:1, height:1, background:"#e2e8f0", display:"block" }}/></div>
               {planJobs.length === 0
-                ? <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>No jobs yet<br/><span style={{ fontSize:11, opacity:0.6 }}>Push from Carry Over tab</span></div>
+                ? <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase" }}>No jobs yet<br/><span style={{ fontSize:11, opacity:0.6 }}>Push from Carry Over tab</span></div>
                 : planJobs.map(job => <JobRow key={job.id} job={job} showAssign={true}/>)
               }
             </div>
+
             {/* Center: map */}
             <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
-              <div id="gm-plan-map" style={{ flex:1, background:"#1a2030" }}/>
-              <div style={{ background:"var(--bark2)", borderTop:"1px solid var(--moss)", padding:"6px 12px", display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
-                <span style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}><span style={{ width:10, height:10, borderRadius:"50%", background:"#e05540", display:"inline-block" }}/> Unassigned</span>
-                {activeTrucks.map(truck => { const idx = trucks.findIndex(t => t.id === truck.id); return (<span key={truck.id} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}><span style={{ width:10, height:10, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/> {truck.name}</span>); })}
+              <div id="gm-plan-map" style={{ flex:1 }}/>
+              <div style={{ background:"#fff", borderTop:"1px solid #e2e8f0", padding:"6px 14px", display:"flex", flexWrap:"wrap", gap:10, alignItems:"center" }}>
+                <span style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b" }}><span style={{ width:10, height:10, borderRadius:"50%", background:"#e05540", display:"inline-block" }}/> Unassigned</span>
+                {activeTrucks.map(truck => { const idx = trucks.findIndex(t => t.id === truck.id); return (<span key={truck.id} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b" }}><span style={{ width:10, height:10, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/> {truck.name}</span>); })}
               </div>
             </div>
+
             {/* Right: crew columns */}
-            <div style={{ width:260, flexShrink:0, overflowY:"auto", borderLeft:"1px solid var(--moss)", padding:"12px 14px" }}>
-              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:10 }}>Crew Assignments</div>
+            <div style={{ width:270, flexShrink:0, overflowY:"auto", borderLeft:"1px solid #e2e8f0", padding:"14px 16px", background:"#f8fafc" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"#64748b", textTransform:"uppercase", marginBottom:12 }}>Crew Assignments</div>
               {byTruck["__unassigned"].length > 0 && (
-                <div style={{ marginBottom:14 }}>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, color:"var(--warn)", textTransform:"uppercase", marginBottom:6 }}>⚠ Unassigned ({byTruck["__unassigned"].length})</div>
-                  {byTruck["__unassigned"].map(job => { const prop = properties[job.property_id]; return (<div key={job.id} style={{ background:"rgba(224,85,64,0.08)", border:"1px solid rgba(224,85,64,0.25)", borderRadius:7, padding:"7px 10px", marginBottom:5 }}><div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--cream)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>{prop?.city&&<div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>{prop.city}</div>}</div>); })}
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:11, letterSpacing:1, color:"#dc2626", textTransform:"uppercase", marginBottom:6 }}>⚠ Unassigned ({byTruck["__unassigned"].length})</div>
+                  {byTruck["__unassigned"].map(job => { const prop = properties[job.property_id]; return (
+                    <div key={job.id} style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:7, padding:"7px 10px", marginBottom:5 }}>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#0A2540", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
+                      {prop?.city&&<div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b" }}>{prop.city}</div>}
+                    </div>
+                  ); })}
                 </div>
               )}
               {trucks.filter(t => (byTruck[t.id]||[]).length > 0).map((truck, idx) => (
-                <div key={truck.id} style={{ marginBottom:14 }}>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, color:CREW_COLORS[idx%CREW_COLORS.length], textTransform:"uppercase", marginBottom:6 }}>
-                    <span style={{ width:8, height:8, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block", marginRight:6 }}/>{truck.name} ({byTruck[truck.id].length})
+                <div key={truck.id} style={{ marginBottom:16 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:11, letterSpacing:1, color:CREW_COLORS[idx%CREW_COLORS.length], textTransform:"uppercase", marginBottom:6, display:"flex", alignItems:"center", gap:5 }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/>{truck.name} ({byTruck[truck.id].length})
                   </div>
                   {byTruck[truck.id].map(job => { const prop = properties[job.property_id]; return (
-                    <div key={job.id} style={{ background:"var(--bark)", border:`1px solid ${CREW_COLORS[idx%CREW_COLORS.length]}44`, borderLeft:`3px solid ${CREW_COLORS[idx%CREW_COLORS.length]}`, borderRadius:7, padding:"7px 10px", marginBottom:5, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6 }}>
+                    <div key={job.id} style={{ background:"#fff", border:`1px solid #e2e8f0`, borderLeft:`3px solid ${CREW_COLORS[idx%CREW_COLORS.length]}`, borderRadius:7, padding:"7px 10px", marginBottom:5, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6 }}>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--cream)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
-                        {prop?.city && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>{prop.city}</div>}
+                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#0A2540", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
+                        {prop?.city && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b" }}>{prop.city}</div>}
                       </div>
-                      <button onClick={() => unassignCrew(job.id)} style={{ width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:5, border:"1px solid var(--moss)", background:"none", color:"var(--stone)", cursor:"pointer", fontSize:13, flexShrink:0 }}>×</button>
+                      <button onClick={() => unassignCrew(job.id)} style={{ width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:5, border:"1px solid #e2e8f0", background:"none", color:"#94a3b8", cursor:"pointer", fontSize:13, flexShrink:0 }}>×</button>
                     </div>
                   ); })}
                 </div>
@@ -6315,15 +6353,15 @@ function GMPlannerView({ onLogout }) {
 
         {/* DONE TODAY */}
         {panel === "done" && (
-          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 80px" }}>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px 80px" }}>
             {completedToday.length === 0
-              ? <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>No completed jobs yet today</div>
+              ? <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>No completed jobs yet today</div>
               : completedToday.map(job => { const prop = properties[job.property_id]; return (
-                <div key={job.id} style={{ background:"rgba(106,184,32,0.06)", border:"1px solid rgba(106,184,32,0.25)", borderLeft:"4px solid var(--leaf)", borderRadius:9, padding:"11px 14px", marginBottom:7, display:"flex", alignItems:"center", gap:10 }}>
-                  <div style={{ width:26, height:26, borderRadius:6, background:"rgba(106,184,32,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:"var(--leaf)" }}>✓</div>
+                <div key={job.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:"4px solid #16a34a", borderRadius:9, padding:"11px 14px", marginBottom:7, display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:26, height:26, borderRadius:6, background:"#dcfce7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:"#16a34a" }}>✓</div>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
-                    {prop?.city && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>📍 {prop.city}</div>}
+                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"#0A2540", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
+                    {prop?.city && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b" }}>📍 {prop.city}</div>}
                   </div>
                 </div>
               ); })
@@ -6333,13 +6371,15 @@ function GMPlannerView({ onLogout }) {
 
         {/* CALENDAR */}
         {panel === "calendar" && (
-          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 80px" }}>
+          <div style={{ flex:1, overflowY:"auto", padding:"16px 20px 80px" }}>
             <GoogleCalendarTab/>
           </div>
         )}
 
       </div>
     </div>
+  );
+}
   );
 }
 
@@ -6573,24 +6613,35 @@ function PropertyManagerView({ onLogout }) {
   const [tab, setTab] = useState("jobs");
   const [propSearch, setPropSearch] = useState("");
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const formatDay = (ds) => new Date(ds + "T12:00:00").toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
+
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
-      <div style={{ background:"#1a2030", borderBottom:"3px solid var(--leaf)", padding:"12px 16px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"#f0f4f8", overflow:"hidden" }}>
+
+      {/* Top bar */}
+      <div style={{ background:"#0A2540", borderBottom:"3px solid #16a34a", padding:"12px 24px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--lime)", letterSpacing:3, lineHeight:1 }}>Residential Services</div>
-          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{todayStr}</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#fff", letterSpacing:3, lineHeight:1 }}>Residential Services</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#86efac", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{formatDay(todayStr)}</div>
         </div>
-        <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
+        <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.3)", borderRadius:6, padding:"6px 14px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer", textTransform:"uppercase" }}>Sign Out</button>
       </div>
-      <div style={{ display:"flex", background:"var(--bark)", borderBottom:"2px solid var(--moss)" }}>
+
+      {/* Tab bar */}
+      <div style={{ display:"flex", background:"#fff", borderBottom:"2px solid #e2e8f0", flexShrink:0 }}>
         {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"var(--lime)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"var(--lime)":"var(--stone)", cursor:"pointer" }}>{t.label}</button>
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ flex:1, padding:"12px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"#16a34a":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"#15803d":"#64748b", cursor:"pointer", transition:"color 0.15s" }}>
+            {t.label}
+          </button>
         ))}
       </div>
-      <div style={{ flex:1, overflow:"auto", padding:"16px", paddingBottom:40 }}>
+
+      {/* Content */}
+      <div style={{ flex:1, overflow:"auto", padding:"20px 24px", paddingBottom:40 }}>
         {tab === "jobs" && (
-  <ManagerJobsView serviceTypes={["mowing","Mowing","edging","Fine Gardening","lawn_maintenance","mulching","seasonal_cleanup","seasonal_containers","spring_cleanup","weeding","irrigation_startup"]}/>
-)}
+          <ManagerJobsView serviceTypes={["mowing","Mowing","edging","Fine Gardening","lawn_maintenance","mulching","seasonal_cleanup","seasonal_containers","spring_cleanup","weeding","irrigation_startup"]}/>
+        )}
         {tab === "properties" && (
           <>
             <input
@@ -6598,12 +6649,16 @@ function PropertyManagerView({ onLogout }) {
               placeholder="Search name or address..."
               value={propSearch}
               onChange={e => setPropSearch(e.target.value)}
-              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", color:"#0A2540", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:14, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}
             />
             <PropertiesTab searchQuery={propSearch}/>
           </>
         )}
-        {tab === "calendar" && <div style={{ padding:"0 0 40px" }}><GoogleCalendarTab/></div>}
+        {tab === "calendar" && (
+          <div style={{ paddingBottom:40 }}>
+            <GoogleCalendarTab/>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -6614,24 +6669,35 @@ function ConstructionManagerView({ onLogout }) {
   const [tab, setTab] = useState("jobs");
   const [propSearch, setPropSearch] = useState("");
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const formatDay = (ds) => new Date(ds + "T12:00:00").toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" });
+
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
-      <div style={{ background:"#1a2030", borderBottom:`3px solid var(--warn)`, padding:"12px 16px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"#f0f4f8", overflow:"hidden" }}>
+
+      {/* Top bar */}
+      <div style={{ background:"#0A2540", borderBottom:"3px solid #d97706", padding:"12px 24px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--warn)", letterSpacing:3, lineHeight:1 }}>Construction Mgr</div>
-          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{todayStr}</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#fff", letterSpacing:3, lineHeight:1 }}>Construction Mgr</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#fcd34d", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{formatDay(todayStr)}</div>
         </div>
-        <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
+        <button onClick={onLogout} style={{ background:"none", border:"1px solid rgba(255,255,255,0.3)", borderRadius:6, padding:"6px 14px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#fff", cursor:"pointer", textTransform:"uppercase" }}>Sign Out</button>
       </div>
-      <div style={{ display:"flex", background:"var(--bark)", borderBottom:"2px solid var(--moss)" }}>
+
+      {/* Tab bar */}
+      <div style={{ display:"flex", background:"#fff", borderBottom:"2px solid #e2e8f0", flexShrink:0 }}>
         {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"var(--warn)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"var(--warn)":"var(--stone)", cursor:"pointer" }}>{t.label}</button>
+          <button key={t.key} onClick={() => setTab(t.key)}
+            style={{ flex:1, padding:"12px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"#d97706":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"#92400e":"#64748b", cursor:"pointer", transition:"color 0.15s" }}>
+            {t.label}
+          </button>
         ))}
       </div>
-      <div style={{ flex:1, overflow:"auto", padding:"16px", paddingBottom:40 }}>
+
+      {/* Content */}
+      <div style={{ flex:1, overflow:"auto", padding:"20px 24px", paddingBottom:40 }}>
         {tab === "jobs" && (
-  <ManagerJobsView serviceTypes={["construction","landscape_install","planting"]}/>
-)}
+          <ManagerJobsView serviceTypes={["construction","landscape_install","planting"]}/>
+        )}
         {tab === "properties" && (
           <>
             <input
@@ -6639,12 +6705,16 @@ function ConstructionManagerView({ onLogout }) {
               placeholder="Search name or address..."
               value={propSearch}
               onChange={e => setPropSearch(e.target.value)}
-              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid var(--moss)", background:"var(--bark)", color:"var(--cream)", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:12 }}
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", color:"#0A2540", fontFamily:"'Barlow',sans-serif", fontSize:14, outline:"none", marginBottom:14, boxShadow:"0 1px 3px rgba(0,0,0,0.05)" }}
             />
             <PropertiesTab searchQuery={propSearch}/>
           </>
         )}
-        {tab === "calendar" && <div style={{ padding:"0 0 40px" }}><GoogleCalendarTab/></div>}
+        {tab === "calendar" && (
+          <div style={{ paddingBottom:40 }}>
+            <GoogleCalendarTab/>
+          </div>
+        )}
       </div>
     </div>
   );
