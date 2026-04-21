@@ -5798,6 +5798,7 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 // -- GOOGLE CALENDAR TAB -------------------------------------------------------
 const GCAL_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "694192444632-h52s8hrb6nbaao5bu6gbg7j0pn270a4f.apps.googleusercontent.com";
 const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar";
+const COMPANY_CAL_ID = "c_6e2b515446ee0ccdca504ebedc56de782fa7ef28bb963b8c0e15883ed3904dbb@group.calendar.google.com";
 
 function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const [token, setToken] = useState(() => localStorage.getItem("gcal_token") || null);
