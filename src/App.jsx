@@ -5796,12 +5796,10 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 // -- LOGIN ---------------------------------------------------------------------
 
 // -- GOOGLE CALENDAR TAB -------------------------------------------------------
-const GCAL_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "694192444632-h52s8hrb6nbaao5bu6gbg7j0pn270a4f.apps.googleusercontent.com";
-const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar";
-const COMPANY_CAL_ID = "c_6e2b515446ee0ccdca504ebedc56de782fa7ef28bb963b8c0e15883ed3904dbb@group.calendar.google.com";
-
 function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
-  const [token, setToken] = useState(() => localStorage.getItem("gcal_token") || null);
+  const [userId, setUserId] = useState(null);
+  const [token, setToken] = useState(null);
+  const [calendars, setCalendars] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -5811,9 +5809,20 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const [creating, setCreating] = useState(false);
   const [newEvent, setNewEvent] = useState(prefillEvent || {
     title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
-    startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: COMPANY_CAL_ID,
+    startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: "primary",
   });
   const tokenClientRef = useRef(null);
+
+  // Get current Supabase user ID so token is stored per-user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserId(user.id);
+        const stored = localStorage.getItem(`gcal_token_${user.id}`);
+        if (stored) setToken(stored);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (window.google?.accounts) { initTokenClient(); return; }
@@ -5834,7 +5843,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
       scope: GCAL_SCOPE,
       callback: (resp) => {
         if (resp.error) { setError("Sign-in failed. Please try again."); return; }
-        localStorage.setItem("gcal_token", resp.access_token);
+        if (userId) localStorage.setItem(`gcal_token_${userId}`, resp.access_token);
         setToken(resp.access_token);
       },
     });
@@ -5843,42 +5852,47 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const signIn = () => {
     setError(null);
     if (tokenClientRef.current) tokenClientRef.current.requestAccessToken();
-    else setError("Google sign-in not ready yet. Please wait a moment and try again.");
+    else setError("Google sign-in not ready. Please wait a moment and try again.");
   };
 
   const signOut = () => {
     if (token) window.google?.accounts?.oauth2?.revoke(token);
-    localStorage.removeItem("gcal_token");
-    setToken(null); setEvents([]);
+    if (userId) localStorage.removeItem(`gcal_token_${userId}`);
+    setToken(null); setEvents([]); setCalendars([]);
   };
 
-  useEffect(() => { if (token) fetchEvents(); }, [token]); // eslint-disable-line
+  useEffect(() => { if (token) fetchAll(); }, [token]); // eslint-disable-line
 
-  const fetchEvents = async () => {
+  const fetchAll = async () => {
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Step 1 — get all calendars this user has access to
-      const calListRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", { headers });
-      if (calListRes.status === 401) { signOut(); return; }
-      const calListData = await calListRes.json();
-      const calendars = (calListData.items || []).filter(c => c.selected !== false);
+      // Fetch calendar list
+      const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", { headers });
+      if (calRes.status === 401) { signOut(); return; }
+      const calData = await calRes.json();
+      const calList = (calData.items || []).filter(c => c.selected !== false);
+      setCalendars(calList);
 
-      // Step 2 — fetch events from every calendar
+      // Update newEvent default calendar to primary
+      setNewEvent(prev => ({ ...prev, calendarId: prev.calendarId || "primary" }));
+
+      // Fetch events from all calendars
       const now = new Date();
       const start = new Date(now); start.setMonth(now.getMonth() - 1);
       const end = new Date(now); end.setMonth(now.getMonth() + 3);
       const params = `timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=250`;
 
       const allResults = await Promise.all(
-        calendars.map(async cal => {
+        calList.map(async cal => {
           try {
             const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`, { headers });
             if (!res.ok) return [];
             const data = await res.json();
             return (data.items || []).map(e => ({
               ...e,
+              _calendarId: cal.id,
               _calendarName: cal.summary,
               _calendarColor: cal.backgroundColor || "#2563eb",
             }));
@@ -5891,7 +5905,6 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
         const bDate = b.start?.dateTime || b.start?.date || "";
         return aDate.localeCompare(bDate);
       });
-
       setEvents(merged);
     } catch(e) { setError("Failed to load events."); }
     setLoading(false);
@@ -5910,10 +5923,11 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
         body: JSON.stringify(body),
       });
       if (res.status === 401) { signOut(); return; }
-      await fetchEvents();
+      if (!res.ok) { setError("Failed to create event. Please try again."); setCreating(false); return; }
+      await fetchAll();
       if (onCreated) { onCreated(); return; }
       setView("month");
-      setNewEvent({ title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }), startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: COMPANY_CAL_ID });
+      setNewEvent({ title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }), startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: "primary" });
     } catch(e) { setError("Failed to create event."); }
     setCreating(false);
   };
@@ -5927,7 +5941,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
   const getEventColor = (ev) => ev._calendarColor || "#2563eb";
 
-  const inputStyle = { width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", color:"#0A2540", fontFamily:"'Barlow',sans-serif", fontSize:15, outline:"none", marginBottom:12, boxSizing:"border-box" };
+  const inputStyle = { width:"100%", padding:"11px 14px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", color:"#0A2540", fontFamily:"'Barlow',sans-serif", fontSize:15, outline:"none", marginBottom:12, boxSizing:"border-box" };
   const labelStyle = { fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1.5, color:"#64748b", textTransform:"uppercase", marginBottom:5, display:"block" };
 
   // Month helpers
@@ -5948,7 +5962,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", textAlign:"center" }}>
       <div style={{ width:72, height:72, borderRadius:16, background:"#dbeafe", border:"2px solid #2563eb", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24, fontSize:32 }}>📅</div>
       <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:28, color:"#0A2540", letterSpacing:3, marginBottom:10 }}>Google Calendar</div>
-      <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:15, color:"#64748b", marginBottom:28, lineHeight:1.6, maxWidth:320 }}>Connect your Google Workspace account to view and create events directly in TotalFlo.</div>
+      <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:15, color:"#64748b", marginBottom:28, lineHeight:1.6, maxWidth:320 }}>Connect your Google Workspace account to view and create events.</div>
       {error && <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"12px 16px", marginBottom:16, fontSize:14, color:"#dc2626", width:"100%" }}>{error}</div>}
       <button onClick={signIn} style={{ padding:"14px 32px", background:"#1e40af", border:"none", borderRadius:10, fontFamily:"'Bebas Neue',sans-serif", fontSize:20, letterSpacing:3, color:"#fff", cursor:"pointer" }}>
         Connect Google Calendar
@@ -5960,7 +5974,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
     <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
 
       {/* Toolbar */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10, paddingBottom:16, borderBottom:"2px solid #e2e8f0" }}>
         <div style={{ display:"flex", gap:6 }}>
           {["month","week","day"].map(v => (
             <button key={v} onClick={() => setView(v)}
@@ -5969,52 +5983,62 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
             </button>
           ))}
         </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b" }}>All calendars shown</span>
-          <button onClick={fetchEvents} style={{ padding:"7px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", cursor:"pointer" }}>↻ Refresh</button>
-          <button onClick={() => setView("create")} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#1e40af", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, letterSpacing:0.5, color:"#fff", cursor:"pointer" }}>+ New Event</button>
-          <button onClick={signOut} style={{ padding:"7px 14px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#94a3b8", cursor:"pointer" }}>Disconnect</button>
+        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <button onClick={fetchAll} style={{ padding:"7px 14px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", cursor:"pointer" }}>↻ Refresh</button>
+          <button onClick={() => setView("create")} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#1e40af", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:"#fff", cursor:"pointer" }}>+ New Event</button>
+          <button onClick={signOut} style={{ padding:"7px 14px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#94a3b8", cursor:"pointer" }}>Disconnect</button>
         </div>
       </div>
 
+      {/* Calendar legend */}
+      {calendars.length > 0 && (
+        <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginBottom:14 }}>
+          {calendars.map(cal => (
+            <span key={cal.id} style={{ display:"flex", alignItems:"center", gap:6, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#475569" }}>
+              <span style={{ width:12, height:12, borderRadius:3, background:cal.backgroundColor||"#2563eb", display:"inline-block", flexShrink:0 }}/>
+              {cal.summary}
+            </span>
+          ))}
+        </div>
+      )}
+
       {error && <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"10px 14px", marginBottom:12, fontSize:14, color:"#dc2626" }}>{error}</div>}
-      {loading && <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>Loading...</div>}
+      {loading && <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>Loading calendars...</div>}
 
       {/* MONTH VIEW */}
       {!loading && view === "month" && (
         <div>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-            <button onClick={prevMonth} style={{ padding:"8px 18px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, color:"#475569", cursor:"pointer" }}>‹ Prev</button>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#0A2540", letterSpacing:2 }}>{monthName}</div>
-            <button onClick={nextMonth} style={{ padding:"8px 18px", borderRadius:8, border:"1px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, color:"#475569", cursor:"pointer" }}>Next ›</button>
+            <button onClick={prevMonth} style={{ padding:"8px 18px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, color:"#475569", cursor:"pointer" }}>‹ Prev</button>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:"#0A2540", letterSpacing:2 }}>{monthName}</div>
+            <button onClick={nextMonth} style={{ padding:"8px 18px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, color:"#475569", cursor:"pointer" }}>Next ›</button>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2, marginBottom:2 }}>
             {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
-              <div key={d} style={{ textAlign:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:"#2563eb", letterSpacing:1, padding:"6px 0", textTransform:"uppercase" }}>{d}</div>
+              <div key={d} style={{ textAlign:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:700, color:"#2563eb", letterSpacing:1, padding:"8px 0", textTransform:"uppercase" }}>{d}</div>
             ))}
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:2 }}>
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-              <div key={`empty-${i}`} style={{ minHeight:90, background:"#f8fafc", borderRadius:6, border:"1px solid #f1f5f9" }}/>
+              <div key={`empty-${i}`} style={{ minHeight:100, background:"#f8fafc", borderRadius:6, border:"1.5px solid #f1f5f9" }}/>
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const dateStr = `${currentMonth.year}-${String(currentMonth.month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
               const dayEvents = getEventsForDay(dateStr);
               const isToday = dateStr === todayStr;
-              const isSelected = dateStr === selectedDay.toLocaleDateString("en-CA", { timeZone:"America/New_York" });
               return (
                 <div key={day} onClick={() => { setSelectedDay(new Date(currentMonth.year, currentMonth.month, day)); setView("day"); }}
-                  style={{ minHeight:90, background:"#fff", border:`2px solid ${isToday?"#2563eb":isSelected?"#93c5fd":"#e2e8f0"}`, borderRadius:8, padding:"6px", cursor:"pointer", transition:"border-color 0.15s", boxShadow: isToday?"0 0 0 1px #2563eb":undefined }}>
-                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:isToday?"#2563eb":"#0A2540", lineHeight:1, marginBottom:4 }}>{day}</div>
+                  style={{ minHeight:100, background:"#fff", border:`1.5px solid ${isToday?"#2563eb":"#e2e8f0"}`, borderRadius:8, padding:"6px", cursor:"pointer", transition:"box-shadow 0.15s", boxShadow:isToday?"0 0 0 1px #2563eb inset":undefined }}>
+                  <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:isToday?"#fff":"#0A2540", lineHeight:1, marginBottom:4, width:28, height:28, borderRadius:"50%", background:isToday?"#2563eb":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>{day}</div>
                   {dayEvents.slice(0,3).map((ev, i) => (
                     <div key={ev.id||i} style={{ background:getEventColor(ev), borderRadius:4, padding:"2px 6px", marginBottom:2 }}>
                       <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", fontWeight:600 }}>
-                        {ev.summary || "(No title)"}
+                        {ev.start?.dateTime ? `${formatTime(ev.start.dateTime)} ` : ""}{ev.summary || "(No title)"}
                       </div>
                     </div>
                   ))}
-                  {dayEvents.length > 3 && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#2563eb", fontWeight:600 }}>+{dayEvents.length-3} more</div>}
+                  {dayEvents.length > 3 && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#2563eb", fontWeight:600, paddingLeft:2 }}>+{dayEvents.length-3} more</div>}
                 </div>
               );
             })}
@@ -6025,30 +6049,30 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
       {/* WEEK VIEW */}
       {!loading && view === "week" && (
         <div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:6 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4 }}>
             {getWeekDays().map((day, idx) => {
               const ds = day.toLocaleDateString("en-CA", { timeZone:"America/New_York" });
               const dayEvents = getEventsForDay(ds);
               const isToday = ds === todayStr;
               return (
                 <div key={idx} onClick={() => { setSelectedDay(day); setView("day"); }}
-                  style={{ background:"#fff", border:`2px solid ${isToday?"#2563eb":"#e2e8f0"}`, borderRadius:10, padding:"10px 8px", minHeight:140, cursor:"pointer", transition:"border-color 0.15s" }}>
+                  style={{ background:"#fff", border:`1.5px solid ${isToday?"#2563eb":"#e2e8f0"}`, borderRadius:10, padding:"10px 8px", minHeight:140, cursor:"pointer" }}>
                   <div style={{ textAlign:"center", marginBottom:8 }}>
-                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:"#64748b", textTransform:"uppercase", fontWeight:600 }}>
+                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1, color:"#64748b", textTransform:"uppercase", fontWeight:700 }}>
                       {day.toLocaleDateString("en-US", { weekday:"short" })}
                     </div>
-                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:isToday?"#2563eb":"#0A2540", lineHeight:1 }}>
+                    <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:isToday?"#fff":"#0A2540", lineHeight:1, width:36, height:36, borderRadius:"50%", background:isToday?"#2563eb":"transparent", display:"flex", alignItems:"center", justifyContent:"center", margin:"4px auto 0" }}>
                       {day.getDate()}
                     </div>
                   </div>
-                  {dayEvents.slice(0,3).map((ev, i) => (
-                    <div key={ev.id||i} style={{ background:getEventColor(ev), borderRadius:5, padding:"3px 7px", marginBottom:4 }}>
+                  {dayEvents.slice(0,4).map((ev, i) => (
+                    <div key={ev.id||i} style={{ background:getEventColor(ev), borderRadius:5, padding:"3px 7px", marginBottom:3 }}>
                       <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>
                         {ev.summary || "(No title)"}
                       </div>
                     </div>
                   ))}
-                  {dayEvents.length > 3 && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#2563eb", fontWeight:600 }}>+{dayEvents.length-3} more</div>}
+                  {dayEvents.length > 4 && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#2563eb", fontWeight:600 }}>+{dayEvents.length-4} more</div>}
                 </div>
               );
             })}
@@ -6059,36 +6083,36 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
       {/* DAY VIEW */}
       {!loading && view === "day" && (
         <div>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-            <button onClick={() => setView("month")} style={{ background:"none", border:"none", color:"#2563eb", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, padding:0 }}>← Month</button>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16, flexWrap:"wrap" }}>
+            <button onClick={() => setView("month")} style={{ background:"none", border:"none", color:"#2563eb", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:700, padding:0 }}>← Month</button>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#0A2540", letterSpacing:2 }}>
               {selectedDay.toLocaleDateString("en-US", { weekday:"long", month:"long", day:"numeric" })}
             </div>
             <button onClick={() => { const d = new Date(selectedDay); d.setDate(d.getDate()-1); setSelectedDay(d); }}
-              style={{ padding:"6px 14px", borderRadius:8, border:"2px solid #e2e8f0", background:"#fff", color:"#0A2540", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600 }}>←</button>
+              style={{ padding:"6px 16px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", color:"#0A2540", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600 }}>←</button>
             <button onClick={() => { const d = new Date(selectedDay); d.setDate(d.getDate()+1); setSelectedDay(d); }}
-              style={{ padding:"6px 14px", borderRadius:8, border:"2px solid #e2e8f0", background:"#fff", color:"#0A2540", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600 }}>→</button>
+              style={{ padding:"6px 16px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", color:"#0A2540", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600 }}>→</button>
           </div>
           {getEventsForDay(selectedDay.toLocaleDateString("en-CA", { timeZone:"America/New_York" })).length === 0 ? (
-            <div style={{ textAlign:"center", padding:"60px 0", background:"#fff", border:"2px solid #e2e8f0", borderRadius:12 }}>
+            <div style={{ textAlign:"center", padding:"60px 0", background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:12 }}>
               <div style={{ fontSize:40, marginBottom:12 }}>📅</div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase" }}>No events today</div>
-              <button onClick={() => setView("create")} style={{ marginTop:16, padding:"8px 20px", borderRadius:8, border:"none", background:"#1e40af", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, color:"#fff", cursor:"pointer" }}>+ Add Event</button>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase", marginBottom:16 }}>No events this day</div>
+              <button onClick={() => setView("create")} style={{ padding:"10px 24px", borderRadius:8, border:"none", background:"#1e40af", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, color:"#fff", cursor:"pointer" }}>+ Add Event</button>
             </div>
           ) : (
             getEventsForDay(selectedDay.toLocaleDateString("en-CA", { timeZone:"America/New_York" })).map((ev, i) => (
-              <div key={ev.id||i} style={{ background:"#fff", border:`2px solid ${getEventColor(ev)}`, borderLeft:`6px solid ${getEventColor(ev)}`, borderRadius:10, padding:"16px 18px", marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:18, color:"#0A2540", flex:1 }}>{ev.summary || "(No title)"}</div>
-                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, padding:"3px 10px", borderRadius:4, background:getEventColor(ev), color:"#fff", fontWeight:600, textTransform:"uppercase" }}>
-                    {ev._source === "company" ? "J&J" : "Personal"}
+              <div key={ev.id||i} style={{ background:"#fff", borderLeft:`5px solid ${getEventColor(ev)}`, borderTop:"1.5px solid #e2e8f0", borderRight:"1.5px solid #e2e8f0", borderBottom:"1.5px solid #e2e8f0", borderRadius:10, padding:"16px 18px", marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
+                <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:6 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:18, color:"#0A2540" }}>{ev.summary || "(No title)"}</div>
+                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:"3px 10px", borderRadius:20, background:getEventColor(ev), color:"#fff", fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
+                    {ev._calendarName || "Calendar"}
                   </span>
                 </div>
                 <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:15, color:"#2563eb", fontWeight:600, marginBottom:ev.description||ev.location?8:0 }}>
-                  {ev.start?.date ? "All day" : `${formatTime(ev.start?.dateTime)} → ${formatTime(ev.end?.dateTime)}`}
+                  🕐 {ev.start?.date ? "All day" : `${formatTime(ev.start?.dateTime)} – ${formatTime(ev.end?.dateTime)}`}
                 </div>
                 {ev.location && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, color:"#475569", marginBottom:4 }}>📍 {ev.location}</div>}
-                {ev.description && <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#475569", lineHeight:1.6 }}>{ev.description}</div>}
+                {ev.description && <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#475569", lineHeight:1.6, marginTop:6, whiteSpace:"pre-line" }}>{ev.description}</div>}
               </div>
             ))
           )}
@@ -6097,24 +6121,25 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
 
       {/* CREATE EVENT */}
       {view === "create" && (
-        <div style={{ background:"#fff", border:"2px solid #e2e8f0", borderRadius:12, padding:"24px", maxWidth:560 }}>
+        <div style={{ background:"#fff", border:"1.5px solid #e2e8f0", borderRadius:12, padding:"24px", maxWidth:560 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
-            <button onClick={() => { if(onCreated) onCreated(); else setView("month"); }} style={{ background:"none", border:"none", color:"#2563eb", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, padding:0 }}>← Back</button>
+            <button onClick={() => { if(onCreated) onCreated(); else setView("month"); }} style={{ background:"none", border:"none", color:"#2563eb", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:700, padding:0 }}>← Back</button>
             <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#0A2540", letterSpacing:2 }}>New Event</div>
           </div>
 
-          <label style={labelStyle}>Add to Calendar</label>
-          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-            {[
-              { id: COMPANY_CAL_ID, label: "J&J Operations", color: "#16a34a" },
-              { id: "primary", label: "My Calendar", color: "#2563eb" },
-            ].map(cal => (
-              <button key={cal.id} onClick={() => setNewEvent(p => ({...p, calendarId: cal.id}))}
-                style={{ flex:1, padding:"10px", borderRadius:8, border:`2px solid ${newEvent.calendarId===cal.id?cal.color:"#e2e8f0"}`, background:newEvent.calendarId===cal.id?`${cal.color}15`:"#f8fafc", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:600, color:newEvent.calendarId===cal.id?cal.color:"#64748b", cursor:"pointer", transition:"all 0.15s" }}>
-                {cal.label}
-              </button>
-            ))}
-          </div>
+          <label style={labelStyle}>Calendar</label>
+          {calendars.length > 0 ? (
+            <select
+              value={newEvent.calendarId}
+              onChange={e => setNewEvent(p => ({...p, calendarId: e.target.value}))}
+              style={{ ...inputStyle, cursor:"pointer" }}>
+              {calendars.map(cal => (
+                <option key={cal.id} value={cal.id}>{cal.summary}</option>
+              ))}
+            </select>
+          ) : (
+            <div style={{ ...inputStyle, color:"#94a3b8", fontSize:13 }}>Loading calendars...</div>
+          )}
 
           <label style={labelStyle}>Event Title</label>
           <input style={inputStyle} placeholder="e.g. Site visit — 14 Oak St" value={newEvent.title} onChange={e => setNewEvent(p => ({...p, title: e.target.value}))}/>
