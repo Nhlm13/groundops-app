@@ -5983,6 +5983,16 @@ const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/cale
       const body = newEvent.allDay
         ? { summary: newEvent.title, description: newEvent.description, start: { date: newEvent.date }, end: { date: newEvent.date } }
         : { summary: newEvent.title, description: newEvent.description, start: { dateTime: `${newEvent.date}T${newEvent.startTime}:00`, timeZone: "America/New_York" }, end: { dateTime: `${newEvent.date}T${newEvent.endTime}:00`, timeZone: "America/New_York" } };
+
+      if (newEvent.recurrence && newEvent.recurrence !== "none" && newEvent.recurrenceEnd) {
+        const untilDate = newEvent.recurrenceEnd.replace(/-/g, "") + "T235959Z";
+        const rruleMap = {
+          "DAILY": `RRULE:FREQ=DAILY;UNTIL=${untilDate}`,
+          "WEEKLY": `RRULE:FREQ=WEEKLY;UNTIL=${untilDate}`,
+          "WEEKDAYS": `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=${untilDate}`,
+        };
+        body.recurrence = [rruleMap[newEvent.recurrence]];
+      }
       const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -5993,7 +6003,7 @@ const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/cale
       await fetchAll();
       if (onCreated) { onCreated(); return; }
       setView("month");
-      setNewEvent({ title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }), startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: "primary" });
+setNewEvent({ title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }), startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: "primary", recurrence: "none", recurrenceEnd: "" });
     } catch(e) { setError("Failed to create event."); }
     setCreating(false);
   };
@@ -6231,6 +6241,23 @@ const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/cale
 
           <label style={labelStyle}>Description (optional)</label>
           <textarea style={{...inputStyle, height:90, resize:"vertical"}} placeholder="Notes, address, instructions..." value={newEvent.description} onChange={e => setNewEvent(p => ({...p, description: e.target.value}))}/>
+
+          <label style={labelStyle}>Repeat</label>
+          <select value={newEvent.recurrence || "none"} onChange={e => setNewEvent(p => ({...p, recurrence: e.target.value}))}
+            style={{ ...inputStyle, cursor:"pointer" }}>
+            <option value="none">Does not repeat</option>
+            <option value="DAILY">Every day</option>
+            <option value="WEEKLY">Every week</option>
+            <option value="WEEKDAYS">Every weekday (Mon–Fri)</option>
+          </select>
+
+          {newEvent.recurrence && newEvent.recurrence !== "none" && (
+            <div>
+              <label style={labelStyle}>Repeat until</label>
+              <input type="date" value={newEvent.recurrenceEnd || ""} onChange={e => setNewEvent(p => ({...p, recurrenceEnd: e.target.value}))}
+                style={{ ...inputStyle }}/>
+            </div>
+          )}
 
           {error && <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"10px 14px", marginBottom:14, fontSize:14, color:"#dc2626" }}>{error}</div>}
           <button onClick={createEvent} disabled={!newEvent.title || creating}
