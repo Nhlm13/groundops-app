@@ -6624,6 +6624,10 @@ function LeadsAssignedView({ assignedTo }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [schedulingLead, setSchedulingLead] = useState(null);
+  const [apptForm, setApptForm] = useState({ date:"", startTime:"09:00", endTime:"10:00", note:"" });
+  const [apptSaving, setApptSaving] = useState(false);
+  const [apptDone, setApptDone] = useState(false);
+  const [apptError, setApptError] = useState("");
 
   const STATUSES = {
     "created ticket": { bg:"#f0f4ff", color:"#4472CA" },
@@ -6704,38 +6708,85 @@ function LeadsAssignedView({ assignedTo }) {
       })}
 
       {schedulingLead && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:200, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
-          <div style={{ background:"#f0f4f8", borderRadius:"16px 16px 0 0", padding:"20px 20px 40px", width:"100%", maxWidth:480, maxHeight:"90dvh", overflowY:"auto" }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
+          <div style={{ background:"#fff", borderRadius:16, padding:"24px", width:"100%", maxWidth:460, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:20 }}>
               <div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#0A2540", letterSpacing:2 }}>Schedule Appointment</div>
-                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b", marginTop:2 }}>{schedulingLead.name}</div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#0A2540", letterSpacing:2, lineHeight:1 }}>Schedule Appointment</div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", marginTop:4 }}>{schedulingLead.name} · {schedulingLead.address}</div>
               </div>
-              <button onClick={() => setSchedulingLead(null)} style={{ background:"none", border:"none", fontSize:20, color:"#94a3b8", cursor:"pointer" }}>×</button>
+              <button onClick={() => { setSchedulingLead(null); setApptForm({ date:"", startTime:"09:00", endTime:"10:00", note:"" }); setApptSaving(false); setApptDone(false); }} style={{ background:"none", border:"none", fontSize:22, color:"#94a3b8", cursor:"pointer", lineHeight:1 }}>×</button>
             </div>
-            <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, padding:"14px 16px", marginBottom:16 }}>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"#0A2540" }}>{schedulingLead.name}</div>
-              {schedulingLead.address && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#2563eb", marginTop:3 }}>📍 {schedulingLead.address}</div>}
-              {schedulingLead.task && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b", marginTop:2 }}>{schedulingLead.task}</div>}
-            </div>
-            <GoogleCalendarTab
-              prefillEvent={{
-                title: `Site Visit — ${schedulingLead.name}`,
-                date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
-                startTime: "09:00",
-                endTime: "10:00",
-                description: `Lead site visit\nAddress: ${schedulingLead.address || ""}\nPhone: ${schedulingLead.phone || ""}\nService: ${schedulingLead.task || ""}\nNotes: ${schedulingLead.notes || ""}`,
-                allDay: false,
-                calendarId: "primary",
-              }}
-              onCreated={() => setSchedulingLead(null)}
-            />
+
+            {apptDone ? (
+              <div style={{ textAlign:"center", padding:"30px 0" }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#16a34a", letterSpacing:2, marginBottom:8 }}>Appointment Created</div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", marginBottom:20 }}>Added to your Google Calendar</div>
+                <button onClick={() => { setSchedulingLead(null); setApptForm({ date:"", startTime:"09:00", endTime:"10:00", note:"" }); setApptSaving(false); setApptDone(false); }}
+                  style={{ padding:"10px 24px", background:"#1e40af", border:"none", borderRadius:8, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"#fff", cursor:"pointer" }}>
+                  Done
+                </button>
+              </div>
+            ) : (
+              <>
+                <div style={{ marginBottom:12 }}>
+                  <label style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1.5, color:"#94a3b8", textTransform:"uppercase", display:"block", marginBottom:4 }}>Date</label>
+                  <input type="date" value={apptForm.date} onChange={e => setApptForm(p => ({...p, date: e.target.value}))}
+                    style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#0A2540", outline:"none", boxSizing:"border-box" }}/>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+                  <div>
+                    <label style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1.5, color:"#94a3b8", textTransform:"uppercase", display:"block", marginBottom:4 }}>Start time</label>
+                    <input type="time" value={apptForm.startTime} onChange={e => setApptForm(p => ({...p, startTime: e.target.value}))}
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#0A2540", outline:"none", boxSizing:"border-box" }}/>
+                  </div>
+                  <div>
+                    <label style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1.5, color:"#94a3b8", textTransform:"uppercase", display:"block", marginBottom:4 }}>End time</label>
+                    <input type="time" value={apptForm.endTime} onChange={e => setApptForm(p => ({...p, endTime: e.target.value}))}
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#0A2540", outline:"none", boxSizing:"border-box" }}/>
+                  </div>
+                </div>
+                <div style={{ marginBottom:20 }}>
+                  <label style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1.5, color:"#94a3b8", textTransform:"uppercase", display:"block", marginBottom:4 }}>Note (optional)</label>
+                  <textarea value={apptForm.note} onChange={e => setApptForm(p => ({...p, note: e.target.value}))}
+                    placeholder="Any additional details..."
+                    style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:"1px solid #e2e8f0", fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#0A2540", outline:"none", resize:"vertical", height:80, boxSizing:"border-box" }}/>
+                </div>
+                {apptError && <div style={{ background:"#fef2f2", border:"1px solid #fecaca", borderRadius:8, padding:"10px 14px", marginBottom:12, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#dc2626" }}>{apptError}</div>}
+                <button
+                  disabled={!apptForm.date || apptSaving}
+                  onClick={async () => {
+                    setApptSaving(true);
+                    setApptError("");
+                    try {
+                      const token = localStorage.getItem("gcal_token");
+                      if (!token) { setApptError("Please connect your Google Calendar first from the Calendar tab."); setApptSaving(false); return; }
+                      const body = {
+                        summary: `Site Visit — ${schedulingLead.name}`,
+                        description: `Address: ${schedulingLead.address || ""}\nPhone: ${schedulingLead.phone || ""}\nService: ${schedulingLead.task || ""}${apptForm.note ? "\nNote: " + apptForm.note : ""}`,
+                        start: { dateTime: `${apptForm.date}T${apptForm.startTime}:00`, timeZone: "America/New_York" },
+                        end:   { dateTime: `${apptForm.date}T${apptForm.endTime}:00`,   timeZone: "America/New_York" },
+                      };
+                      const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                      });
+                      if (res.status === 401) { setApptError("Google session expired. Please reconnect from the Calendar tab."); setApptSaving(false); return; }
+                      if (!res.ok) { setApptError("Failed to create event. Please try again."); setApptSaving(false); return; }
+                      setApptDone(true);
+                    } catch(e) { setApptError("Something went wrong. Please try again."); }
+                    setApptSaving(false);
+                  }}
+                  style={{ width:"100%", padding:"13px", background:!apptForm.date||apptSaving?"#94a3b8":"#1e40af", border:"none", borderRadius:10, fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3, color:"#fff", cursor:!apptForm.date||apptSaving?"not-allowed":"pointer", transition:"background 0.15s" }}>
+                  {apptSaving ? "Creating..." : "Create Appointment"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
 
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
