@@ -5808,7 +5808,7 @@ const GCAL_COLOR_MAP = {
 };
 
 function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
-  const [userId, setUserId] = useState(null);
+const [userId, setUserId] = useState(null); // eslint-disable-line no-unused-vars
   const [token, setToken] = useState(null);
   const [calendars, setCalendars] = useState([]);
   const [events, setEvents] = useState([]);
