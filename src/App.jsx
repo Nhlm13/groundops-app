@@ -4285,12 +4285,13 @@ function OfficeView({ onLogout }) {
   });
 
   const STATUSES = [
-    { key: "",               label: "New",            color: "#8a9bb0", bg: "rgba(138,155,176,0.15)" },
-    { key: "created ticket", label: "Ticket Created", color: "#d4bc4a", bg: "rgba(212,188,74,0.12)"  },
-    { key: "visit planned",  label: "Visit Planned",  color: "#9b59b6", bg: "rgba(155,89,182,0.12)"  },
-    { key: "estimate sent",  label: "Estimate Sent",  color: "#4472CA", bg: "rgba(68,114,202,0.12)"  },
-    { key: "schedule",       label: "Scheduled",      color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
-    { key: "completed",      label: "Completed",      color: "#0e7490", bg: "rgba(14,116,144,0.12)"  },
+    { key: "",                   label: "New",               color: "#8a9bb0", bg: "rgba(138,155,176,0.15)" },
+    { key: "created ticket",     label: "Ticket Created",    color: "#d4bc4a", bg: "rgba(212,188,74,0.12)"  },
+    { key: "visit planned",      label: "Visit Planned",     color: "#9b59b6", bg: "rgba(155,89,182,0.12)"  },
+    { key: "estimate sent",      label: "Estimate Sent",     color: "#4472CA", bg: "rgba(68,114,202,0.12)"  },
+    { key: "estimate accepted",  label: "Estimate Accepted", color: "#f97316", bg: "rgba(249,115,22,0.12)"  },
+    { key: "schedule",           label: "Scheduled",         color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
+    { key: "completed",          label: "Completed",         color: "#0e7490", bg: "rgba(14,116,144,0.12)"  },
   ];
 
   const TRUCK_COLORS = ["#4472CA","#22a86e","#d4bc4a","#e05540","#9b59b6","#5E7CE2","#0A369D","#92B4F4"];
@@ -4378,17 +4379,50 @@ function OfficeView({ onLogout }) {
   const convertToProperty = async () => {
     if (!selected) return;
     setConverting(true);
-    const { data: clientData, error: clientError } = await supabase.from("clients").insert({
-      company_id: COMPANY_ID, name: selected.name,
-      email: selected.billing_email || null, phone: selected.phone || null,
-    }).select().single();
-    if (clientError) { alert("Error creating client record. Please try again."); setConverting(false); return; }
-    const { error: propError } = await supabase.from("properties").insert({
-      company_id: COMPANY_ID, client_id: clientData.id, address: selected.address,
-      service_notes: selected.notes || null, active: true, property_type: "residential", base_service_price: 0,
-    });
-    if (!propError) { await updateStatus(selected.id, "schedule"); alert(`${selected.name} has been added as a property!`); }
-    else { alert("Error creating property. Client was created but property failed."); }
+    try {
+      // Check if client already exists to avoid duplicates
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("company_id", COMPANY_ID)
+        .ilike("name", selected.name.trim())
+        .maybeSingle();
+
+      let clientId = existing?.id;
+
+      if (!clientId) {
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .insert({
+            company_id: COMPANY_ID,
+            name: selected.name.trim(),
+            phone: selected.phone || null,
+          })
+          .select()
+          .single();
+        if (clientError) throw new Error("client");
+        clientId = clientData.id;
+      }
+
+      const { error: propError } = await supabase.from("properties").insert({
+        company_id: COMPANY_ID,
+        client_id: clientId,
+        address: selected.address,
+        service_notes: selected.notes || null,
+        active: true,
+        property_type: "residential",
+        base_service_price: 0,
+      });
+
+      if (propError) throw new Error("property");
+
+      await updateStatus(selected.id, "schedule");
+      alert(`✓ ${selected.name} has been added as a property!`);
+    } catch(e) {
+      if (e.message === "client") alert("Error creating client record. Please check the clients table permissions.");
+      else if (e.message === "property") alert("Client created but property failed. Please try again.");
+      else alert("Something went wrong. Please try again.");
+    }
     setConverting(false);
   };
 
@@ -4813,12 +4847,12 @@ function OfficeView({ onLogout }) {
                 <label style={labelStyle}>Notes</label>
                 <textarea style={{ ...inputStyle, resize: "none", height: 100 }} value={selected.notes || ""} onChange={e => setSelected(s => ({ ...s, notes: e.target.value }))}/>
               </div>
-              {selected.status === "schedule" && (
-                <button disabled={converting} onClick={convertToProperty}
-                  style={{ width: "100%", padding: "14px", background: converting ? "#92B4F4" : "#22a86e", border: "none", borderRadius: 10, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: converting ? "not-allowed" : "pointer", marginBottom: 8 }}>
-                  {converting ? "Converting..." : "✓ Convert to Property"}
-                </button>
-              )}
+              {selected?.status === "estimate accepted" && (
+                  <button disabled={converting} onClick={convertToProperty}
+                    style={{ width:"100%", padding:"16px", background:converting?"#888":"#22a86e", border:"none", borderRadius:10, fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3, color:"#fff", cursor:converting?"not-allowed":"pointer", marginBottom:8 }}>
+                    {converting ? "Converting..." : "✓ Convert to Property"}
+                  </button>
+                )}
               <div style={{ position: "sticky", bottom: 0, background: "#1e2d4a", borderTop: "1px solid rgba(68,114,202,0.2)", padding: "12px 16px", display: "flex", gap: 8, marginTop: "auto" }}>
                 <button onClick={() => deleteRequest(selected.id)} style={{ padding: "12px 16px", background: "none", border: "1px solid #e0554044", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 14, letterSpacing: 1, color: "#e05540", cursor: "pointer" }}>Delete</button>
                 <button disabled={saving} onClick={saveEdit} style={{ flex: 1, padding: "12px", background: saving ? "#92B4F4" : "#4472CA", border: "none", borderRadius: 8, fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, letterSpacing: 2, color: "#fff", cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Saving..." : "Save Changes"}</button>
