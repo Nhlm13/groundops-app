@@ -6632,35 +6632,44 @@ function LeadsAssignedView({ assignedTo }) {
     "completed":      { bg:"#dcfce7", color:"#166534" },
   };
 
+  const fetchLeads = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("company_id", COMPANY_ID)
+      .eq("assigned_to", assignedTo)
+      .order("created_at", { ascending: false });
+    setLeads(data || []);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("requests")
-        .select("*")
-        .eq("company_id", COMPANY_ID)
-        .eq("assigned_to", assignedTo)
-        .order("created_at", { ascending: false });
-      setLeads(data || []);
-      setLoading(false);
-    };
-    fetch();
-  }, [assignedTo]);
+    fetchLeads();
+  }, [assignedTo]); // eslint-disable-line
 
   if (loading) return (
     <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>Loading...</div>
   );
 
   if (leads.length === 0) return (
-    <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase", lineHeight:1.8 }}>
-      No leads assigned to you yet
+    <div>
+      <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
+        <button onClick={fetchLeads} style={{ background:"none", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b", cursor:"pointer" }}>↻ Refresh</button>
+      </div>
+      <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase", lineHeight:1.8 }}>
+        No leads assigned to you yet
+      </div>
     </div>
   );
 
   return (
     <div>
-      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginBottom:14 }}>
-        {leads.length} lead{leads.length !== 1 ? "s" : ""} assigned to you
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase" }}>
+          {leads.length} lead{leads.length !== 1 ? "s" : ""} assigned to you
+        </div>
+        <button onClick={fetchLeads} style={{ background:"none", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b", cursor:"pointer" }}>↻ Refresh</button>
       </div>
       {leads.map(r => {
         const st = STATUSES[r.status] || { bg:"#f8fafc", color:"#64748b" };
