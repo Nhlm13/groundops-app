@@ -4927,13 +4927,47 @@ function OfficeView({ onLogout }) {
                           {r.milestone && <div style={{ fontSize: 11, color: "#4472CA", fontStyle: "italic", marginTop: 2 }}>🏁 {r.milestone}</div>}
                           {r.notes && <div style={{ fontSize: 11, color: "#aaa", fontStyle: "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.notes}</div>}
                           <div style={{ display: "flex", gap: 5, marginTop: 8, flexWrap: "wrap" }}>
-                            {STATUSES.filter(s => s.key !== r.status).map(s => (
-                              <button key={s.key} onClick={e => { e.stopPropagation(); updateStatus(r.id, s.key); }}
-                                style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${s.color}44`, background: s.bg, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: s.color, cursor: "pointer", letterSpacing: 0.5 }}>
-                                → {s.label}
-                              </button>
-                            ))}
-                          </div>
+  {STATUSES.filter(s => s.key !== r.status).map(s => (
+    <button key={s.key} onClick={e => { e.stopPropagation(); updateStatus(r.id, s.key); }}
+      style={{ padding: "3px 10px", borderRadius: 6, border: `1px solid ${s.color}44`, background: s.bg, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: s.color, cursor: "pointer", letterSpacing: 0.5 }}>
+      → {s.label}
+    </button>
+  ))}
+</div>
+<div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, paddingTop: 8, borderTop: "1px solid #e8eef8" }} onClick={e => e.stopPropagation()}>
+  <span style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: "#888", letterSpacing: 0.5 }}>Assign:</span>
+  {[
+    { value: "", label: "Unassigned" },
+    { value: "Tom", label: "Tom" },
+    { value: "Evan", label: "Evan" },
+  ].map(opt => (
+    <button key={opt.value} onClick={async e => {
+      e.stopPropagation();
+      await supabase.from("requests").update({ assigned_to: opt.value || null }).eq("id", r.id);
+      setRequests(prev => prev.map(req => req.id === r.id ? { ...req, assigned_to: opt.value || null } : req));
+    }}
+      style={{ padding: "3px 10px", borderRadius: 6, border: `1.5px solid ${r.assigned_to === opt.value || (!r.assigned_to && !opt.value) ? "#4472CA" : "#dde5f5"}`, background: r.assigned_to === opt.value || (!r.assigned_to && !opt.value) ? "rgba(68,114,202,0.12)" : "#f8fafc", fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: r.assigned_to === opt.value || (!r.assigned_to && !opt.value) ? "#4472CA" : "#888", cursor: "pointer", fontWeight: 600 }}>
+      {opt.label}
+    </button>
+  ))}
+  {r.assigned_to && (
+    <input
+      defaultValue={r.assigned_note || ""}
+      placeholder="Add a note..."
+      onClick={e => e.stopPropagation()}
+      onBlur={async e => {
+        await supabase.from("requests").update({ assigned_note: e.target.value }).eq("id", r.id);
+        setRequests(prev => prev.map(req => req.id === r.id ? { ...req, assigned_note: e.target.value } : req));
+      }}
+      style={{ flex: 1, padding: "3px 8px", borderRadius: 6, border: "1px solid #dde5f5", fontFamily: "'Barlow',sans-serif", fontSize: 11, color: "#444", outline: "none", minWidth: 0 }}
+    />
+  )}
+</div>
+{r.assigned_to && (
+  <div style={{ marginTop: 4, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 11, color: "#4472CA", letterSpacing: 0.5 }}>
+    → Assigned to <strong>{r.assigned_to}</strong>{r.assigned_note ? ` — ${r.assigned_note}` : ""}
+  </div>
+)}
                         </div>
                       ))}
                     </div>
@@ -6585,6 +6619,73 @@ function ManagerJobsView({ serviceTypes }) {
   );
 }
 
+// -- LEADS ASSIGNED VIEW -------------------------------------------------------
+function LeadsAssignedView({ assignedTo }) {
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const STATUSES = {
+    "created ticket": { bg:"#f0f4ff", color:"#4472CA" },
+    "visit planned":  { bg:"#fef9c3", color:"#854d0e" },
+    "estimate sent":  { bg:"#f0fdf4", color:"#166534" },
+    "schedule":       { bg:"#f0f4ff", color:"#4472CA" },
+    "completed":      { bg:"#dcfce7", color:"#166534" },
+  };
+
+  useEffect(() => {
+    const fetch = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("company_id", COMPANY_ID)
+        .eq("assigned_to", assignedTo)
+        .order("created_at", { ascending: false });
+      setLeads(data || []);
+      setLoading(false);
+    };
+    fetch();
+  }, [assignedTo]);
+
+  if (loading) return (
+    <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>Loading...</div>
+  );
+
+  if (leads.length === 0) return (
+    <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase", lineHeight:1.8 }}>
+      No leads assigned to you yet
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#94a3b8", letterSpacing:1, textTransform:"uppercase", marginBottom:14 }}>
+        {leads.length} lead{leads.length !== 1 ? "s" : ""} assigned to you
+      </div>
+      {leads.map(r => {
+        const st = STATUSES[r.status] || { bg:"#f8fafc", color:"#64748b" };
+        return (
+          <div key={r.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:`4px solid ${st.color}`, borderRadius:10, padding:"14px 16px", marginBottom:8, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:6 }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"#0A2540" }}>{r.name}</div>
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:"3px 9px", borderRadius:4, background:st.bg, color:st.color, fontWeight:600, flexShrink:0, textTransform:"uppercase" }}>{r.status || "New"}</span>
+            </div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#2563eb", marginBottom:4 }}>{r.task}</div>
+            {r.address && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b", marginBottom:3 }}>📍 {r.address}</div>}
+            {r.phone && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#16a34a", marginBottom:3 }}>📞 {r.phone}</div>}
+            {r.assigned_note && (
+              <div style={{ marginTop:8, padding:"8px 10px", background:"#f0f4ff", border:"1px solid #c7d7f9", borderRadius:6, fontFamily:"'Barlow',sans-serif", fontSize:12, color:"#1e40af", lineHeight:1.5 }}>
+                💬 {r.assigned_note}
+              </div>
+            )}
+            {r.notes && <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:11, color:"#94a3b8", marginTop:5, fontStyle:"italic" }}>{r.notes}</div>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
 function PropertyManagerView({ onLogout }) {
@@ -6607,7 +6708,7 @@ function PropertyManagerView({ onLogout }) {
 
       {/* Tab bar */}
       <div style={{ display:"flex", background:"#fff", borderBottom:"2px solid #e2e8f0", flexShrink:0 }}>
-        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
+        {[{ key:"jobs", label:"My Jobs" }, { key:"leads", label:"Leads" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ flex:1, padding:"12px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"#16a34a":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"#15803d":"#64748b", cursor:"pointer", transition:"color 0.15s" }}>
             {t.label}
@@ -6663,7 +6764,7 @@ function ConstructionManagerView({ onLogout }) {
 
       {/* Tab bar */}
       <div style={{ display:"flex", background:"#fff", borderBottom:"2px solid #e2e8f0", flexShrink:0 }}>
-        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
+        {[{ key:"jobs", label:"My Jobs" }, { key:"leads", label:"Leads" }, { key:"properties", label:"Properties" }, { key:"calendar", label:"📅 Calendar" }].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
             style={{ flex:1, padding:"12px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"#d97706":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"#92400e":"#64748b", cursor:"pointer", transition:"color 0.15s" }}>
             {t.label}
@@ -6676,6 +6777,7 @@ function ConstructionManagerView({ onLogout }) {
         {tab === "jobs" && (
           <ManagerJobsView serviceTypes={["construction","landscape_install","planting"]}/>
         )}
+        {tab === "leads" && <LeadsAssignedView assignedTo="Evan"/>}
         {tab === "properties" && (
           <>
             <input
