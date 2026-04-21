@@ -6634,13 +6634,18 @@ function LeadsAssignedView({ assignedTo }) {
 
   const fetchLeads = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("requests")
-      .select("*")
-      .eq("company_id", COMPANY_ID)
-      .eq("assigned_to", assignedTo)
-      .order("created_at", { ascending: false });
-    setLeads(data || []);
+    try {
+      const { data, error } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("company_id", COMPANY_ID)
+        .eq("assigned_to", assignedTo)
+        .order("created_at", { ascending: false });
+      if (error) console.error("LeadsAssignedView error:", error);
+      setLeads(data || []);
+    } catch(e) {
+      console.error("LeadsAssignedView exception:", e);
+    }
     setLoading(false);
   };
 
