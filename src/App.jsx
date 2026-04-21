@@ -5861,22 +5861,40 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
       client_id: GCAL_CLIENT_ID,
       scope: GCAL_SCOPE,
       callback: (resp) => {
-        if (resp.error) { setError("Sign-in failed. Please try again."); return; }
+        if (resp.error) { return; }
         const expiry = Date.now() + (resp.expires_in || 3600) * 1000;
         if (userId) {
           localStorage.setItem(`gcal_token_${userId}`, resp.access_token);
           localStorage.setItem(`gcal_token_expiry_${userId}`, expiry.toString());
+          localStorage.setItem(`gcal_authorized_${userId}`, "true");
         }
         setToken(resp.access_token);
       },
     });
   };
 
-  const silentRefresh = () => {
-    if (tokenClientRef.current) {
-      tokenClientRef.current.requestAccessToken({ prompt: "" });
-    }
-  };
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserId(user.id);
+        const stored = localStorage.getItem(`gcal_token_${user.id}`);
+        const expiry = localStorage.getItem(`gcal_token_expiry_${user.id}`);
+        const authorized = localStorage.getItem(`gcal_authorized_${user.id}`);
+        if (stored && expiry && Date.now() < parseInt(expiry) - 60000) {
+          setToken(stored);
+        } else if (authorized) {
+          const tryRefresh = () => {
+            if (tokenClientRef.current) {
+              tokenClientRef.current.requestAccessToken({ prompt: "" });
+            } else {
+              setTimeout(tryRefresh, 500);
+            }
+          };
+          setTimeout(tryRefresh, 1000);
+        }
+      }
+    });
+  }, []);
 
   const signIn = () => {
     setError(null);
