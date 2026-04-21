@@ -6787,6 +6787,11 @@ function LeadsAssignedView({ assignedTo }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// -- PROPERTY MANAGER VIEW ---
 
 
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
