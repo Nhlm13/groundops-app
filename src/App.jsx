@@ -6375,13 +6375,11 @@ function GMPlannerView({ onLogout }) {
             <GoogleCalendarTab/>
           </div>
         )}
-
       </div>
     </div>
   );
 }
-  );
-}
+
 
 // -- MANAGER JOBS VIEW --------------------------------------------------------
 function ManagerJobsView({ serviceTypes }) {
