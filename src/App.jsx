@@ -5912,7 +5912,7 @@ const [userId, setUserId] = useState(null); // eslint-disable-line no-unused-var
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?fields=items(id,summary,backgroundColor,colorId,selected)", { headers });
+const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?fields=items(id,summary,backgroundColor,colorId,selected,accessRole,primary)", { headers });
       if (calRes.status === 401) { signOut(); return; }
       const calData = await calRes.json();
       const calList = (calData.items || []).filter(c => c.selected !== false);
@@ -5947,7 +5947,26 @@ const [userId, setUserId] = useState(null); // eslint-disable-line no-unused-var
         })
       );
 
-      const merged = allResults.flat().sort((a, b) => {
+      // Deduplicate by event ID — prefer non-primary calendar attribution
+      const allEvents = allResults.flat();
+      const primaryCalId = calList.find(c => c.id === "primary")?.id || 
+        calList.find(c => c.accessRole === "owner" && c.primary)?.id || "";
+      
+      const seen = new Map();
+      allEvents.forEach(ev => {
+        if (!ev.id) return;
+        const existing = seen.get(ev.id);
+        if (!existing) {
+          seen.set(ev.id, ev);
+        } else {
+          // Prefer the version from a non-primary calendar
+          if (existing._calendarId === primaryCalId && ev._calendarId !== primaryCalId) {
+            seen.set(ev.id, ev);
+          }
+        }
+      });
+
+      const merged = Array.from(seen.values()).sort((a, b) => {
         const aDate = a.start?.dateTime || a.start?.date || "";
         const bDate = b.start?.dateTime || b.start?.date || "";
         return aDate.localeCompare(bDate);
