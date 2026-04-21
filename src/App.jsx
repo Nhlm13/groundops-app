@@ -5857,25 +5857,41 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const fetchEvents = async () => {
     setLoading(true); setError(null);
     try {
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Step 1 — get all calendars this user has access to
+      const calListRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", { headers });
+      if (calListRes.status === 401) { signOut(); return; }
+      const calListData = await calListRes.json();
+      const calendars = (calListData.items || []).filter(c => c.selected !== false);
+
+      // Step 2 — fetch events from every calendar
       const now = new Date();
       const start = new Date(now); start.setMonth(now.getMonth() - 1);
       const end = new Date(now); end.setMonth(now.getMonth() + 3);
       const params = `timeMin=${start.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=250`;
-      const headers = { Authorization: `Bearer ${token}` };
-      const [personalRes, companyRes] = await Promise.all([
-        fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, { headers }),
-        fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(COMPANY_CAL_ID)}/events?${params}`, { headers }),
-      ]);
-      if (personalRes.status === 401) { signOut(); return; }
-      const personalData = await personalRes.json();
-      const companyData = companyRes.ok ? await companyRes.json() : { items: [] };
-      const personal = (personalData.items || []).map(e => ({ ...e, _source: "personal" }));
-      const company = (companyData.items || []).map(e => ({ ...e, _source: "company" }));
-      const merged = [...personal, ...company].sort((a, b) => {
+
+      const allResults = await Promise.all(
+        calendars.map(async cal => {
+          try {
+            const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`, { headers });
+            if (!res.ok) return [];
+            const data = await res.json();
+            return (data.items || []).map(e => ({
+              ...e,
+              _calendarName: cal.summary,
+              _calendarColor: cal.backgroundColor || "#2563eb",
+            }));
+          } catch { return []; }
+        })
+      );
+
+      const merged = allResults.flat().sort((a, b) => {
         const aDate = a.start?.dateTime || a.start?.date || "";
         const bDate = b.start?.dateTime || b.start?.date || "";
         return aDate.localeCompare(bDate);
       });
+
       setEvents(merged);
     } catch(e) { setError("Failed to load events."); }
     setLoading(false);
