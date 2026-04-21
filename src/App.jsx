@@ -6628,6 +6628,7 @@ function LeadsAssignedView({ assignedTo }) {
   const [apptSaving, setApptSaving] = useState(false);
   const [apptDone, setApptDone] = useState(false);
   const [apptError, setApptError] = useState("");
+  const [reschedulingEventId, setReschedulingEventId] = useState(null);
 
   const STATUSES = {
     "created ticket": { bg:"#f0f4ff", color:"#4472CA" },
@@ -6658,6 +6659,36 @@ function LeadsAssignedView({ assignedTo }) {
     fetchLeads();
   }, [assignedTo]); // eslint-disable-line
 
+  const resetModal = () => {
+    setSchedulingLead(null);
+    setApptForm({ date:"", startTime:"09:00", endTime:"10:00", note:"" });
+    setApptSaving(false);
+    setApptDone(false);
+    setApptError("");
+    setReschedulingEventId(null);
+  };
+
+  const openSchedule = (r) => {
+    setApptForm({ date:"", startTime:"09:00", endTime:"10:00", note:"" });
+    setReschedulingEventId(null);
+    setApptDone(false);
+    setApptError("");
+    setSchedulingLead(r);
+  };
+
+  const openReschedule = (r) => {
+    setApptForm({ date: r.appt_date || "", startTime: r.appt_start || "09:00", endTime: r.appt_end || "10:00", note:"" });
+    setReschedulingEventId(r.appt_event_id || null);
+    setApptDone(false);
+    setApptError("");
+    setSchedulingLead(r);
+  };
+
+  const formatApptDate = (ds) => {
+    if (!ds) return "";
+    return new Date(ds + "T12:00:00").toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
+  };
+
   if (loading) return (
     <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>Loading...</div>
   );
@@ -6684,6 +6715,7 @@ function LeadsAssignedView({ assignedTo }) {
 
       {leads.map(r => {
         const st = STATUSES[r.status] || { bg:"#f8fafc", color:"#64748b" };
+        const hasAppt = !!r.appt_date;
         return (
           <div key={r.id} style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:`4px solid ${st.color}`, borderRadius:10, padding:"14px 16px", marginBottom:8, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:6 }}>
@@ -6699,10 +6731,26 @@ function LeadsAssignedView({ assignedTo }) {
               </div>
             )}
             {r.notes && <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:11, color:"#94a3b8", marginTop:5, fontStyle:"italic" }}>{r.notes}</div>}
-            <button onClick={() => setSchedulingLead(r)}
-              style={{ marginTop:10, width:"100%", padding:"8px", borderRadius:7, border:"1px solid #c7d7f9", background:"#f0f4ff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:"#1e40af", cursor:"pointer", letterSpacing:0.5 }}>
-              📅 Schedule Appointment
-            </button>
+
+            {hasAppt ? (
+              <div style={{ marginTop:10, background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:7, padding:"10px 12px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
+                <div>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#166534", letterSpacing:0.5, textTransform:"uppercase", marginBottom:2 }}>Appointment Scheduled</div>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#166534", fontWeight:600 }}>
+                    📅 {formatApptDate(r.appt_date)} · {r.appt_start} – {r.appt_end}
+                  </div>
+                </div>
+                <button onClick={() => openReschedule(r)}
+                  style={{ padding:"5px 12px", borderRadius:6, border:"1px solid #16a34a", background:"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#16a34a", cursor:"pointer", fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
+                  Reschedule
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => openSchedule(r)}
+                style={{ marginTop:10, width:"100%", padding:"8px", borderRadius:7, border:"1px solid #c7d7f9", background:"#f0f4ff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:"#1e40af", cursor:"pointer", letterSpacing:0.5 }}>
+                📅 Schedule Appointment
+              </button>
+            )}
           </div>
         );
       })}
@@ -6712,18 +6760,22 @@ function LeadsAssignedView({ assignedTo }) {
           <div style={{ background:"#fff", borderRadius:16, padding:"24px", width:"100%", maxWidth:460, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:20 }}>
               <div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#0A2540", letterSpacing:2, lineHeight:1 }}>Schedule Appointment</div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"#0A2540", letterSpacing:2, lineHeight:1 }}>
+                  {reschedulingEventId ? "Reschedule Appointment" : "Schedule Appointment"}
+                </div>
                 <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", marginTop:4 }}>{schedulingLead.name} · {schedulingLead.address}</div>
               </div>
-              <button onClick={() => { setSchedulingLead(null); setApptForm({ date:"", startTime:"09:00", endTime:"10:00", note:"" }); setApptSaving(false); setApptDone(false); }} style={{ background:"none", border:"none", fontSize:22, color:"#94a3b8", cursor:"pointer", lineHeight:1 }}>×</button>
+              <button onClick={resetModal} style={{ background:"none", border:"none", fontSize:22, color:"#94a3b8", cursor:"pointer", lineHeight:1 }}>×</button>
             </div>
 
             {apptDone ? (
               <div style={{ textAlign:"center", padding:"30px 0" }}>
                 <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
-                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#16a34a", letterSpacing:2, marginBottom:8 }}>Appointment Created</div>
-                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", marginBottom:20 }}>Added to your Google Calendar</div>
-                <button onClick={() => { setSchedulingLead(null); setApptForm({ date:"", startTime:"09:00", endTime:"10:00", note:"" }); setApptSaving(false); setApptDone(false); }}
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#16a34a", letterSpacing:2, marginBottom:8 }}>
+                  {reschedulingEventId ? "Appointment Rescheduled" : "Appointment Created"}
+                </div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#64748b", marginBottom:20 }}>Saved to your Google Calendar</div>
+                <button onClick={resetModal}
                   style={{ padding:"10px 24px", background:"#1e40af", border:"none", borderRadius:8, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"#fff", cursor:"pointer" }}>
                   Done
                 </button>
@@ -6762,6 +6814,12 @@ function LeadsAssignedView({ assignedTo }) {
                     try {
                       const token = localStorage.getItem("gcal_token");
                       if (!token) { setApptError("Please connect your Google Calendar first from the Calendar tab."); setApptSaving(false); return; }
+                      if (reschedulingEventId) {
+                        await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${reschedulingEventId}`, {
+                          method: "DELETE",
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                      }
                       const body = {
                         summary: `Site Visit — ${schedulingLead.name}`,
                         description: `Address: ${schedulingLead.address || ""}\nPhone: ${schedulingLead.phone || ""}\nService: ${schedulingLead.task || ""}${apptForm.note ? "\nNote: " + apptForm.note : ""}`,
@@ -6775,12 +6833,20 @@ function LeadsAssignedView({ assignedTo }) {
                       });
                       if (res.status === 401) { setApptError("Google session expired. Please reconnect from the Calendar tab."); setApptSaving(false); return; }
                       if (!res.ok) { setApptError("Failed to create event. Please try again."); setApptSaving(false); return; }
+                      const eventData = await res.json();
+                      await supabase.from("requests").update({
+                        appt_date: apptForm.date,
+                        appt_start: apptForm.startTime,
+                        appt_end: apptForm.endTime,
+                        appt_event_id: eventData.id,
+                      }).eq("id", schedulingLead.id);
+                      setLeads(prev => prev.map(l => l.id === schedulingLead.id ? { ...l, appt_date: apptForm.date, appt_start: apptForm.startTime, appt_end: apptForm.endTime, appt_event_id: eventData.id } : l));
                       setApptDone(true);
                     } catch(e) { setApptError("Something went wrong. Please try again."); }
                     setApptSaving(false);
                   }}
                   style={{ width:"100%", padding:"13px", background:!apptForm.date||apptSaving?"#94a3b8":"#1e40af", border:"none", borderRadius:10, fontFamily:"'Bebas Neue',sans-serif", fontSize:18, letterSpacing:3, color:"#fff", cursor:!apptForm.date||apptSaving?"not-allowed":"pointer", transition:"background 0.15s" }}>
-                  {apptSaving ? "Creating..." : "Create Appointment"}
+                  {apptSaving ? "Saving..." : reschedulingEventId ? "Reschedule Appointment" : "Create Appointment"}
                 </button>
               </>
             )}
@@ -6790,8 +6856,6 @@ function LeadsAssignedView({ assignedTo }) {
     </div>
   );
 }
-
-// -- PROPERTY MANAGER VIEW ---
 
 
 // -- PROPERTY MANAGER VIEW -----------------------------------------------------
