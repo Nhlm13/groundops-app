@@ -6408,26 +6408,14 @@ function ManagerJobsView({ serviceTypes }) {
     setLoading(true);
     const { start, end } = getDateRange();
     const { data: jobData } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("company_id", COMPANY_ID)
-      .gte("date", start)
-      .lte("date", end)
-      .in("service_type", serviceTypes)
-      .order("date");
-
+      .from("jobs").select("*").eq("company_id", COMPANY_ID)
+      .gte("date", start).lte("date", end)
+      .in("service_type", serviceTypes).order("date");
     const { data: propData } = await supabase
-      .from("properties")
-      .select("id, address, client_id, lat, lng")
-      .eq("company_id", COMPANY_ID);
-
-    const { data: clientData } = await supabase
-      .from("clients").select("id, name");
-
+      .from("properties").select("id,address,client_id,lat,lng").eq("company_id", COMPANY_ID);
+    const { data: clientData } = await supabase.from("clients").select("id,name");
     const { data: truckData } = await supabase
-      .from("trucks").select("id, name")
-      .eq("company_id", COMPANY_ID).eq("active", true);
-
+      .from("trucks").select("id,name").eq("company_id", COMPANY_ID).eq("active", true);
     const clientMap = {};
     (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
     const propMap = {};
@@ -6436,15 +6424,12 @@ function ManagerJobsView({ serviceTypes }) {
     });
     const truckMap = {};
     (truckData || []).forEach(t => { truckMap[t.id] = t.name; });
-
     const jobIds = (jobData || []).map(j => j.id);
     let aMap = {};
     if (jobIds.length > 0) {
-      const { data: aData } = await supabase
-        .from("job_assignments").select("*").in("job_id", jobIds);
+      const { data: aData } = await supabase.from("job_assignments").select("*").in("job_id", jobIds);
       (aData || []).forEach(a => { aMap[a.job_id] = a; });
     }
-
     setJobs(jobData || []);
     setProperties(propMap);
     setTrucks(truckMap);
@@ -6458,12 +6443,11 @@ function ManagerJobsView({ serviceTypes }) {
   const formatDate = (ds) => {
     const [y, m, d] = ds.split("-").map(Number);
     const date = new Date(y, m - 1, d);
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    const today = new Date(); today.setHours(0,0,0,0);
     const diff = Math.round((date - today) / 86400000);
     if (diff === 0) return "Today";
     if (diff === 1) return "Tomorrow";
-    return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    return date.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
   };
 
   const formatService = (s) => {
@@ -6471,65 +6455,61 @@ function ManagerJobsView({ serviceTypes }) {
     return s.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const STATUS_COLOR = {
-    completed:  { bg: "rgba(106,184,32,0.12)", color: "var(--leaf)", label: "✓ Done" },
-    in_progress:{ bg: "rgba(212,132,10,0.12)",  color: "var(--warn)", label: "In Progress" },
-    scheduled:  { bg: "rgba(138,170,112,0.1)",  color: "var(--stone)", label: "Scheduled" },
-    carried_over:{ bg: "rgba(42,90,149,0.1)",   color: "var(--mgr-lt)", label: "Carried Over" },
+  const STATUS = {
+    completed:    { bg:"#dcfce7", color:"#166534", label:"✓ Done" },
+    in_progress:  { bg:"#fef9c3", color:"#854d0e", label:"In Progress" },
+    scheduled:    { bg:"#f1f5f9", color:"#475569", label:"Scheduled" },
+    carried_over: { bg:"#dbeafe", color:"#1e40af", label:"Carried Over" },
   };
 
-  // Group by date
   const byDate = {};
-  jobs.forEach(j => {
-    if (!byDate[j.date]) byDate[j.date] = [];
-    byDate[j.date].push(j);
-  });
+  jobs.forEach(j => { if (!byDate[j.date]) byDate[j.date] = []; byDate[j.date].push(j); });
   const dates = Object.keys(byDate).sort();
-
   const totalToday = jobs.filter(j => j.date === todayStr).length;
   const doneToday = jobs.filter(j => j.date === todayStr && j.status === "completed").length;
   const pending = jobs.filter(j => j.status === "scheduled" || j.status === "carried_over").length;
 
   if (loading) return (
-    <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>Loading...</div>
+    <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:2, color:"#94a3b8", textTransform:"uppercase" }}>Loading...</div>
   );
 
   if (selectedJob) {
     const prop = properties[selectedJob.property_id];
-    const st = STATUS_COLOR[selectedJob.status] || STATUS_COLOR.scheduled;
+    const st = STATUS[selectedJob.status] || STATUS.scheduled;
     const truck = assignments[selectedJob.id] ? trucks[assignments[selectedJob.id].truck_id] : null;
     return (
       <div style={{ animation:"fadeUp 0.2s ease both" }}>
-        <button onClick={() => setSelectedJob(null)} style={{ background:"none", border:"none", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, padding:0, marginBottom:16, display:"flex", alignItems:"center", gap:6 }}>
-          ← Back
+        <button onClick={() => setSelectedJob(null)}
+          style={{ background:"none", border:"none", color:"#2563eb", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, padding:0, marginBottom:16 }}>
+          ← Back to Jobs
         </button>
-        <div style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:"4px solid var(--mgr-lt)", borderRadius:10, padding:"14px 16px", marginBottom:10 }}>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"var(--cream)", letterSpacing:1, lineHeight:1 }}>{prop?.client_name || "Unknown"}</div>
-          {prop?.address && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#92B4F4", marginTop:4 }}>📍 {prop.address}</div>}
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8, flexWrap:"wrap" }}>
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, padding:"3px 10px", borderRadius:4, background:st.bg, color:st.color }}>{st.label}</span>
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>{formatDate(selectedJob.date)}</span>
-            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>{formatService(selectedJob.service_type)}</span>
+        <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:"4px solid #2563eb", borderRadius:10, padding:"16px 18px", marginBottom:10, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:24, color:"#0A2540", letterSpacing:1, lineHeight:1 }}>{prop?.client_name || "Unknown"}</div>
+          {prop?.address && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#2563eb", marginTop:5 }}>📍 {prop.address}</div>}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, flexWrap:"wrap" }}>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, padding:"4px 10px", borderRadius:4, background:st.bg, color:st.color, fontWeight:600 }}>{st.label}</span>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b" }}>{formatDate(selectedJob.date)}</span>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b" }}>{formatService(selectedJob.service_type)}</span>
           </div>
         </div>
         {truck && (
-          <div style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:9, padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontSize:16 }}>🚛</span>
+          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:9, padding:"12px 16px", marginBottom:8, display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+            <span style={{ fontSize:18 }}>🚛</span>
             <div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>Assigned Crew</div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"var(--cream)" }}>{truck}</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase" }}>Assigned Crew</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"#0A2540" }}>{truck}</div>
             </div>
           </div>
         )}
         {selectedJob.notes && (
-          <div style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:9, padding:"11px 14px", marginBottom:8 }}>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginBottom:4 }}>Notes</div>
-            <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:13, color:"var(--cream)", lineHeight:1.5 }}>{selectedJob.notes}</div>
+          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:9, padding:"12px 16px", marginBottom:8, boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase", marginBottom:5 }}>Notes</div>
+            <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:14, color:"#0A2540", lineHeight:1.6 }}>{selectedJob.notes}</div>
           </div>
         )}
         {prop?.address && (
           <a href={`https://maps.apple.com/?q=${encodeURIComponent(prop.address)}`} target="_blank" rel="noopener noreferrer"
-            style={{ display:"block", width:"100%", padding:"12px", background:"rgba(42,90,149,0.15)", border:"1px solid var(--mgr)", borderRadius:9, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"var(--mgr-lt)", textAlign:"center", textDecoration:"none", marginTop:8 }}>
+            style={{ display:"block", width:"100%", padding:"13px", background:"#1e40af", border:"none", borderRadius:9, fontFamily:"'Bebas Neue',sans-serif", fontSize:16, letterSpacing:2, color:"#fff", textAlign:"center", textDecoration:"none", marginTop:10 }}>
             📍 Open in Maps
           </a>
         )}
@@ -6540,60 +6520,60 @@ function ManagerJobsView({ serviceTypes }) {
   return (
     <div>
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:14 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:16 }}>
         {[
-          { label:"Today", value:totalToday, color:"var(--cream)" },
-          { label:"Done", value:doneToday, color:"var(--leaf)" },
-          { label:"Pending", value:pending, color:pending>0?"var(--warn)":"var(--leaf)" },
+          { label:"Today", value:totalToday, color:"#0A2540" },
+          { label:"Done", value:doneToday, color:"#16a34a" },
+          { label:"Pending", value:pending, color:pending>0?"#d97706":"#16a34a" },
         ].map(s => (
-          <div key={s.label} style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"8px", textAlign:"center" }}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:s.color, lineHeight:1 }}>{s.value}</div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginTop:1 }}>{s.label}</div>
+          <div key={s.label} style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:9, padding:"12px", textAlign:"center", boxShadow:"0 1px 3px rgba(0,0,0,0.04)" }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:26, color:s.color, lineHeight:1 }}>{s.value}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase", marginTop:3 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Date range filter */}
-      <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+      <div style={{ display:"flex", gap:8, marginBottom:16 }}>
         {[{ key:"today", label:"Today" }, { key:"week", label:"Next 7 Days" }, { key:"month", label:"This Month" }].map(r => (
           <button key={r.key} onClick={() => setDateRange(r.key)}
-            style={{ flex:1, padding:"7px 4px", borderRadius:8, border:`1.5px solid ${dateRange===r.key?"var(--mgr)":"var(--moss)"}`, background:dateRange===r.key?"rgba(42,90,149,0.15)":"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:0.5, color:dateRange===r.key?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", fontWeight:600 }}>
+            style={{ flex:1, padding:"8px 4px", borderRadius:8, border:`1.5px solid ${dateRange===r.key?"#2563eb":"#e2e8f0"}`, background:dateRange===r.key?"#dbeafe":"#fff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:0.5, color:dateRange===r.key?"#1e40af":"#64748b", cursor:"pointer", fontWeight:600, transition:"all 0.15s" }}>
             {r.label}
           </button>
         ))}
       </div>
 
       {jobs.length === 0 ? (
-        <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>
+        <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"#94a3b8", textTransform:"uppercase" }}>
           No jobs in this period
         </div>
       ) : (
         dates.map(date => (
-          <div key={date} style={{ marginBottom:18 }}>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:15, letterSpacing:2, color:date===todayStr?"var(--lime)":"var(--stone)", textTransform:"uppercase", marginBottom:8, display:"flex", alignItems:"center", gap:8 }}>
+          <div key={date} style={{ marginBottom:20 }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:date===todayStr?"#16a34a":"#64748b", textTransform:"uppercase", marginBottom:8, display:"flex", alignItems:"center", gap:8 }}>
               {formatDate(date)}
-              <span style={{ flex:1, height:1, background:"var(--moss)", display:"block" }}/>
-              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, fontWeight:400 }}>{byDate[date].length} job{byDate[date].length!==1?"s":""}</span>
+              <span style={{ flex:1, height:1, background:"#e2e8f0", display:"block" }}/>
+              <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, fontWeight:400, color:"#94a3b8" }}>{byDate[date].length} job{byDate[date].length!==1?"s":""}</span>
             </div>
             {byDate[date].map(job => {
               const prop = properties[job.property_id];
-              const st = STATUS_COLOR[job.status] || STATUS_COLOR.scheduled;
+              const st = STATUS[job.status] || STATUS.scheduled;
               const truck = assignments[job.id] ? trucks[assignments[job.id].truck_id] : null;
               return (
                 <div key={job.id} onClick={() => setSelectedJob(job)}
-                  style={{ background:"var(--bark)", border:"1px solid var(--moss)", borderLeft:`4px solid ${st.color}`, borderRadius:9, padding:"11px 14px", marginBottom:7, cursor:"pointer", transition:"background 0.15s" }}>
+                  style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:`4px solid ${st.color}`, borderRadius:9, padding:"12px 16px", marginBottom:8, cursor:"pointer", boxShadow:"0 1px 3px rgba(0,0,0,0.04)", transition:"box-shadow 0.15s" }}>
                   <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"#0A2540", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                         {prop?.client_name || "Unknown"}
                       </div>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2, flexWrap:"wrap" }}>
-                        {prop?.city && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4" }}>📍 {prop.city}</span>}
-                        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>{formatService(job.service_type)}</span>
-                        {truck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>🚛 {truck}</span>}
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:3, flexWrap:"wrap" }}>
+                        {prop?.city && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#2563eb" }}>📍 {prop.city}</span>}
+                        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#94a3b8" }}>{formatService(job.service_type)}</span>
+                        {truck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b" }}>🚛 {truck}</span>}
                       </div>
                     </div>
-                    <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:"3px 8px", borderRadius:4, background:st.bg, color:st.color, flexShrink:0, letterSpacing:0.5 }}>{st.label}</span>
+                    <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:"3px 9px", borderRadius:4, background:st.bg, color:st.color, flexShrink:0, fontWeight:600 }}>{st.label}</span>
                   </div>
                 </div>
               );
