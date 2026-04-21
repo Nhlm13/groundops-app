@@ -6735,6 +6735,7 @@ function PropertyManagerView({ onLogout }) {
         {tab === "jobs" && (
           <ManagerJobsView serviceTypes={["mowing","Mowing","edging","Fine Gardening","lawn_maintenance","mulching","seasonal_cleanup","seasonal_containers","spring_cleanup","weeding","irrigation_startup"]}/>
         )}
+        {tab === "leads" && <LeadsAssignedView assignedTo="Tom"/>}
         {tab === "properties" && (
           <>
             <input
