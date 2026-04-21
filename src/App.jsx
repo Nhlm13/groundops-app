@@ -5730,6 +5730,398 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 }
 
 // -- LOGIN ---------------------------------------------------------------------
+// -- GM PLANNER VIEW -----------------------------------------------------------
+function GMPlannerView({ onLogout }) {
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+  const tomorrowStr = tmr.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+  const [planDate, setPlanDate] = useState(tomorrowStr);
+  const [todayJobs, setTodayJobs] = useState([]);
+  const [planJobs, setPlanJobs] = useState([]);
+  const [trucks, setTrucks] = useState([]);
+  const [properties, setProperties] = useState({});
+  const [assignments, setAssignments] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [panel, setPanel] = useState("plan");
+  const [assigningJob, setAssigningJob] = useState(null);
+  const [pushing, setPushing] = useState({});
+  const [mapReady, setMapReady] = useState(false);
+  const mapInst = useRef(null);
+  const markersRef = useRef({});
+
+  const CREW_COLORS = ["#4472CA","#22a86e","#e05540","#d4bc4a","#9b59b6","#0e7490","#f97316","#14b8a6","#ec4899","#84cc16","#6366f1","#f43f5e"];
+
+  const fetchData = async () => {
+    setLoading(true);
+    const [
+      { data: todayJobData },
+      { data: planJobData },
+      { data: truckData },
+      { data: propData },
+    ] = await Promise.all([
+      supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", todayStr).order("sort_order"),
+      supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", planDate).order("sort_order"),
+      supabase.from("trucks").select("id,name").eq("company_id", COMPANY_ID).eq("active", true),
+      supabase.from("properties").select("id,address,client_id,lat,lng").eq("company_id", COMPANY_ID),
+    ]);
+    const { data: clientData } = await supabase.from("clients").select("id,name");
+    const clientMap = {};
+    (clientData || []).forEach(c => { clientMap[c.id] = c.name; });
+    const propMap = {};
+    (propData || []).forEach(p => {
+      propMap[p.id] = { ...p, client_name: clientMap[p.client_id] || p.address || "Unknown", city: p.address?.split(",")[1]?.trim() || "" };
+    });
+    const planIds = (planJobData || []).map(j => j.id);
+    let aMap = {};
+    if (planIds.length > 0) {
+      const { data: aData } = await supabase.from("job_assignments").select("*").in("job_id", planIds);
+      (aData || []).forEach(a => { aMap[a.job_id] = a; });
+    }
+    setTodayJobs(todayJobData || []);
+    setPlanJobs(planJobData || []);
+    setTrucks(truckData || []);
+    setProperties(propMap);
+    setAssignments(aMap);
+    setLoading(false);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchData(); }, [planDate]);
+
+  useEffect(() => {
+    if (loading || panel !== "plan") return;
+    if (mapInst.current) return;
+    const container = document.getElementById("gm-plan-map");
+    if (!container) return;
+    const doInit = () => {
+      if (mapInst.current) return;
+      mapInst.current = window.L.map(container).setView([42.305, -71.52], 11);
+      window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap contributors" }).addTo(mapInst.current);
+      setMapReady(true);
+    };
+    if (!window.L) {
+      const link = document.createElement("link"); link.rel = "stylesheet"; link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(link);
+      const script = document.createElement("script"); script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; script.onload = () => setTimeout(doInit, 200); document.head.appendChild(script);
+    } else { setTimeout(doInit, 200); }
+    return () => { if (mapInst.current) { mapInst.current.remove(); mapInst.current = null; setMapReady(false); } };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, panel]);
+
+  useEffect(() => {
+    if (!mapInst.current || !mapReady) return;
+    Object.values(markersRef.current).forEach(m => m.remove());
+    markersRef.current = {};
+    planJobs.forEach(job => {
+      const prop = properties[job.property_id];
+      if (!prop?.lat || !prop?.lng) return;
+      const a = assignments[job.id];
+      const tIdx = trucks.findIndex(t => t.id === a?.truck_id);
+      const color = a ? CREW_COLORS[tIdx % CREW_COLORS.length] : "#e05540";
+      const truckName = trucks.find(t => t.id === a?.truck_id)?.name || "Unassigned";
+      const marker = window.L.circleMarker([prop.lat, prop.lng], { radius: 9, fillColor: color, color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.9 }).addTo(mapInst.current);
+      marker.bindPopup(`<div style="font-family:'Barlow Condensed',sans-serif;min-width:150px;"><div style="font-weight:700;font-size:14px;color:#0A369D;">${prop.client_name}</div><div style="font-size:12px;color:#666;margin-top:2px;">${prop.city || prop.address}</div><div style="font-size:11px;margin-top:4px;color:${color};font-weight:600;">${truckName}</div></div>`);
+      markersRef.current[job.id] = marker;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planJobs, assignments, trucks, mapReady]);
+
+  const pushToDate = async (job) => {
+    setPushing(p => ({ ...p, [job.id]: true }));
+    await supabase.from("jobs").insert({ company_id: COMPANY_ID, property_id: job.property_id, team_id: job.team_id, schedule_id: job.schedule_id, date: planDate, status: "scheduled", sort_order: job.sort_order, notes: job.notes, service_type: job.service_type, service_types: job.service_types, original_date: job.date, carried_over: true });
+    await supabase.from("jobs").update({ status: "carried_over" }).eq("id", job.id);
+    setTodayJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: "carried_over" } : j));
+    const { data: fresh } = await supabase.from("jobs").select("*").eq("company_id", COMPANY_ID).eq("date", planDate).order("sort_order");
+    setPlanJobs(fresh || []);
+    setPushing(p => ({ ...p, [job.id]: false }));
+  };
+
+  const assignCrew = async (jobId, truckId) => {
+    const existing = assignments[jobId];
+    if (existing) {
+      await supabase.from("job_assignments").update({ truck_id: truckId }).eq("id", existing.id);
+      setAssignments(prev => ({ ...prev, [jobId]: { ...existing, truck_id: truckId } }));
+    } else {
+      const { data } = await supabase.from("job_assignments").insert({ job_id: jobId, truck_id: truckId, crew_name: "" }).select().single();
+      if (data) setAssignments(prev => ({ ...prev, [jobId]: data }));
+    }
+    setAssigningJob(null);
+  };
+
+  const unassignCrew = async (jobId) => {
+    const existing = assignments[jobId];
+    if (!existing) return;
+    await supabase.from("job_assignments").delete().eq("id", existing.id);
+    setAssignments(prev => { const n = { ...prev }; delete n[jobId]; return n; });
+  };
+
+  const incomplete = todayJobs.filter(j => j.status !== "completed" && j.status !== "carried_over");
+  const completedToday = todayJobs.filter(j => j.status === "completed");
+  const unassignedCount = planJobs.filter(j => !assignments[j.id]).length;
+
+  const byTruck = {};
+  trucks.forEach(t => { byTruck[t.id] = []; });
+  byTruck["__unassigned"] = [];
+  planJobs.forEach(j => {
+    const a = assignments[j.id];
+    if (a?.truck_id && byTruck[a.truck_id] !== undefined) { byTruck[a.truck_id].push(j); }
+    else { byTruck["__unassigned"].push(j); }
+  });
+  const activeTrucks = trucks.filter(t => (byTruck[t.id] || []).length > 0);
+
+  const formatDate = (ds) => {
+    const [y, m, d] = ds.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  const JobRow = ({ job, showAssign = false, showPush = false }) => {
+    const prop = properties[job.property_id];
+    const a = assignments[job.id];
+    const assignedTruck = trucks.find(t => t.id === a?.truck_id);
+    const tIdx = trucks.findIndex(t => t.id === a?.truck_id);
+    const crewColor = a ? CREW_COLORS[tIdx % CREW_COLORS.length] : "var(--warn)";
+    const isAssigning = assigningJob === job.id;
+    const isPushing = pushing[job.id];
+    const alreadyPushed = job.status === "carried_over";
+    return (
+      <div style={{ background:"var(--bark)", border:`1px solid var(--moss)`, borderLeft:`4px solid ${alreadyPushed?"var(--leaf)":crewColor}`, borderRadius:9, padding:"11px 14px", marginBottom:7, opacity:alreadyPushed?0.55:1, transition:"opacity 0.2s" }}>
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:15, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name || "Unknown"}</div>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:2 }}>
+              {prop?.city && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#92B4F4" }}>📍 {prop.city}</span>}
+              {showAssign && assignedTruck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:crewColor, fontWeight:700 }}>{assignedTruck.name}</span>}
+              {showAssign && !assignedTruck && <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)" }}>Unassigned</span>}
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6, flexShrink:0, alignItems:"center" }}>
+            {showPush && (alreadyPushed
+              ? <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--leaf)" }}>✓ Pushed</span>
+              : <button onClick={() => pushToDate(job)} disabled={isPushing} style={{ padding:"5px 11px", borderRadius:6, border:"1px solid var(--warn)", background:"rgba(212,132,10,0.12)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--warn)", cursor:isPushing?"not-allowed":"pointer", whiteSpace:"nowrap" }}>{isPushing ? "..." : `→ ${formatDate(planDate)}`}</button>
+            )}
+            {showAssign && <button onClick={() => setAssigningJob(isAssigning ? null : job.id)} style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${isAssigning?"var(--mgr-lt)":"var(--mgr)"}`, background:isAssigning?"rgba(42,90,149,0.2)":"none", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--mgr-lt)", cursor:"pointer" }}>{assignedTruck ? "Change" : "Assign"}</button>}
+            {showAssign && assignedTruck && <button onClick={() => unassignCrew(job.id)} style={{ width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:6, border:"1px solid var(--moss)", background:"none", color:"var(--stone)", cursor:"pointer", fontSize:13 }}>×</button>}
+          </div>
+        </div>
+        {isAssigning && (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:9, paddingTop:9, borderTop:"1px solid var(--moss)", animation:"fadeUp 0.15s ease both" }}>
+            {trucks.map((truck, idx) => (
+              <button key={truck.id} onClick={() => assignCrew(job.id, truck.id)} style={{ padding:"5px 10px", borderRadius:6, border:`1.5px solid ${a?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"var(--moss)"}`, background:a?.truck_id===truck.id?`${CREW_COLORS[idx%CREW_COLORS.length]}22`:"var(--bark2)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:a?.truck_id===truck.id?CREW_COLORS[idx%CREW_COLORS.length]:"var(--stone)", cursor:"pointer", fontWeight:600 }}>{truck.name}</button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (loading) return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
+      <div style={{ background:"#1a2030", borderBottom:"3px solid var(--mgr)", padding:"12px 20px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))" }}>
+        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"var(--mgr-lt)", letterSpacing:3 }}>GM Planner</div>
+      </div>
+      <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>Loading...</div>
+    </div>
+  );
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)", overflow:"hidden" }}>
+      {/* Top bar */}
+      <div style={{ background:"#1a2030", borderBottom:"3px solid var(--mgr)", padding:"12px 20px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap" }}>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:22, color:"var(--mgr-lt)", letterSpacing:3, lineHeight:1 }}>GM Planner</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>
+            {incomplete.length > 0 && <span style={{ color:"var(--warn)" }}>⚠ {incomplete.length} need carry-over · </span>}
+            {unassignedCount > 0 ? <span style={{ color:"var(--warn)" }}>{unassignedCount} unassigned</span> : <span style={{ color:"var(--leaf)" }}>All assigned ✓</span>}
+          </div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6, background:"var(--bark)", border:"1px solid var(--mgr)", borderRadius:8, padding:"5px 10px" }}>
+            <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1, textTransform:"uppercase" }}>Plan for</span>
+            <input type="date" value={planDate} onChange={e => setPlanDate(e.target.value)} style={{ background:"none", border:"none", color:"var(--mgr-lt)", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, outline:"none", cursor:"pointer" }}/>
+            {planDate !== tomorrowStr && <button onClick={() => setPlanDate(tomorrowStr)} style={{ background:"none", border:"none", color:"var(--stone)", cursor:"pointer", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:0 }}>Tomorrow</button>}
+          </div>
+          <button onClick={fetchData} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--stone)", cursor:"pointer" }}>↻</button>
+          <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
+        </div>
+      </div>
+
+      {/* Stat bar */}
+      <div style={{ display:"flex", gap:8, padding:"10px 16px", background:"var(--bark2)", borderBottom:"1px solid var(--moss)", overflowX:"auto" }}>
+        {[
+          { label:"Carry Over", value:incomplete.length, color:incomplete.length>0?"var(--warn)":"var(--leaf)" },
+          { label:`${formatDate(planDate)} total`, value:planJobs.length, color:"var(--cream)" },
+          { label:"Unassigned", value:unassignedCount, color:unassignedCount>0?"var(--warn)":"var(--leaf)" },
+          { label:"Crews active", value:activeTrucks.length, color:"var(--mgr-lt)" },
+          { label:"Done today", value:completedToday.length, color:"var(--leaf)" },
+        ].map(s => (
+          <div key={s.label} style={{ flexShrink:0, background:"var(--bark)", border:"1px solid var(--moss)", borderRadius:8, padding:"7px 14px", textAlign:"center", minWidth:80 }}>
+            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:s.color, lineHeight:1 }}>{s.value}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:10, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", marginTop:1 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Panel tabs */}
+      <div style={{ display:"flex", borderBottom:"2px solid var(--moss)", background:"var(--bark)" }}>
+        {[
+          { key:"carryover", label:`⚠ Carry Over${incomplete.length>0?` (${incomplete.length})`:""}` },
+          { key:"plan",      label:`📋 Plan ${formatDate(planDate)}` },
+          { key:"done",      label:`✓ Done Today (${completedToday.length})` },
+        ].map(p => (
+          <button key={p.key} onClick={() => setPanel(p.key)} style={{ flex:1, padding:"10px 8px", background:"none", border:"none", borderBottom:`3px solid ${panel===p.key?"var(--mgr-lt)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:panel===p.key?"var(--mgr-lt)":"var(--stone)", cursor:"pointer", whiteSpace:"nowrap" }}>{p.label}</button>
+        ))}
+      </div>
+
+      <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column" }}>
+
+        {/* CARRY OVER */}
+        {panel === "carryover" && (
+          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 80px" }}>
+            <div style={{ background:"rgba(212,132,10,0.08)", border:"1px solid rgba(212,132,10,0.3)", borderRadius:9, padding:"11px 14px", marginBottom:14 }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--warn)", lineHeight:1.5 }}>These jobs were not completed today. Push them to {formatDate(planDate)} or skip them.</div>
+            </div>
+            {incomplete.length === 0
+              ? <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, letterSpacing:2, color:"var(--leaf)", textTransform:"uppercase" }}>🎉 All jobs completed today!</div>
+              : incomplete.map(job => <JobRow key={job.id} job={job} showPush={true}/>)
+            }
+            {todayJobs.filter(j => j.status==="carried_over").length > 0 && (
+              <>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", margin:"18px 0 10px", display:"flex", alignItems:"center", gap:8 }}>Already Pushed <span style={{ flex:1, height:1, background:"var(--moss)", display:"block" }}/></div>
+                {todayJobs.filter(j => j.status==="carried_over").map(job => <JobRow key={job.id} job={job} showPush={true}/>)}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* PLAN */}
+        {panel === "plan" && (
+          <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+            {/* Left: job list */}
+            <div style={{ width:280, flexShrink:0, overflowY:"auto", borderRight:"1px solid var(--moss)", padding:"12px 14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:10, display:"flex", alignItems:"center", gap:8 }}>{formatDate(planDate)} <span style={{ flex:1, height:1, background:"var(--moss)", display:"block" }}/></div>
+              {planJobs.length === 0
+                ? <div style={{ textAlign:"center", padding:"40px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase" }}>No jobs yet<br/><span style={{ fontSize:11, opacity:0.6 }}>Push from Carry Over tab</span></div>
+                : planJobs.map(job => <JobRow key={job.id} job={job} showAssign={true}/>)
+              }
+            </div>
+            {/* Center: map */}
+            <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
+              <div id="gm-plan-map" style={{ flex:1, background:"#1a2030" }}/>
+              <div style={{ background:"var(--bark2)", borderTop:"1px solid var(--moss)", padding:"6px 12px", display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+                <span style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}><span style={{ width:10, height:10, borderRadius:"50%", background:"#e05540", display:"inline-block" }}/> Unassigned</span>
+                {activeTrucks.map(truck => { const idx = trucks.findIndex(t => t.id === truck.id); return (<span key={truck.id} style={{ display:"flex", alignItems:"center", gap:4, fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}><span style={{ width:10, height:10, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block" }}/> {truck.name}</span>); })}
+              </div>
+            </div>
+            {/* Right: crew columns */}
+            <div style={{ width:260, flexShrink:0, overflowY:"auto", borderLeft:"1px solid var(--moss)", padding:"12px 14px" }}>
+              <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase", marginBottom:10 }}>Crew Assignments</div>
+              {byTruck["__unassigned"].length > 0 && (
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, color:"var(--warn)", textTransform:"uppercase", marginBottom:6 }}>⚠ Unassigned ({byTruck["__unassigned"].length})</div>
+                  {byTruck["__unassigned"].map(job => { const prop = properties[job.property_id]; return (<div key={job.id} style={{ background:"rgba(224,85,64,0.08)", border:"1px solid rgba(224,85,64,0.25)", borderRadius:7, padding:"7px 10px", marginBottom:5 }}><div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--cream)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>{prop?.city&&<div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>{prop.city}</div>}</div>); })}
+                </div>
+              )}
+              {trucks.filter(t => (byTruck[t.id]||[]).length > 0).map((truck, idx) => (
+                <div key={truck.id} style={{ marginBottom:14 }}>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:12, letterSpacing:1, color:CREW_COLORS[idx%CREW_COLORS.length], textTransform:"uppercase", marginBottom:6 }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background:CREW_COLORS[idx%CREW_COLORS.length], display:"inline-block", marginRight:6 }}/>{truck.name} ({byTruck[truck.id].length})
+                  </div>
+                  {byTruck[truck.id].map(job => { const prop = properties[job.property_id]; return (
+                    <div key={job.id} style={{ background:"var(--bark)", border:`1px solid ${CREW_COLORS[idx%CREW_COLORS.length]}44`, borderLeft:`3px solid ${CREW_COLORS[idx%CREW_COLORS.length]}`, borderRadius:7, padding:"7px 10px", marginBottom:5, display:"flex", alignItems:"center", justifyContent:"space-between", gap:6 }}>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"var(--cream)", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
+                        {prop?.city && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)" }}>{prop.city}</div>}
+                      </div>
+                      <button onClick={() => unassignCrew(job.id)} style={{ width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:5, border:"1px solid var(--moss)", background:"none", color:"var(--stone)", cursor:"pointer", fontSize:13, flexShrink:0 }}>×</button>
+                    </div>
+                  ); })}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* DONE TODAY */}
+        {panel === "done" && (
+          <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 80px" }}>
+            {completedToday.length === 0
+              ? <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:2, color:"var(--stone)", textTransform:"uppercase" }}>No completed jobs yet today</div>
+              : completedToday.map(job => { const prop = properties[job.property_id]; return (
+                <div key={job.id} style={{ background:"rgba(106,184,32,0.06)", border:"1px solid rgba(106,184,32,0.25)", borderLeft:"4px solid var(--leaf)", borderRadius:9, padding:"11px 14px", marginBottom:7, display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ width:26, height:26, borderRadius:6, background:"rgba(106,184,32,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontFamily:"'Bebas Neue',sans-serif", fontSize:14, color:"var(--leaf)" }}>✓</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"var(--cream)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{prop?.client_name||"Unknown"}</div>
+                    {prop?.city && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"var(--stone)" }}>📍 {prop.city}</div>}
+                  </div>
+                </div>
+              ); })
+            }
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -- PROPERTY MANAGER VIEW -----------------------------------------------------
+function PropertyManagerView({ onLogout }) {
+  const [tab, setTab] = useState("jobs");
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
+      <div style={{ background:"#1a2030", borderBottom:"3px solid var(--leaf)", padding:"12px 16px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--lime)", letterSpacing:3, lineHeight:1 }}>Property Manager</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{todayStr}</div>
+        </div>
+        <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
+      </div>
+      <div style={{ display:"flex", background:"var(--bark)", borderBottom:"2px solid var(--moss)" }}>
+        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"var(--lime)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"var(--lime)":"var(--stone)", cursor:"pointer" }}>{t.label}</button>
+        ))}
+      </div>
+      <div style={{ flex:1, overflow:"auto", padding:"16px", paddingBottom:40 }}>
+        {tab === "jobs" && (
+          <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", lineHeight:1.8 }}>
+            Jobs assigned to your crews will appear here
+          </div>
+        )}
+        {tab === "properties" && <PropertiesTab/>}
+      </div>
+    </div>
+  );
+}
+
+// -- CONSTRUCTION MANAGER VIEW -------------------------------------------------
+function ConstructionManagerView({ onLogout }) {
+  const [tab, setTab] = useState("jobs");
+  const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
+      <div style={{ background:"#1a2030", borderBottom:`3px solid var(--warn)`, padding:"12px 16px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--warn)", letterSpacing:3, lineHeight:1 }}>Construction Mgr</div>
+          <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{todayStr}</div>
+        </div>
+        <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
+      </div>
+      <div style={{ display:"flex", background:"var(--bark)", borderBottom:"2px solid var(--moss)" }}>
+        {[{ key:"jobs", label:"My Jobs" }, { key:"properties", label:"Properties" }].map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ flex:1, padding:"11px 8px", background:"none", border:"none", borderBottom:`3px solid ${tab===t.key?"var(--warn)":"transparent"}`, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, fontWeight:600, color:tab===t.key?"var(--warn)":"var(--stone)", cursor:"pointer" }}>{t.label}</button>
+        ))}
+      </div>
+      <div style={{ flex:1, overflow:"auto", padding:"16px", paddingBottom:40 }}>
+        {tab === "jobs" && (
+          <div style={{ textAlign:"center", padding:"60px 0", fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, letterSpacing:1, color:"var(--stone)", textTransform:"uppercase", lineHeight:1.8 }}>
+            Construction jobs assigned to your crews will appear here
+          </div>
+        )}
+        {tab === "properties" && <PropertiesTab/>}
+      </div>
+    </div>
+  );
+}
 const MEMORY_KEY="jj_truck_memory";
 function getTodayDateStr(){return new Date().toLocaleDateString("en-US");}
 function loadMemory(){try{const raw=localStorage.getItem(MEMORY_KEY);if(!raw)return null;const mem=JSON.parse(raw);if(mem.date!==getTodayDateStr()){localStorage.removeItem(MEMORY_KEY);return null;}return mem;}catch(e){return null;}}
@@ -5922,25 +6314,29 @@ const OFFICE_EMAIL = "katie@jandjandsonlawncare.com";
 
   const handleMgrLogin = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if(user?.email === OWNER_EMAIL) {
-      setScreen("owner");
-    } else if(user?.email === OFFICE_EMAIL) {
-      setScreen("office");
-    } else {
-      setScreen("manager");
-    }
+    if (!user) return;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, name")
+      .eq("id", user.id)
+      .single();
+    const role = profile?.role || "manager";
+    setScreen(role);
   };
 
   return (
     <LangContext.Provider value={lang}>
       <style>{css}</style>
       <div className="app">
-        {screen==="login" && <LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={handleMgrLogin} lang={lang} setLang={setLang}/>}
-        {screen==="truck" && truck && <TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout}/>}
-        {screen==="manager" && <ManagerZone onLogout={()=>setScreen("login")}/>}
-        {screen==="office" && <OfficeView onLogout={()=>setScreen("login")}/>}
-        {screen==="owner" && ownerMode==="dashboard" && <OwnerDashboard onLogout={()=>setScreen("login")} onManagerView={()=>setOwnerMode("manager")}/>}
-        {screen==="owner" && ownerMode==="manager" && <ManagerZone onLogout={()=>setScreen("login")} isOwner={true} onOwnerView={()=>setOwnerMode("dashboard")}/>}
+       {screen==="login"                && <LoginScreen onTruckLogin={handleTruckLogin} onMgrLogin={handleMgrLogin} lang={lang} setLang={setLang}/>}
+{screen==="truck"  && truck      && <TruckHome truck={truck} initialDivision={truckDiv} onLogout={handleLogout}/>}
+{screen==="owner"  && ownerMode==="dashboard" && <OwnerDashboard onLogout={()=>setScreen("login")} onManagerView={()=>setOwnerMode("manager")}/>}
+{screen==="owner"  && ownerMode==="manager"   && <ManagerZone onLogout={()=>setScreen("login")} isOwner={true} onOwnerView={()=>setOwnerMode("dashboard")}/>}
+{screen==="office"               && <OfficeView onLogout={()=>setScreen("login")}/>}
+{screen==="gm"                   && <GMPlannerView onLogout={()=>setScreen("login")}/>}
+{screen==="property_manager"     && <PropertyManagerView onLogout={()=>setScreen("login")}/>}
+{screen==="construction_manager" && <ConstructionManagerView onLogout={()=>setScreen("login")}/>}
+{screen==="manager"              && <ManagerZone onLogout={()=>setScreen("login")}/>}
       </div>
     </LangContext.Provider>
   );
