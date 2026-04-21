@@ -6071,7 +6071,7 @@ function PropertyManagerView({ onLogout }) {
     <div style={{ display:"flex", flexDirection:"column", height:"100dvh", background:"var(--earth)" }}>
       <div style={{ background:"#1a2030", borderBottom:"3px solid var(--leaf)", padding:"12px 16px 10px", paddingTop:"calc(12px + env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--lime)", letterSpacing:3, lineHeight:1 }}>Property Manager</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"var(--lime)", letterSpacing:3, lineHeight:1 }}>Residential Services</div>
           <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"var(--stone)", letterSpacing:1.5, textTransform:"uppercase", marginTop:2 }}>{todayStr}</div>
         </div>
         <button onClick={onLogout} style={{ background:"none", border:"1px solid var(--moss)", borderRadius:6, padding:"6px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, letterSpacing:1, color:"var(--stone)", cursor:"pointer", textTransform:"uppercase" }}>Out</button>
