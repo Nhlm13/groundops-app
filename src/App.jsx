@@ -4289,8 +4289,9 @@ function OfficeView({ onLogout }) {
     { key: "created ticket",     label: "Ticket Created",    color: "#d4bc4a", bg: "rgba(212,188,74,0.12)"  },
     { key: "visit planned",      label: "Visit Planned",     color: "#9b59b6", bg: "rgba(155,89,182,0.12)"  },
     { key: "estimate sent",      label: "Estimate Sent",     color: "#4472CA", bg: "rgba(68,114,202,0.12)"  },
-    { key: "estimate accepted",  label: "Estimate Accepted", color: "#f97316", bg: "rgba(249,115,22,0.12)"  },
-    { key: "schedule",           label: "Scheduled",         color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
+    { key: "estimate accepted",  label: "Estimate Accepted",  color: "#f97316", bg: "rgba(249,115,22,0.12)"  },
+    { key: "awaiting schedule",  label: "Awaiting Schedule",  color: "#0e7490", bg: "rgba(14,116,144,0.12)"  },
+    { key: "schedule",           label: "Scheduled",          color: "#22a86e", bg: "rgba(34,168,110,0.12)"  },
     { key: "completed",          label: "Completed",         color: "#0e7490", bg: "rgba(14,116,144,0.12)"  },
   ];
 
@@ -4416,7 +4417,7 @@ function OfficeView({ onLogout }) {
 
       if (propError) throw new Error("property");
 
-      await updateStatus(selected.id, "schedule");
+      await updateStatus(selected.id, "awaiting schedule");
       alert(`✓ ${selected.name} has been added as a property!`);
     } catch(e) {
       if (e.message === "client") alert("Error creating client record. Please check the clients table permissions.");
