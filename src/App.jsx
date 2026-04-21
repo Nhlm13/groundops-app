@@ -6623,6 +6623,7 @@ function ManagerJobsView({ serviceTypes }) {
 function LeadsAssignedView({ assignedTo }) {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [schedulingLead, setSchedulingLead] = useState(null);
 
   const STATUSES = {
     "created ticket": { bg:"#f0f4ff", color:"#4472CA" },
@@ -6676,6 +6677,7 @@ function LeadsAssignedView({ assignedTo }) {
         </div>
         <button onClick={fetchLeads} style={{ background:"none", border:"1px solid #e2e8f0", borderRadius:6, padding:"4px 10px", fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#64748b", cursor:"pointer" }}>↻ Refresh</button>
       </div>
+
       {leads.map(r => {
         const st = STATUSES[r.status] || { bg:"#f8fafc", color:"#64748b" };
         return (
@@ -6693,9 +6695,44 @@ function LeadsAssignedView({ assignedTo }) {
               </div>
             )}
             {r.notes && <div style={{ fontFamily:"'Barlow',sans-serif", fontSize:11, color:"#94a3b8", marginTop:5, fontStyle:"italic" }}>{r.notes}</div>}
+            <button onClick={() => setSchedulingLead(r)}
+              style={{ marginTop:10, width:"100%", padding:"8px", borderRadius:7, border:"1px solid #c7d7f9", background:"#f0f4ff", fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, fontWeight:600, color:"#1e40af", cursor:"pointer", letterSpacing:0.5 }}>
+              📅 Schedule Appointment
+            </button>
           </div>
         );
       })}
+
+      {schedulingLead && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:200, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+          <div style={{ background:"#f0f4f8", borderRadius:"16px 16px 0 0", padding:"20px 20px 40px", width:"100%", maxWidth:480, maxHeight:"90dvh", overflowY:"auto" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:"#0A2540", letterSpacing:2 }}>Schedule Appointment</div>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b", marginTop:2 }}>{schedulingLead.name}</div>
+              </div>
+              <button onClick={() => setSchedulingLead(null)} style={{ background:"none", border:"none", fontSize:20, color:"#94a3b8", cursor:"pointer" }}>×</button>
+            </div>
+            <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, padding:"14px 16px", marginBottom:16 }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:14, color:"#0A2540" }}>{schedulingLead.name}</div>
+              {schedulingLead.address && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#2563eb", marginTop:3 }}>📍 {schedulingLead.address}</div>}
+              {schedulingLead.task && <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#64748b", marginTop:2 }}>{schedulingLead.task}</div>}
+            </div>
+            <GoogleCalendarTab
+              prefillEvent={{
+                title: `Site Visit — ${schedulingLead.name}`,
+                date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
+                startTime: "09:00",
+                endTime: "10:00",
+                description: `Lead site visit\nAddress: ${schedulingLead.address || ""}\nPhone: ${schedulingLead.phone || ""}\nService: ${schedulingLead.task || ""}\nNotes: ${schedulingLead.notes || ""}`,
+                allDay: false,
+                calendarId: "primary",
+              }}
+              onCreated={() => setSchedulingLead(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
