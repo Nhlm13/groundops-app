@@ -5796,9 +5796,16 @@ function ManagerZone({ onLogout, isOwner, onOwnerView }) {
 // -- LOGIN ---------------------------------------------------------------------
 
 // -- GOOGLE CALENDAR TAB -------------------------------------------------------
-
 const GCAL_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || "694192444632-h52s8hrb6nbaao5bu6gbg7j0pn270a4f.apps.googleusercontent.com";
 const GCAL_SCOPE = "https://www.googleapis.com/auth/calendar";
+
+const GCAL_COLOR_MAP = {
+  "1":"#ac725e","2":"#d06b64","3":"#f83a22","4":"#fa573c","5":"#ff7537",
+  "6":"#ffad46","7":"#42d692","8":"#16a765","9":"#7bd148","10":"#b3dc6c",
+  "11":"#fbe983","12":"#fad165","13":"#92e1c0","14":"#9fe1e7","15":"#9fc6e7",
+  "16":"#4986e7","17":"#9a9cff","18":"#b99aff","19":"#c2c2c2","20":"#cabdbf",
+  "21":"#cca6ac","22":"#f691b2","23":"#cd74e6","24":"#a47ae2",
+};
 
 function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const [userId, setUserId] = useState(null);
@@ -5809,131 +5816,116 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const [error, setError] = useState(null);
   const [view, setView] = useState(prefillEvent ? "create" : "month");
   const [selectedDay, setSelectedDay] = useState(new Date());
-  const [currentMonth, setCurrentMonth] = useState(() => ({ year: new Date().getFullYear(), month: new Date().getMonth() }));
+  const [currentMonth, setCurrentMonth] = useState(() => ({
+    year: new Date().getFullYear(), month: new Date().getMonth()
+  }));
   const [creating, setCreating] = useState(false);
   const [newEvent, setNewEvent] = useState(prefillEvent || {
     title: "", date: new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }),
     startTime: "08:00", endTime: "09:00", description: "", allDay: false, calendarId: "primary",
   });
   const tokenClientRef = useRef(null);
-
-  // Get current Supabase user ID so token is stored per-user
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUserId(user.id);
-        const stored = localStorage.getItem(`gcal_token_${user.id}`);
-        const expiry = localStorage.getItem(`gcal_token_expiry_${user.id}`);
-        if (stored && expiry && Date.now() < parseInt(expiry) - 60000) {
-          // Token still valid — use it
-          setToken(stored);
-        } else if (stored) {
-          // Token expired — try silent refresh once GIS is ready
-          setUserId(user.id);
-          const tryRefresh = () => {
-            if (tokenClientRef.current) {
-              tokenClientRef.current.requestAccessToken({ prompt: "" });
-            } else {
-              setTimeout(tryRefresh, 500);
-            }
-          };
-          setTimeout(tryRefresh, 1000);
-        }
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (window.google?.accounts) { initTokenClient(); return; }
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.onload = initTokenClient;
-    document.head.appendChild(script);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const userIdRef = useRef(null);
 
   useEffect(() => {
     if (prefillEvent) { setNewEvent(prefillEvent); setView("create"); }
   }, [prefillEvent]);
 
-  const initTokenClient = () => {
-    tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
-      client_id: GCAL_CLIENT_ID,
-      scope: GCAL_SCOPE,
-      callback: (resp) => {
-        if (resp.error) { return; }
-        const expiry = Date.now() + (resp.expires_in || 3600) * 1000;
-        if (userId) {
-          localStorage.setItem(`gcal_token_${userId}`, resp.access_token);
-          localStorage.setItem(`gcal_token_expiry_${userId}`, expiry.toString());
-          localStorage.setItem(`gcal_authorized_${userId}`, "true");
-        }
-        setToken(resp.access_token);
-      },
-    });
-  };
-
+  // Single unified init effect
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setUserId(user.id);
-        const stored = localStorage.getItem(`gcal_token_${user.id}`);
-        const expiry = localStorage.getItem(`gcal_token_expiry_${user.id}`);
-        const authorized = localStorage.getItem(`gcal_authorized_${user.id}`);
-        if (stored && expiry && Date.now() < parseInt(expiry) - 60000) {
+      if (!user) return;
+      setUserId(user.id);
+      userIdRef.current = user.id;
+
+      const stored = localStorage.getItem(`gcal_token_${user.id}`);
+      const expiry = localStorage.getItem(`gcal_token_expiry_${user.id}`);
+      const authorized = localStorage.getItem(`gcal_authorized_${user.id}`);
+      const tokenStillValid = stored && expiry && Date.now() < parseInt(expiry) - 60000;
+
+      const setupClient = () => {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: GCAL_CLIENT_ID,
+          scope: GCAL_SCOPE,
+          callback: (resp) => {
+            if (resp.error) return;
+            const uid = userIdRef.current;
+            const newExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+            if (uid) {
+              localStorage.setItem(`gcal_token_${uid}`, resp.access_token);
+              localStorage.setItem(`gcal_token_expiry_${uid}`, newExpiry.toString());
+              localStorage.setItem(`gcal_authorized_${uid}`, "true");
+            }
+            setToken(resp.access_token);
+          },
+        });
+
+        if (tokenStillValid) {
           setToken(stored);
         } else if (authorized) {
-          const tryRefresh = () => {
-            if (tokenClientRef.current) {
-              tokenClientRef.current.requestAccessToken({ prompt: "" });
-            } else {
-              setTimeout(tryRefresh, 500);
-            }
-          };
-          setTimeout(tryRefresh, 1000);
+          tokenClientRef.current.requestAccessToken({ prompt: "" });
+        }
+      };
+
+      if (window.google?.accounts) {
+        setupClient();
+      } else {
+        const existing = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+        if (existing) {
+          existing.addEventListener("load", setupClient);
+        } else {
+          const script = document.createElement("script");
+          script.src = "https://accounts.google.com/gsi/client";
+          script.onload = setupClient;
+          document.head.appendChild(script);
         }
       }
     });
-  }, []);
+  }, []); // eslint-disable-line
+
+  useEffect(() => { if (token) fetchAll(); }, [token]); // eslint-disable-line
 
   const signIn = () => {
     setError(null);
-    if (tokenClientRef.current) tokenClientRef.current.requestAccessToken();
+    if (tokenClientRef.current) tokenClientRef.current.requestAccessToken({ prompt: "select_account" });
     else setError("Google sign-in not ready. Please wait a moment and try again.");
   };
 
   const signOut = () => {
     if (token) window.google?.accounts?.oauth2?.revoke(token);
-    if (userId) localStorage.removeItem(`gcal_token_${userId}`);
+    const uid = userIdRef.current;
+    if (uid) {
+      localStorage.removeItem(`gcal_token_${uid}`);
+      localStorage.removeItem(`gcal_token_expiry_${uid}`);
+      localStorage.removeItem(`gcal_authorized_${uid}`);
+    }
     setToken(null); setEvents([]); setCalendars([]);
   };
 
-  useEffect(() => { if (token) fetchAll(); }, [token]); // eslint-disable-line
+  const getCalColor = (cal) => {
+    if (cal.backgroundColor) return cal.backgroundColor;
+    if (cal.colorId) return GCAL_COLOR_MAP[cal.colorId] || "#2563eb";
+    return "#2563eb";
+  };
 
   const fetchAll = async () => {
-    // Silently refresh token if expiring within 5 minutes
-    if (userId) {
-      const expiry = localStorage.getItem(`gcal_token_expiry_${userId}`);
-      if (expiry && Date.now() > parseInt(expiry) - 300000) {
-        silentRefresh();
-        return;
-      }
-    }
     setLoading(true); setError(null);
     try {
       const headers = { Authorization: `Bearer ${token}` };
-
-      // Fetch calendar list
-      const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList", { headers });
+      const calRes = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?fields=items(id,summary,backgroundColor,colorId,selected)", { headers });
       if (calRes.status === 401) { signOut(); return; }
       const calData = await calRes.json();
       const calList = (calData.items || []).filter(c => c.selected !== false);
+
+      // Build color map by calendar id
+      const colorById = {};
+      const nameById = {};
+      calList.forEach(cal => {
+        colorById[cal.id] = getCalColor(cal);
+        nameById[cal.id] = cal.summary;
+      });
       setCalendars(calList);
 
-      // Update newEvent default calendar to primary
-      setNewEvent(prev => ({ ...prev, calendarId: prev.calendarId || "primary" }));
-
-      // Fetch events from all calendars
       const now = new Date();
       const start = new Date(now); start.setMonth(now.getMonth() - 1);
       const end = new Date(now); end.setMonth(now.getMonth() + 3);
@@ -5948,8 +5940,8 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
             return (data.items || []).map(e => ({
               ...e,
               _calendarId: cal.id,
-              _calendarName: cal.summary,
-              _calendarColor: cal.backgroundColor || "#2563eb",
+              _calendarName: nameById[cal.id] || cal.summary,
+              _calendarColor: colorById[cal.id],
             }));
           } catch { return []; }
         })
@@ -5999,7 +5991,6 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
   const inputStyle = { width:"100%", padding:"11px 14px", borderRadius:8, border:"1.5px solid #e2e8f0", background:"#fff", color:"#0A2540", fontFamily:"'Barlow',sans-serif", fontSize:15, outline:"none", marginBottom:12, boxSizing:"border-box" };
   const labelStyle = { fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, letterSpacing:1.5, color:"#64748b", textTransform:"uppercase", marginBottom:5, display:"block" };
 
-  // Month helpers
   const daysInMonth = new Date(currentMonth.year, currentMonth.month + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.year, currentMonth.month, 1).getDay();
   const monthName = new Date(currentMonth.year, currentMonth.month, 1).toLocaleDateString("en-US", { month:"long", year:"numeric" });
@@ -6027,7 +6018,6 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
-
       {/* Toolbar */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10, paddingBottom:16, borderBottom:"2px solid #e2e8f0" }}>
         <div style={{ display:"flex", gap:6 }}>
@@ -6047,10 +6037,10 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
 
       {/* Calendar legend */}
       {calendars.length > 0 && (
-        <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginBottom:14 }}>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:12, marginBottom:16, padding:"10px 14px", background:"#f8fafc", borderRadius:8, border:"1px solid #e2e8f0" }}>
           {calendars.map(cal => (
             <span key={cal.id} style={{ display:"flex", alignItems:"center", gap:6, fontFamily:"'Barlow Condensed',sans-serif", fontSize:13, color:"#475569" }}>
-              <span style={{ width:12, height:12, borderRadius:3, background:cal.backgroundColor||"#2563eb", display:"inline-block", flexShrink:0 }}/>
+              <span style={{ width:14, height:14, borderRadius:3, background:getCalColor(cal), display:"inline-block", flexShrink:0 }}/>
               {cal.summary}
             </span>
           ))}
@@ -6084,10 +6074,10 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
               const isToday = dateStr === todayStr;
               return (
                 <div key={day} onClick={() => { setSelectedDay(new Date(currentMonth.year, currentMonth.month, day)); setView("day"); }}
-                  style={{ minHeight:100, background:"#fff", border:`1.5px solid ${isToday?"#2563eb":"#e2e8f0"}`, borderRadius:8, padding:"6px", cursor:"pointer", transition:"box-shadow 0.15s", boxShadow:isToday?"0 0 0 1px #2563eb inset":undefined }}>
+                  style={{ minHeight:100, background:"#fff", border:`1.5px solid ${isToday?"#2563eb":"#e2e8f0"}`, borderRadius:8, padding:"6px", cursor:"pointer" }}>
                   <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:20, color:isToday?"#fff":"#0A2540", lineHeight:1, marginBottom:4, width:28, height:28, borderRadius:"50%", background:isToday?"#2563eb":"transparent", display:"flex", alignItems:"center", justifyContent:"center" }}>{day}</div>
-                  {dayEvents.slice(0,3).map((ev, i) => (
-                    <div key={ev.id||i} style={{ background:getEventColor(ev), borderRadius:4, padding:"2px 6px", marginBottom:2 }}>
+                  {dayEvents.slice(0,3).map((ev, j) => (
+                    <div key={ev.id||j} style={{ background:getEventColor(ev), borderRadius:4, padding:"2px 6px", marginBottom:2 }}>
                       <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", fontWeight:600 }}>
                         {ev.start?.dateTime ? `${formatTime(ev.start.dateTime)} ` : ""}{ev.summary || "(No title)"}
                       </div>
@@ -6120,8 +6110,8 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
                       {day.getDate()}
                     </div>
                   </div>
-                  {dayEvents.slice(0,4).map((ev, i) => (
-                    <div key={ev.id||i} style={{ background:getEventColor(ev), borderRadius:5, padding:"3px 7px", marginBottom:3 }}>
+                  {dayEvents.slice(0,4).map((ev, j) => (
+                    <div key={ev.id||j} style={{ background:getEventColor(ev), borderRadius:5, padding:"3px 7px", marginBottom:3 }}>
                       <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>
                         {ev.summary || "(No title)"}
                       </div>
@@ -6159,7 +6149,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
               <div key={ev.id||i} style={{ background:"#fff", borderLeft:`5px solid ${getEventColor(ev)}`, borderTop:"1.5px solid #e2e8f0", borderRight:"1.5px solid #e2e8f0", borderBottom:"1.5px solid #e2e8f0", borderRadius:10, padding:"16px 18px", marginBottom:10, boxShadow:"0 2px 8px rgba(0,0,0,0.05)" }}>
                 <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:10, marginBottom:6 }}>
                   <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:700, fontSize:18, color:"#0A2540" }}>{ev.summary || "(No title)"}</div>
-                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:11, padding:"3px 10px", borderRadius:20, background:getEventColor(ev), color:"#fff", fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
+                  <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:12, padding:"3px 10px", borderRadius:20, background:getEventColor(ev), color:"#fff", fontWeight:600, whiteSpace:"nowrap", flexShrink:0 }}>
                     {ev._calendarName || "Calendar"}
                   </span>
                 </div>
@@ -6184,9 +6174,7 @@ function GoogleCalendarTab({ prefillEvent = null, onCreated = null }) {
 
           <label style={labelStyle}>Calendar</label>
           {calendars.length > 0 ? (
-            <select
-              value={newEvent.calendarId}
-              onChange={e => setNewEvent(p => ({...p, calendarId: e.target.value}))}
+            <select value={newEvent.calendarId} onChange={e => setNewEvent(p => ({...p, calendarId: e.target.value}))}
               style={{ ...inputStyle, cursor:"pointer" }}>
               {calendars.map(cal => (
                 <option key={cal.id} value={cal.id}>{cal.summary}</option>
