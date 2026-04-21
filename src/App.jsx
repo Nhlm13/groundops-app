@@ -7271,7 +7271,22 @@ export default function App() {
   const[truck,setTruck]=useState(null);
   const[truckDiv,setTruckDiv]=useState("");
   const[lang,setLang]=useState(detectLang);
-  const[ownerMode,setOwnerMode]=useState("dashboard"); // "dashboard" or "manager"
+  const[ownerMode,setOwnerMode]=useState("dashboard");
+
+  // Restore manager session on page refresh
+  useEffect(() => {
+    const restoreSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
+      if (profile?.role) setScreen(profile.role);
+    };
+    restoreSession();
+  }, []); // eslint-disable-line
 
   const postSignIn = async (tr) => {
     try {
