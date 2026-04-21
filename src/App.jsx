@@ -6271,8 +6271,6 @@ export default function App() {
   const[lang,setLang]=useState(detectLang);
   const[ownerMode,setOwnerMode]=useState("dashboard"); // "dashboard" or "manager"
 
-  const OWNER_EMAIL = "justin@jandjandsonlawncare.com"; 
-
   const postSignIn = async (tr) => {
     try {
       let truckId = tr.supabaseId;
@@ -6309,8 +6307,6 @@ export default function App() {
 
   const handleTruckLogin = tr => { setTruck(tr); setTruckDiv(""); setScreen("truck"); postSignIn(tr); };
   const handleLogout = () => { if(truck) postSignOut(truck); setTruck(null); setTruckDiv(""); setScreen("login"); };
-
-const OFFICE_EMAIL = "katie@jandjandsonlawncare.com";
 
   const handleMgrLogin = async () => {
     const { data: { user } } = await supabase.auth.getUser();
