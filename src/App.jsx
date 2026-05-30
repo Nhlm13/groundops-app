@@ -15,13 +15,6 @@ const isMowing = (n) => MOWING_CREWS.includes(Number(n));
 const MAP_CENTER = [42.13, -71.05];
 const MAP_ZOOM = 11;
 
-const CREW_COLORS = [
-  "#6ab820", "#4472CA", "#e05540", "#d4bc4a", "#9b59b6",
-  "#0e7490", "#f97316", "#14b8a6", "#ec4899", "#84cc16",
-  "#6366f1", "#f43f5e", "#22a86e", "#eab308", "#a855f7",
-  "#06b6d4", "#fb7185", "#65a30d", "#3b82f6", "#f59e0b",
-];
-
 /* =============================== i18n ==============================
    Crew-facing screens are translated. Each device remembers its choice.
    Manager screens stay in English.
@@ -546,7 +539,7 @@ function CrewJobDetail({ job, crew, onBack, onChanged }) {
   const [status, setStatus] = useState(job.status);
   const [startedAt, setStartedAt] = useState(job.started_at ? new Date(job.started_at).getTime() : null);
   const [baseSecs, setBaseSecs] = useState(job.elapsed_seconds || 0);
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   const [damageNote, setDamageNote] = useState(job.checklist?.damageNote || "");
   const [finalNote, setFinalNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -960,7 +953,10 @@ function BuildSchedule({ onDone }) {
     const out = []; let cur = { lat: MAP_CENTER[0], lng: MAP_CENTER[1] };
     while (todo.length) {
       let bi = 0, bd = Infinity;
-      todo.forEach((s, i) => { const d = d2(cur, s); if (d < bd) { bd = d; bi = i; } });
+      for (let i = 0; i < todo.length; i++) {
+        const d = d2(cur, todo[i]);
+        if (d < bd) { bd = d; bi = i; }
+      }
       cur = todo.splice(bi, 1)[0]; out.push(cur);
     }
     setStops([...out, ...noGeo]);
